@@ -15,6 +15,7 @@ import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.service.NetworkLinksService;
 import net.geant.coco.agent.portal.service.NetworkSitesService;
 import net.geant.coco.agent.portal.service.NetworkSwitchesService;
+import net.geant.coco.agent.portal.utils.Pce;
 import net.geant.coco.agent.portal.utils.TestApp;
 
 @Slf4j
@@ -24,17 +25,18 @@ public class BgpThread implements Runnable {
     private NetworkLinksService networkLinksService;
     private NetworkSitesService networkSitesService;
     private BgpRouter bgpRouter;
-
+    private Pce pce;
+    
     private static final int SLEEP_INTERVAL = 2000;
     
     private Map<String, BgpRouteEntry> prefixToBgpRouteEntry = new HashMap<String, BgpRouteEntry>();
     
-	public BgpThread(NetworkSwitchesService networkSwitchesService, NetworkLinksService networkLinksService, NetworkSitesService networkSitesService, BgpRouter bgpRouter) {
+	public BgpThread(NetworkSwitchesService networkSwitchesService, NetworkLinksService networkLinksService, NetworkSitesService networkSitesService, BgpRouter bgpRouter, Pce pce) {
 		this.networkSwitchesService = networkSwitchesService;
 		this.networkLinksService = networkLinksService;
 		this.networkSitesService = networkSitesService;
 		this.bgpRouter = bgpRouter;
-
+		this.pce = pce;
 	}
 
 	public void run() {
@@ -82,9 +84,11 @@ public class BgpThread implements Runnable {
 		networkSitesService.insertNetworkSite(prefix, vlanId, neighborIp);
 		
 		List<NetworkSite> newNetworkSites = networkSitesService.getNetworkSites();
-		TestApp.pce.updatePceElement(newNetworkSites);
+		pce.updatePceElement(newNetworkSites);
 		
-		TestApp.networkAddSiteToVpn("vpn1", "tno-north-" + prefix);
+		// this may be redundant, core forwarding does not change here (?)
+		pce.setupCoreForwarding();
+
 	}
 
 	private Map<String, BgpRouteEntry> getPrefixToBgpRouteEntryMap() {

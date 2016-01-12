@@ -165,7 +165,7 @@ public class PortalController {
 		new Thread(setupThreadRunnable).start();
 		log.debug("Started core provisioning thread");
 		
-		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter);
+		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter, pce);
 		log.debug("Starting bgp thread");
 		new Thread(bgpThreadRunnable).start();
 		log.debug("Started bgp thread");

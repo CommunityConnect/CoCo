@@ -80,6 +80,11 @@ public class PortalController {
 
 	private BgpRouter bgpRouter;
 
+	private String neighborIp;
+	private String neighborName;
+    
+	Map<String, String> sitesNameToPrefixMap;
+	
     @Autowired
     public void setNetworkSwitchService(
             NetworkSwitchesService networkSwitchesService) {
@@ -134,44 +139,6 @@ public class PortalController {
 
     }
     
-	public void setUpPce(List<NetworkSwitch> networkSwitches, List<NetworkSite> networkSites,
-			List<NetworkSwitch> networkSwitchesWithEnni) {
-
-		class SetupThread implements Runnable {
-
-			RestClient restClient;
-			List<NetworkSwitch> networkSwitches;
-			List<NetworkSite> networkSites;
-			List<NetworkSwitch> networkSwitchesWithEnni;
-
-			public SetupThread(RestClient restClient, List<NetworkSwitch> networkSwitches, List<NetworkSite> networkSites,
-					List<NetworkSwitch> networkSwitchesWithEnni) {
-				this.restClient = restClient;
-				this.networkSwitches = networkSwitches;
-				this.networkSites = networkSites;
-				this.networkSwitchesWithEnni = networkSwitchesWithEnni;
-			}
-
-			public void run() {
-				pce = new Pce(restClient, networkSwitches, networkSites, networkSwitchesWithEnni);
-				pce.setupCoreForwarding();
-			}
-		}
-		
-		String controllerUrl = env.getProperty("controller.url");
-		RestClient restClient = new RestClient(controllerUrl);
-		Runnable setupThreadRunnable = new SetupThread(restClient, networkSwitches, networkSites, networkSwitchesWithEnni);
-		log.debug("Starting core provisioning thread");
-		new Thread(setupThreadRunnable).start();
-		log.debug("Started core provisioning thread");
-		
-		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter, pce);
-		log.debug("Starting bgp thread");
-		new Thread(bgpThreadRunnable).start();
-		log.debug("Started bgp thread");
-		
-	}
-
     @RequestMapping("/addsite")
     public String addSite(Model model) {
 
@@ -497,7 +464,7 @@ public class PortalController {
     
     //Map to store sites, ideally we should use database
     Map<Integer, RestSite> restSiteData = new HashMap<Integer, RestSite>();
-    
+
     @RequestMapping(value = RestVpnURIConstants.DUMMY_VPN, method = RequestMethod.GET)
     public @ResponseBody RestVpn getDummyVpn() {
     	log.info("Start getDummyVpn");
@@ -543,6 +510,109 @@ public class PortalController {
         return restVpnData.get(vpnId);
     }
     
+    
+    @RequestMapping(value = RestVpnURIConstants.SET_VPN_PRIVACY, method = RequestMethod.POST)
+    public @ResponseBody RestVpn setVpnPrivacy(@PathVariable("id") int vpnId, @RequestBody RestVpn vpn) {
+    	log.info("Start setVpnPrivacy. ID="+vpnId);
+    	
+    	Assert.isTrue(vpn.getId() == vpnId, "VPN id and ID from the rest path are not the same. REST PATH:" + String.valueOf(vpnId) + " VPN ID" + String.valueOf(vpn.getId()));
+    	
+    	if (vpn.getIsPublic()) {
+    		// make it public to all neighbors using BGP
+    		log.info("making vpn public");
+
+        	List<RestSite> sites = vpn.getSites();
+        	for (RestSite restSite : sites) {
+        		String siteName = restSite.getName();
+        		if (!siteName.contains(neighborName)) {
+	        		String siteIpPrefix = this.sitesNameToPrefixMap.get(siteName);
+	        		bgpRouter.addVpn(siteIpPrefix, this.neighborIp, vpnId);
+        		}
+			}
+    	}
+    	else {
+    		// make it not public to all neighbors using BGP
+    		log.info("making vpn private");
+    		
+    		List<RestSite> sites = vpn.getSites();
+        	for (RestSite restSite : sites) {
+        		String siteName = restSite.getName();
+        		if (!siteName.contains(neighborName)) {
+	        		String siteIpPrefix = this.sitesNameToPrefixMap.get(siteName);
+	        		bgpRouter.delVpn(siteIpPrefix, this.neighborIp, vpnId);
+        		}
+			}
+    	}
+    	
+		return vpn;
+
+    }
+    
+    public void setUpPce(List<NetworkSwitch> networkSwitches, List<NetworkSite> networkSites,
+			List<NetworkSwitch> networkSwitchesWithEnni) {
+
+		class SetupThread implements Runnable {
+
+			RestClient restClient;
+			List<NetworkSwitch> networkSwitches;
+			List<NetworkSite> networkSites;
+			List<NetworkSwitch> networkSwitchesWithEnni;
+
+			public SetupThread(RestClient restClient, List<NetworkSwitch> networkSwitches, List<NetworkSite> networkSites,
+					List<NetworkSwitch> networkSwitchesWithEnni) {
+				this.restClient = restClient;
+				this.networkSwitches = networkSwitches;
+				this.networkSites = networkSites;
+				this.networkSwitchesWithEnni = networkSwitchesWithEnni;
+			}
+
+			public void run() {
+				pce = new Pce(restClient, networkSwitches, networkSites, networkSwitchesWithEnni);
+				pce.setupCoreForwarding();
+			}
+		}
+		
+		String controllerUrl = env.getProperty("controller.url");
+		RestClient restClient = new RestClient(controllerUrl);
+		Runnable setupThreadRunnable = new SetupThread(restClient, networkSwitches, networkSites, networkSwitchesWithEnni);
+		log.debug("Starting core provisioning thread");
+		new Thread(setupThreadRunnable).start();
+		log.debug("Started core provisioning thread");
+	}
+    
+    public void initializeNetworkSitesData() {
+    	this.networkSites = networkSitesService.getNetworkSites();
+    	setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
+    	
+    	List<Vpn> vpnsFromDao = vpnsService.getVpns();
+    	
+
+    	log.info("Initialize rest data");
+        // TODO - this is from database, synch with state in vpnData
+        // where should I get the data from?
+		for (Vpn vpnFromDao : vpnsFromDao) {
+			List<NetworkSite> networkSites = networkSitesService.getNetworkSites(vpnFromDao.getName());
+			RestVpn restVpn = new RestVpn(vpnFromDao);
+			restVpn.setSites(siteToRest(networkSites));
+			restVpnData.put(restVpn.getId(), restVpn);
+		}
+		
+		List<RestSite> restSites = siteToRest(networkSites);
+		
+		for (RestSite restSite : restSites) {
+			restSiteData.put(restSite.getId(), restSite);
+		}
+		
+		
+    	Map<String, String> sitesNameToPrefixMap = new HashMap<String, String>();
+    	
+    	for (NetworkSite site : networkSites) {
+    		sitesNameToPrefixMap.put(site.getName(), site.getIpv4Prefix());
+		}
+    	
+    	this.sitesNameToPrefixMap = sitesNameToPrefixMap;
+    }
+    
     @PostConstruct
     @RequestMapping("/setupAll")
     public @ResponseBody String initializeEverything() {
@@ -582,6 +652,25 @@ public class PortalController {
 			restSiteData.put(restSite.getId(), restSite);
 		}
 		
+		
+    	Map<String, String> sitesNameToPrefixMap = new HashMap<String, String>();
+    	
+    	for (NetworkSite site : networkSites) {
+    		sitesNameToPrefixMap.put(site.getName(), site.getIpv4Prefix());
+		}
+    	
+    	this.sitesNameToPrefixMap = sitesNameToPrefixMap;
+    	
+		
+		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter, pce);
+		log.debug("Starting bgp thread");
+		new Thread(bgpThreadRunnable).start();
+		log.debug("Started bgp thread");
+		
+		
+		this.neighborIp = env.getProperty("bgpNeighborIps");
+		this.neighborName = env.getProperty("neighborName");
+
 		return "everything initialized succesfully";
 		
     }

@@ -486,6 +486,7 @@ function connect_sites()
 	vpn["id"] = parseInt(currentVPN);
 	vpn["name"] = "vpn" + (vpn["id"]-1).toString();
 	vpn["sites"] = sitelist;
+	vpn["isPublic"] = false;
 	
 	console.log(vpn);
 	
@@ -540,6 +541,7 @@ function disconnect_sites()
 	vpn["id"] = parseInt(currentVPN);
 	vpn["name"] = "vpn" + (vpn["id"]-1).toString();
 	vpn["sites"] = sitelist;
+	vpn["isPublic"] = false;
 	
 	console.log(vpn);
 	
@@ -556,18 +558,38 @@ function disconnect_sites()
 
 function setVpnPrivacy(vpn_id,vpn_public)
 {
+	var sitelist = [];	
+	$( "#site-list" ).find('li').each(function( index ) 
+	{
+		var site = {};
+		
+		/* done to remove node-x id, where x is number, we need only number for rest */
+		var tmp = "" + $(this).attr('id');
+		tmp = tmp.replace("node-", "");
+		site["id"] = parseInt(tmp);
+		//site["id"] = $(this).attr('id');
+		site["name"] = $(this).text();
+		console.log(site);
+		sitelist.push(site);
+		
+		console.log( index + ": " + $(this).text() );
+		
+	}	);
+	
 	var vpn = {};
 	vpn["id"] = vpn_id;
-	vpn["public"] = vpn_public;
+	vpn["name"] = "vpn" + (vpn["id"]-1).toString();
+	vpn["sites"] = sitelist;
+	vpn["isPublic"] = vpn_public;
 	
 	
 	console.log(JSON.stringify(vpn));
-	/* MICHAL CHANGE THIS !
-	$.post('./json/setVpnPrivacy', vpn, function(response) {
+	/* MICHAL CHANGE THIS ! */
+	$.postJSON('../rest/vpn/setPrivacy/' + vpn["id"], vpn, function(response) {
 		// Do something with the request
 		console.log(response);
 	}, 'json');
-	*/
+	
 }
 
 

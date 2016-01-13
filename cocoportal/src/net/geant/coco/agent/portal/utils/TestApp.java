@@ -119,7 +119,7 @@ public class TestApp {
 
         BgpRouter bgpRouter = new BgpRouter("134.221.121.203", 7644);
         
-		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter);
+		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter, pce);
 		log.debug("Starting bgp thread");
 		new Thread(bgpThreadRunnable).start();
 		log.debug("Started bgp thread");
@@ -137,7 +137,8 @@ public class TestApp {
     	String neighborName = "tno-south";
     	
     	bgpRouter.addVpn(siteIpPrefix, neighborIp, 1);
-		
+    	
+    	/*
     	networkAddSiteToVpn("vpn1", "tn-ce1");
     	
 		int result = networkSitesService.insertNetworkSite(siteIpPrefix, 1, neighborIp);
@@ -145,7 +146,7 @@ public class TestApp {
 		pce.updatePceElement(newNetworkSites);
 
 		networkAddSiteToVpn("vpn1", neighborName + "-" + siteIpPrefix);
-		
+		*/
 		
 		/*
 		List<NetworkSwitch> networkSwitches = networkSwitchesService.getNetworkSwitches();

@@ -11,6 +11,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import net.geant.coco.agent.portal.bgp.BgpRouteEntry;
 import net.geant.coco.agent.portal.bgp.BgpRouter;
+import net.geant.coco.agent.portal.controllers.PortalController;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.service.NetworkLinksService;
 import net.geant.coco.agent.portal.service.NetworkSitesService;
@@ -26,6 +27,7 @@ public class BgpThread implements Runnable {
     private NetworkSitesService networkSitesService;
     private BgpRouter bgpRouter;
     private Pce pce;
+    private PortalController portalController;
     
     private static final int SLEEP_INTERVAL = 2000;
     
@@ -37,6 +39,14 @@ public class BgpThread implements Runnable {
 		this.networkSitesService = networkSitesService;
 		this.bgpRouter = bgpRouter;
 		this.pce = pce;
+	}
+	
+	public BgpThread(NetworkSwitchesService networkSwitchesService, NetworkLinksService networkLinksService, NetworkSitesService networkSitesService, BgpRouter bgpRouter, PortalController portalController) {
+		this.networkSwitchesService = networkSwitchesService;
+		this.networkLinksService = networkLinksService;
+		this.networkSitesService = networkSitesService;
+		this.bgpRouter = bgpRouter;
+		this.portalController = portalController;
 	}
 
 	public void run() {
@@ -87,8 +97,13 @@ public class BgpThread implements Runnable {
 		pce.updatePceElement(newNetworkSites);
 		
 		// this may be redundant, core forwarding does not change here (?)
-		pce.setupCoreForwarding();
-
+		if (portalController != null) {
+			portalController.initializeNetworkSitesData();
+		}
+		
+		if (portalController == null && pce != null) {
+			pce.setupCoreForwarding();
+		}
 	}
 
 	private Map<String, BgpRouteEntry> getPrefixToBgpRouteEntryMap() {

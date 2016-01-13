@@ -17,17 +17,20 @@ public class RestVpn implements Serializable{
     private int id;
     private String name;
     private List<RestSite> sites;
+    private boolean isPublic;
     
     public RestVpn() {
     	this.id = -1;
     	this.name = "whereDoIUseThisActually?";
     	sites = new ArrayList<RestSite>();
+    	isPublic = false;
     }
     
     public RestVpn(Vpn vpn) {
     	this.id = vpn.getId();
     	this.name = vpn.getName();
     	sites = new ArrayList<RestSite>();
+    	isPublic = false;
     }
       
     public int getId() {
@@ -49,6 +52,14 @@ public class RestVpn implements Serializable{
     
     public void setSites(List<RestSite> sites) {
         this.sites = sites;
+    }
+    
+    public boolean getIsPublic() {
+    	return this.isPublic;
+    }
+    
+    public void setPublic(boolean isPublic) {
+    	this.isPublic = isPublic;
     }
     
     public void addSiteToVpn(RestSite site) {

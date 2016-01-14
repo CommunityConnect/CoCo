@@ -10,4 +10,8 @@ public class RestVpnURIConstants {
     public static final String CREATE_VPN = "/rest/vpn/create";
     public static final String DELETE_VPN = "/rest/vpn/delete/{id}";
     public static final String GET_ALL_SITES = "/rest/sites/{id}";
+    
+    public static final String GET_TOPOLOGY = "/topology";
+    public static final String GET_TOPOLOGY_VIS = "/topology/vis";
+    public static final String GET_TOPOLOGY_IS_CHANGED = "/topology/isChanged";
 }

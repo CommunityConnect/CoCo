@@ -92,16 +92,15 @@ public class BgpThread implements Runnable {
 	
 	private void addVirtualSiteExternal(String prefix, int vlanId, String neighborIp) {
 		networkSitesService.insertNetworkSite(prefix, vlanId, neighborIp);
-		
-		List<NetworkSite> newNetworkSites = networkSitesService.getNetworkSites();
-		pce.updatePceElement(newNetworkSites);
-		
+
 		// this may be redundant, core forwarding does not change here (?)
 		if (portalController != null) {
-			portalController.initializeNetworkSitesData();
+			portalController.initializeNetworkSitesData(true);
 		}
 		
 		if (portalController == null && pce != null) {
+			List<NetworkSite> newNetworkSites = networkSitesService.getNetworkSites();
+			pce.updatePceElement(newNetworkSites);
 			pce.setupCoreForwarding();
 		}
 	}

@@ -1,31 +1,59 @@
-
 var nodes = new vis.DataSet();
 var edges = new vis.DataSet();
-	//alert($.getJSON("./json/getNetwork"));
+// alert($.getJSON("./json/getNetwork"));
 
-	//$.getJSON("./json/getNetwork", function(data) {
-	$.getJSON("../topology/vis", function(data) {
-  console.log( "success" );
-  	nodes.add(data.nodes);
+// $.getJSON("./json/getNetwork", function(data) {
+$.getJSON("../topology/vis", function(data) {
+	console.log("success");
+	nodes.add(data.nodes);
 	edges.add(data.edges);
-	
-	drawNet(nodes,edges);
-})
-  .done(function() {
-    console.log( "second success" );
-  })
-  .fail(function() {
-    console.log( "error" );
+
+	drawNet(nodes, edges);
+}).done(function() {
+	console.log("second success");
+}).fail(function() {
+	console.log("error");
 	alert('could not get topology !');
-  })
-  .always(function() {
-    console.log( "complete" );
-	
+}).always(function() {
+	console.log("complete");
 
-	
-	
-  });
+});
 
+function drawContinuosly() {
+	
+	var shouldRedraw = false;
+	
+	//TODO debug and fix redrawing
+	$.getJSON("../topology/isChanged", function(data) {
+		if (data == true) {
+			shouldRedraw = true;
+		}
+		else {
+			shouldRedraw = false;
+		}
+	});
+	
+	if (shouldRedraw) {
+		var nodes = new vis.DataSet();
+		var edges = new vis.DataSet();
+	
+		$.getJSON("../topology/vis", function(data) {
+			console.log("success");
+			nodes.add(data.nodes);
+			edges.add(data.edges);
+	
+			drawNet(nodes, edges);
+		}).done(function() {
+			console.log("second success");
+		}).fail(function() {
+			console.log("error");
+			alert('could not get topology !');
+		}).always(function() {
+			console.log("complete");
+	
+		});
+	}
+}
   
   
 function drawNet(nodes,edges) {  

@@ -85,6 +85,8 @@ public class PortalController {
     
 	Map<String, String> sitesNameToPrefixMap;
 	
+	boolean networkChanged = false;
+	
     @Autowired
     public void setNetworkSwitchService(
             NetworkSwitchesService networkSwitchesService) {
@@ -334,13 +336,13 @@ public class PortalController {
         }
     }
 
-	@RequestMapping(value="topology", method=RequestMethod.GET)  
+	@RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY, method=RequestMethod.GET)  
     public @ResponseBody  
     List<NetworkInterface> getTopology() {  
      return topologyService.getNetworkInterfaces();
     }
     
-    @RequestMapping(value="topology/vis", method=RequestMethod.GET)  
+    @RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_VIS, method=RequestMethod.GET)  
     public @ResponseBody  
     String getTopologyVis() {
     	StringBuilder visJson = new StringBuilder();
@@ -420,7 +422,19 @@ public class PortalController {
     	visJson.append("]}");
     	
     	return visJson.toString();
-    } 
+    }
+    
+    @RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_IS_CHANGED, method=RequestMethod.GET)  
+    public @ResponseBody  
+    boolean getTopologyChange() {
+    	
+    	if (networkChanged == true) {
+    		networkChanged = false;
+    		return true;
+    	}
+    	
+    	return networkChanged;
+    }
     
     /*
     @RequestMapping(value="student", method=RequestMethod.GET)  
@@ -517,6 +531,10 @@ public class PortalController {
     	
     	Assert.isTrue(vpn.getId() == vpnId, "VPN id and ID from the rest path are not the same. REST PATH:" + String.valueOf(vpnId) + " VPN ID" + String.valueOf(vpn.getId()));
     	
+
+    	RestVpn vpnCurrent = restVpnData.get(vpnId);
+    	vpnCurrent.setPublic(vpn.getIsPublic());
+    	
     	if (vpn.getIsPublic()) {
     		// make it public to all neighbors using BGP
     		log.info("making vpn public");
@@ -580,8 +598,11 @@ public class PortalController {
 		log.debug("Started core provisioning thread");
 	}
     
-    public void initializeNetworkSitesData() {
-    	this.networkSites = networkSitesService.getNetworkSites();
+    public void initializeNetworkSitesData(boolean doGetSites) {
+    	if (doGetSites) {
+    		this.networkSites = networkSitesService.getNetworkSites();
+    	}
+    	
     	setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
     	
     	List<Vpn> vpnsFromDao = vpnsService.getVpns();
@@ -611,6 +632,8 @@ public class PortalController {
 		}
     	
     	this.sitesNameToPrefixMap = sitesNameToPrefixMap;
+    	
+    	this.networkChanged = true;
     }
     
     @PostConstruct
@@ -631,38 +654,10 @@ public class PortalController {
 		String bgpIp = env.getProperty("ip");
     	bgpRouter = new BgpRouter(bgpIp, 7644);
     	
-    	setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
-    	
-    	List<Vpn> vpnsFromDao = vpnsService.getVpns();
-    	
-
-    	log.info("Initialize rest data");
-        // TODO - this is from database, synch with state in vpnData
-        // where should I get the data from?
-		for (Vpn vpnFromDao : vpnsFromDao) {
-			List<NetworkSite> networkSites = networkSitesService.getNetworkSites(vpnFromDao.getName());
-			RestVpn restVpn = new RestVpn(vpnFromDao);
-			restVpn.setSites(siteToRest(networkSites));
-			restVpnData.put(restVpn.getId(), restVpn);
-		}
-		
-		List<RestSite> restSites = siteToRest(networkSites);
-		
-		for (RestSite restSite : restSites) {
-			restSiteData.put(restSite.getId(), restSite);
-		}
-		
-		
-    	Map<String, String> sitesNameToPrefixMap = new HashMap<String, String>();
-    	
-    	for (NetworkSite site : networkSites) {
-    		sitesNameToPrefixMap.put(site.getName(), site.getIpv4Prefix());
-		}
-    	
-    	this.sitesNameToPrefixMap = sitesNameToPrefixMap;
+    	initializeNetworkSitesData(false);
     	
 		
-		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter, pce);
+		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter, this);
 		log.debug("Starting bgp thread");
 		new Thread(bgpThreadRunnable).start();
 		log.debug("Started bgp thread");

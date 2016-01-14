@@ -219,7 +219,11 @@
 	<script src="./netDiagram.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
-	
+	<script>
+		window.setInterval(function() {
+			drawContinuosly();
+		}, 5000);
+	</script>
 			<script>
 $.fn.bootstrapSwitch.defaults.size = 'mini';			
 $("[name='VPN-1-checkbox']").bootstrapSwitch();
@@ -239,7 +243,7 @@ function populate_vpnlist(){
 		{
 			var vpn = vpns[i];
 			var checked = "";
-			if (vpn.public) { checked = "checked"; }
+			if (vpn.isPublic) { checked = "checked"; }
 			
 			
 			$("#vpn-list").append(

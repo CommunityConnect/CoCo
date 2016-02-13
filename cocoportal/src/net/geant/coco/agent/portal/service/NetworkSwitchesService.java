@@ -20,4 +20,8 @@ public class NetworkSwitchesService {
     public List<NetworkSwitch> getNetworkSwitches() {
         return networkSwitchDao.getNetworkSwitches();
     }
+    
+    public List<NetworkSwitch> getNetworkSwitchesWithNni() {
+        return networkSwitchDao.getNetworkSwitchesWithNni();
+    }
 }

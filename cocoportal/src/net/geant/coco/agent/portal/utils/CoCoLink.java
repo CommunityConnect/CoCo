@@ -1,7 +1,9 @@
 package net.geant.coco.agent.portal.utils;
 
+import org.jgrapht.graph.DefaultWeightedEdge;
 
-public class CoCoLink {
+
+public class CoCoLink extends DefaultWeightedEdge {
 	private String id;
 	private String srcNode;
 	private String srcTp;
@@ -9,6 +11,7 @@ public class CoCoLink {
 	private String dstNode;
 	private String dstTp;
 	private String dstTpNr;
+	public double weight;
 	
 	public CoCoLink(String id, String srcNode, String srcTp, String dstNode, String dstTp) {
 		this.id = id;

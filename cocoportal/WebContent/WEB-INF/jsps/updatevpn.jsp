@@ -41,6 +41,14 @@
 			<button name="addsite" value="<c:out value="${site.name}"></c:out>">add</button>
 			<br>
 		</c:forEach>
+		
+		
+		<h3>External switches:</h3>
+		<c:forEach var="sw" items="${ext_switches}">
+			<c:out value="${sw.name}"></c:out> - BGP neighbour: <c:out value="${sw.bgpIp}"></c:out>
+			<button name="addswitch" value="<c:out value="${sw.name}"></c:out>">add</button>
+			<br>
+		</c:forEach> 
 		<p>
 			<button name="done" value="done">done</button>
 		</p>

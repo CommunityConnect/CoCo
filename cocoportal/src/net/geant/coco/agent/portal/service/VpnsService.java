@@ -25,6 +25,10 @@ public class VpnsService {
         return vpnDao.getVpn(vpnName);
     }
     
+    public Vpn getVpn(int vpnId) {
+        return vpnDao.getVpn(vpnId);
+    }
+    
     public boolean addSite(String vpnName, String siteName) {
         return vpnDao.addSite(vpnName, siteName);
     }

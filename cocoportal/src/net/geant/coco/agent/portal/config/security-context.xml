@@ -30,8 +30,9 @@
 			access="isAuthenticated()" />
 		<security:intercept-url pattern="/updatevpn"
 			access="isAuthenticated()" />
+		<security:intercept-url pattern="/**" access="isAuthenticated()" />
 		
-		<security:intercept-url pattern="/**" access="denyAll" />
+		<!-- <security:intercept-url pattern="/**" access="denyAll" /> -->
 		
 		
 		

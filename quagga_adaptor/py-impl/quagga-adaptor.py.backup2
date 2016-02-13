@@ -1,0 +1,155 @@
+
+import sys
+sys.path.append('../gen-py') 
+
+from qbgp import BgpConfigurator
+from qbgp.ttypes import * 
+from thrift.transport import TSocket
+from thrift.transport import TTransport
+from thrift.protocol import TBinaryProtocol
+from thrift.server import TServer 
+from telnetlib import Telnet
+
+import socket
+
+class BgpHandler:
+	
+	host = '10.10.10.1'
+	port = 2605
+	password = 'zebra'
+	currentprompt = '>'
+
+
+	bgp_asNumber = -1
+
+	def __init__(self):
+		self.log = {}
+
+	def connectTelnet(self, host, port):
+		self.tn = Telnet(host,port)
+		print self.tn.read_until('Password:',1)
+		self.tn.write(self.password + '\n')
+		print self.tn.read_until('>',1)
+		self.tn.write('enable\n')		
+		print self.tn.read_until('#',1)
+		self.currentprompt = '#'
+
+	def execTelnetCommand(self, command):
+		self.tn.write(command + '\n')
+		return self.tn.read_until(self.currentprompt,1)
+		
+
+	def closeTelnet(self):
+
+		self.tn.close()
+
+
+	def startBgpServer(self, asNumber, routerId, port, holdTime, keepAliveTime):
+		print "StartBGP: " + str(asNumber) + ", "+ str(routerId) + ", " + str(port) + ", " + str(holdTime) + ", " + str(keepAliveTime)
+		self.asNumber = asNumber
+		
+		print "Opening telnet to: " + self.host + ":" + str(self.port)
+
+		self.connectTelnet(self.host,self.port)
+		print self.execTelnetCommand('conf t')
+		print self.execTelnetCommand('router bgp ' + str(asNumber))
+		print self.execTelnetCommand('bgp router-id ' + str(routerId))
+		print self.execTelnetCommand('end')
+		self.closeTelnet()
+
+		return 0
+
+	def stopBgpServer(self):
+		print "StopBGP: "
+		
+		self.connectTelnet(self.host,self.port)
+		print self.execTelnetCommand('conf t')
+		print self.execTelnetCommand('no router bgp ' + str(self.asNumber))
+		print self.execTelnetCommand('end')
+		self.closeTelnet()
+
+		return 0
+
+	def createPeer(self, ipAddress, asNumber):
+		print "CreatePeer: " + str(ipAddress) + ", " + str(asNumber)
+
+                self.connectTelnet(self.host,self.port)
+                print self.execTelnetCommand('conf t')
+                print self.execTelnetCommand('router bgp ' + str(self.asNumber))
+		print self.execTelnetCommand('neighbor ' + str(ipAddress) + ' remote-as ' + str(asNumber))
+		print self.execTelnetCommand('neighbor ' + str(ipAddress) + ' activate' )		
+		print self.execTelnetCommand('end')
+		self.closeTelnet()
+
+		return 0
+
+	def deletePeer(self, ipAddress):
+		print "delete neigbor:" + str(ipAddress)
+
+                self.connectTelnet(self.host,self.port)
+                print self.execTelnetCommand('conf t')
+                print self.execTelnetCommand('router bgp ' + str(self.asNumber))
+                print self.execTelnetCommand('no neighbor ' + str(ipAddress))
+                print self.execTelnetCommand('end')
+		self.closeTelnet()
+	
+		return 0	
+
+	def addVrf(self, rd, irts, erts):
+		print "add vrf: rd:" + str(rd) + " irts:" + str(irts) + " erts:" + str(erts)
+
+                self.connectTelnet(self.host,self.port)
+                print self.execTelnetCommand('conf t')
+                print self.execTelnetCommand('router bgp ' + str(self.asNumber))
+                print self.execTelnetCommand('end')
+		self.closeTelnet()
+
+		return 0
+
+	def delVrf(self, rd):
+		print "del vrf rd:" + str(rd)
+		return 0
+
+	def pushRoute(self, prefix, nexthop, rd, label):
+		print "push route prefix:" + str(prefix) + " nexthop:" + str(nexthop) + " rd:" + str(rd) + " label:" + str(label)
+                self.connectTelnet(self.host,self.port)
+                print self.execTelnetCommand('conf t')
+                print self.execTelnetCommand('router bgp ' + str(self.asNumber))
+	        print self.execTelnetCommand('address-family vpnv4 unicast')
+		print self.execTelnetCommand('network ' + str(prefix) + ' rd ' + str(rd) + ' tag ' + str(label))
+
+		# TODO: add route map ?
+
+                print self.execTelnetCommand('end')
+		self.closeTelnet()
+
+		return 0
+
+	def withdrawRoute(self, prefix, rd):
+		print "withdrawRoute prefix " + str(prefix) + " rd:" + str(rd)
+
+                self.connectTelnet(self.host,self.port)
+                print self.execTelnetCommand('conf t')
+                print self.execTelnetCommand('router bgp ' + str(self.asNumber))
+                print self.execTelnetCommand('no network ' + str(prefix) + ' rd ' + str(rd))				
+                print self.execTelnetCommand('end')
+		self.closeTelnet()
+
+		return 0
+
+	def getRoutes(self,optype,winsize):
+		print "get routes optype:" + str(optype) + " winsize:" + str(winsize)
+		
+
+
+
+handler = BgpHandler()
+processor = BgpConfigurator.Processor(handler)
+transport = TSocket.TServerSocket(port=7644)
+tfactory = TTransport.TBufferedTransportFactory()
+pfactory = TBinaryProtocol.TBinaryProtocolFactory()
+
+server = TServer.TSimpleServer(processor, transport, tfactory, pfactory) 
+print "Starting python server..."
+server.serve()
+print "done!"

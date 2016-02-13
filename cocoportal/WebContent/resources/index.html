@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="./favicon.ico">
+
+    <title>Community Connect portal</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./bootstrap-3.3.5-dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="navbar-fixed-top.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+	<style>
+	    #mynetwork {
+            width: 100%;
+            height: 400px;
+            border: none;
+            background-color: none;
+        }
+	</style>
+	<script type="text/javascript" src="./vis/vis.js"></script>
+    <link href="./vis/vis.css" rel="stylesheet" type="text/css"/>
+	<link href="./bootstrap-switch-master/dist/css/bootstrap3/bootstrap-switch.min.css" rel="stylesheet" type="text/css"/>
+	
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">CoCo</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li class="active"><a href="./logout">Logout<span class="sr-only">(current)</span></a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+	
+	
+    <div class="container">
+		<!-- Modal -->
+		<div class="modal fade" id="connectModal" role="dialog">
+			<div class="modal-dialog">
+			
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class="modal-title">Connect sites</h4>
+					</div>
+					<div class="modal-body">
+						<p>Connect selected sites ?</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal" onclick="connect_sites();">Yes</button>
+					</div>
+				</div>
+			  
+			</div>
+		</div>
+		
+		
+		<!-- Modal -->
+		<div class="modal fade" id="disconnectModal" role="dialog">
+			<div class="modal-dialog">
+			
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class="modal-title">Disconnect sites</h4>
+					</div>
+					<div class="modal-body">
+						<p>Disconnect selected sites ?</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal" onclick="disconnect_sites();">Yes</button>
+					</div>
+				</div>
+			  
+			</div>
+		</div>
+		
+		
+		<!-- Modal -->
+		<div class="modal fade" id="enniModal" role="dialog">
+			<div class="modal-dialog">
+			
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<!-- <button type="button" class="close" data-dismiss="modal">&times;</button> -->
+						<h4 class="modal-title">Select VPN to connect to on this ENNI</h4>
+					</div>
+					<div class="modal-body">
+						
+						
+						 <div class="form-group">
+						  <label for="sel1">Select list:</label>
+						  <select class="form-control" id="enni_vpn_select">
+							<option>66532: Where the party is at !</option>
+							<option>66533: Where the party is not at !</option>
+						  </select>
+						</div>			
+						
+						<p>Please select VPN to connect to</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal" id="save_enni">Add</button>
+					</div>
+				</div>
+			  
+			</div>
+		</div>
+			
+		<div class="row">
+  			<div class="col-md-9" id="mainCol">
+				<!-- Main component for a primary marketing message or call to action -->
+				<div class="jumbotron">
+        <h2>Topology overview</h2>
+		
+		
+		
+		
+		
+		<p>
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<div id="mynetwork"></div>
+			</div>
+		</div>
+		</p>
+		
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<div class="row">
+					<div class="col-md-6">
+						<div class="panel-default">
+							Sites in current VPN:
+							<ul id="site-list" class="list-group">
+								<li href="#" class="list-group-item">Site A</li>
+								<li href="#" class="list-group-item">Site B</li>
+								<li href="#" class="list-group-item">Site C</li>
+							</ul>
+							
+							<button id="add-nodelist" type="button" class="btn btn-default">Add to list</button>													
+							<button id="del-nodelist" type="button" class="btn btn-default">Delete from list</button>
+						
+						</div>
+					</div>
+					<div class="col-md-3">
+						<br/>
+						<p>
+						<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#connectModal">Update Vpn</button>
+						</p>
+						<!-- <p>
+						<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#disconnectModal">Disconnect</button>
+						</p> -->
+					</div>
+					
+				</div>
+			</div>
+		</div>
+		
+      </div>		
+			</div> 
+			<!-- <div  data-spy="affix" class="col-md-2" id="rightCol"> -->
+			<div class="col-md-3 col-sm-3 col-xs-3">
+			<div class="well bs-sidebar affix" 	id="sidebar">
+				<ul id="vpn-list" class="list-group">
+					<!-- vpns are added here --> 
+				</ul>
+	
+					<button type="button" class="btn btn-default">Add</button>
+					<button type="button" class="btn btn-default">Delete</button>
+
+				
+			</div>
+			</div>
+		</div> <!-- end row -->
+	</div> <!-- /container -->	
+
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="./bootstrap-3.3.5-dist/js/bootstrap.min.js"></script>
+	<script src="./bootstrap-switch-master/dist/js/bootstrap-switch.js"></script>
+	<script src="./netDiagram.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
+	<script>
+		window.setInterval(function() {
+			drawContinuosly();
+		}, 5000);
+	</script>
+			<script>
+$.fn.bootstrapSwitch.defaults.size = 'mini';			
+$("[name='VPN-1-checkbox']").bootstrapSwitch();
+
+
+// Very bad grobal variable
+var currentVPN = -1;
+
+// this should be in onload
+populate_vpnlist();
+
+function populate_vpnlist(){
+	$.getJSON("../rest/vpns", function(data) {
+		var vpns = data;
+		var i;
+		for ( i =0; i < vpns.length; i++)
+		{
+			var vpn = vpns[i];
+			var checked = "";
+			if (vpn.isPublic) { checked = "checked"; }
+			
+			
+			$("#vpn-list").append(
+				'<li id="vpn-' + vpn.id + '" href="#" class="list-group-item" onclick="vpn_list_on_click(\'' + vpn.id + '\');">' + vpn.name +
+				'<div class="text-right">' +
+				'	<input type="checkbox" name="' + 'vpn-checkbox-' + vpn.id + '" data-off-text="Private" data-on-text="Public" ' + checked + '>' +
+				'</div>' + 
+				'</li>'
+			); 
+			
+			// init bootstrap switch
+			$("[name='vpn-checkbox-" + vpn.id + "']").bootstrapSwitch();
+			
+			$("[name='vpn-checkbox-" + vpn.id + "']").on('switchChange.bootstrapSwitch', function(event, state) {
+				var str = $(this).attr('name');
+				setVpnPrivacy( str.replace("vpn-checkbox-","") ,state);
+			
+			});
+			
+			
+
+
+		}
+		
+		// Select the first VPN 
+		$( '#vpn-' + vpns[0].id ).addClass("active");
+		currentVPN = vpns[0].id;
+		populate_sitelist(currentVPN);
+				
+	
+	});
+
+	
+}
+
+add_list_on_click();
+
+
+function vpn_list_on_click(id){
+	$(this).parent().children().removeClass("active");
+	$(this).addClass("active");
+	//console.log("vpn-on-click");
+	//console.log($(this).attr('id'));
+	console.log(id);
+	currentVPN = id;//$(this).attr('id');
+	populate_sitelist(currentVPN);
+	
+}
+
+			
+function add_list_on_click(){
+	$("ul li").click(
+	function() {
+		$(this).parent().children().removeClass("active");
+		$(this).addClass("active");
+		}
+	);
+}
+/*			
+$("ul li").click(function() {
+    $(this).parent().children().removeClass("active");
+    $(this).addClass("active");
+});*/
+
+$('#add-nodelist').on('click', function(event) {
+  event.preventDefault(); // To prevent following the link (optional)
+  var _nodes = network.getSelectedNodes();
+  if (_nodes.length < 1)
+  {
+	alert('No node selected');
+	return;
+  }
+  
+   var currnode = -1;
+   /*for (i = 0; i < nodes.length; i++) { 
+		if (nodes[i].id == _nodes[0])
+		{
+			currnode = nodes[i];
+		}
+   }*/
+   
+   currnode = nodes.get(_nodes[0]);
+   
+   
+   if (currnode == -1) {
+		alert("madness");
+		return;
+   }   
+  node = currnode;
+
+  if ( currnode.group == "SWITCH" )
+  {
+	alert("switches are not valid endpoints");
+	return;
+  }
+    
+  if ( $( "#node-" + parseInt(currnode.id) ).length )
+  {
+	alert("Endpoint already in list");
+	return;
+  }
+
+  if ( currnode.group == "enni" )
+  {	
+	populate_remote_vpn_list(parseInt(currnode.id));
+	$('#enniModal').modal('show');
+ 
+  }
+  else
+  {
+  
+	$("#site-list").append("<li id=\"node-" + parseInt(currnode.id) + "\" href=\"#\" class=\"list-group-item\">" + currnode.label + "</li>");
+  }
+  add_list_on_click();
+});
+
+
+function populate_remote_vpn_list(valueName)
+{
+	// empty the list
+	$('#enni_vpn_select')
+		.find('option')
+		.remove()
+		.end();
+	
+	
+	$.getJSON("../rest/remoteVpns", function(data) {
+		var vpns = data["remotevpns"];
+		var i;
+		for ( i =0; i < vpns.length; i++)
+		{
+			var vpn = vpns[i];
+			$('#enni_vpn_select').append('<option value="node-' + valueName + '">AS ' + vpn.as + ": " + vpn.name + '</option>');
+		}
+	});
+
+}
+
+//populate_sitelist(1);
+
+function populate_sitelist(vpnID)
+{
+	// empty the list
+	$('#site-list')
+		.find('li')
+		.remove()
+		.end();
+	
+	
+	// TODO: Add parameter !
+	$.getJSON("../rest/sites/" + vpnID, function(data) {
+		//var vpn = data["vpn"][0];
+		var sites = data;
+		var i;
+		for ( i =0; i < sites.length; i++)
+		{
+			var site = sites[i];
+			$('#site-list').append("<li id=\"node-" + site.id + "\" href=\"#\" class=\"list-group-item\">" + site.name + "</li>");
+		}
+		add_list_on_click();
+
+		/*
+		edgs = vpn.edges;
+		
+		
+		// set width to 2 highly ineffeciently (but hey who cars its javascript)
+		//for ( i =0; i < edges.length; i++)
+		//{
+		//	edges[i]['width'] = 2;
+		//}
+		
+		// iterate over the list that we got from coco and make the edges in the vpn twice as wide
+		for ( i =0; i < edgs.length; i++)
+		{
+			edge = edgs[i];
+			var x;
+			var curr_edge;
+
+			edges.forEach( function (curr_edge)  {
+				if (edge['from'] == curr_edge['from'] && edge['to'] == curr_edge['to'])
+				{
+					
+					edges.update({"from" : curr_edge['from'], "to" : curr_edge['to'], "id" : curr_edge['id'], "width" : 5 });
+					//curr_edge['width'] = 20;
+				}
+			
+			} );
+			
+		
+		}
+		*/
+
+		
+	});
+
+}
+
+
+
+
+$('#save_enni').click(function(){
+
+	  //TODO: set the enni id and the as + vpn name
+	  
+	  var text = $( "#enni_vpn_select option:selected" ).text();
+	  var val = $( "#enni_vpn_select option:selected" ).val();
+	  
+	  $("#site-list").append("<li id=\"" + val + "\" href=\"#\" class=\"list-group-item\">" + text + "</li>");
+	  add_list_on_click();
+      return true;
+         
+});
+
+$('#del-nodelist').on('click', function(event) {
+  event.preventDefault(); // To prevent following the link (optional)  
+  var selected = $('#site-list').children(".active");
+  selected.remove();
+  
+});
+
+
+function connect_sites()
+{
+	var sitelist = [];	
+	$( "#site-list" ).find('li').each(function( index ) 
+	{
+		var site = {};
+		
+		/* done to remove node-x id, where x is number, we need only number for rest */
+		var tmp = "" + $(this).attr('id');
+		tmp = tmp.replace("node-", "");
+		site["id"] = parseInt(tmp);
+		//site["id"] = $(this).attr('id');
+		site["name"] = $(this).text();
+		console.log(site);
+		sitelist.push(site);
+		
+		console.log( index + ": " + $(this).text() );
+		
+	}	);
+	
+	
+	var vpn = {};
+	vpn["id"] = parseInt(currentVPN);
+	vpn["name"] = "vpn" + (vpn["id"]-1).toString();
+	vpn["sites"] = sitelist;
+	vpn["isPublic"] = false;
+	
+	console.log(vpn);
+	
+	console.log(JSON.stringify(vpn));
+	
+	/* MICHAL CHANGE THIS - changed ! */
+	$.postJSON('../rest/vpn/update/' + vpn["id"], vpn, function(response) {
+		// Do something with the request
+		console.log(response);
+	}, 'json');
+	
+	populate_sitelist(currentVPN);
+
+}
+
+$.postJSON = function(url, data, callback) {
+    return jQuery.ajax({
+    headers: { 
+        'Accept': 'application/json',
+        'Content-Type': 'application/json' 
+    },
+    'type': 'POST',
+    'url': url,
+    'data': JSON.stringify(data),
+    'dataType': 'json',
+    'success': callback
+    });
+};
+
+function disconnect_sites()
+{
+	var sitelist = [];	
+	$( "#site-list" ).find('li').each(function( index ) 
+	{
+		var site = {};
+		
+		/* done to remove node-x id, where x is number, we need only number for rest */
+		var tmp = "" + $(this).attr('id');
+		tmp = tmp.replace("node-", "");
+		site["id"] = parseInt(tmp);
+		//site["id"] = $(this).attr('id');
+		site["name"] = $(this).text();
+		console.log(site);
+		sitelist.push(site);
+		
+		console.log( index + ": " + $(this).text() );
+		
+	}	);
+	
+	
+	var vpn = {};
+	vpn["id"] = parseInt(currentVPN);
+	vpn["name"] = "vpn" + (vpn["id"]-1).toString();
+	vpn["sites"] = sitelist;
+	vpn["isPublic"] = false;
+	
+	console.log(vpn);
+	
+	console.log(JSON.stringify(vpn));
+	/* MICHAL CHANGE THIS ! - changed */
+	$.postJSON('../rest/vpn/update/' + vpn["id"], vpn, function(response) {
+		// Do something with the request
+		console.log(response);
+	}, 'json');
+	
+	populate_sitelist(currentVPN);
+}
+
+
+function setVpnPrivacy(vpn_id,vpn_public)
+{
+	var sitelist = [];	
+	$( "#site-list" ).find('li').each(function( index ) 
+	{
+		var site = {};
+		
+		/* done to remove node-x id, where x is number, we need only number for rest */
+		var tmp = "" + $(this).attr('id');
+		tmp = tmp.replace("node-", "");
+		site["id"] = parseInt(tmp);
+		//site["id"] = $(this).attr('id');
+		site["name"] = $(this).text();
+		console.log(site);
+		sitelist.push(site);
+		
+		console.log( index + ": " + $(this).text() );
+		
+	}	);
+	
+	var vpn = {};
+	vpn["id"] = vpn_id;
+	vpn["name"] = "vpn" + (vpn["id"]-1).toString();
+	vpn["sites"] = sitelist;
+	vpn["isPublic"] = vpn_public;
+	
+	
+	console.log(JSON.stringify(vpn));
+	/* MICHAL CHANGE THIS ! */
+	$.postJSON('../rest/vpn/setPrivacy/' + vpn["id"], vpn, function(response) {
+		// Do something with the request
+		console.log(response);
+	}, 'json');
+	
+}
+
+
+//TODO: VPN context
+
+//TODO: select first VPN context
+//TODO: disable add and delete buttons ?
+//TODO: Connect and disconnect nodes from vpn + delete and cancel buttons + JSON requests
+//TODO: network formatting
+//TODO: logo's
+//TODO: remove logout
+//TODO: add about and contact
+
+</script>
+	
+  </body>
+</html>

@@ -22,5 +22,9 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lombok.jar"/>
+	<classpathentry kind="lib" path="slf4j-api-1.7.12.jar"/>
+	<classpathentry kind="lib" path="slf4j-simple-1.7.12.jar"/>
+	<classpathentry kind="lib" path="thrift-0.9.0.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

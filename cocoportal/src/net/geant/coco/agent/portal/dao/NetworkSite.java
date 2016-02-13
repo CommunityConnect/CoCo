@@ -1,14 +1,14 @@
 package net.geant.coco.agent.portal.dao;
 
-public class NetworkSite {
+public class NetworkSite extends NetworkElement {
     public NetworkSite() {
 
     }
 
-    public NetworkSite(String name, int x, int y, String providerSwitch,
+    public NetworkSite(int id, String name, int x, int y, String providerSwitch,
             int providerPort, int customerPort, int vlanId, String ipv4Prefix,
             String macAddress, String vpnName) {
-        super();
+        super(id, name, NODE_TYPE.CUSTOMER);
         this.name = name;
         this.x = x;
         this.y = y;
@@ -20,6 +20,18 @@ public class NetworkSite {
         this.macAddress = macAddress;
         this.vpnName = vpnName;
     }
+    
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        String NEW_LINE = "_";
+
+        result.append(this.getName() + NEW_LINE);
+        result.append(this.getIpv4Prefix() + NEW_LINE);
+        result.append(this.getMacAddress() + NEW_LINE);
+
+        return result.toString();
+      }
 
     private int id;
     private String name;

@@ -73,12 +73,29 @@ public class NetworkSwitchDao {
                 });
     }
     
-    /**
-     * @param args
-     */
-    public static void main(String[] args) {
-        // TODO Auto-generated method stub
+    public List<NetworkSwitch> getNetworkSwitchesWithNni() {
 
+        MapSqlParameterSource params = new MapSqlParameterSource();
+
+        return jdbc.query("select switches.id, switches.name, switches.x, switches.y, switches.mpls_label, ases.bgp_ip from switches INNER JOIN ext_links ON switches.id=ext_links.switch INNER JOIN ases ON ext_links.as=ases.id",
+                new RowMapper<NetworkSwitch>() {
+
+                    @Override
+                    public NetworkSwitch mapRow(ResultSet rs, int rowNum)
+                            throws SQLException {
+                    	NetworkSwitchExt networkSwitch = new NetworkSwitchExt();
+
+                        networkSwitch.setId(rs.getInt("id"));
+                        networkSwitch.setName(rs.getString("name"));
+                        networkSwitch.setX(rs.getInt("x"));
+                        networkSwitch.setY(rs.getInt("y"));
+                        networkSwitch.setMplsLabel(rs.getInt("mpls_label"));
+                        networkSwitch.setBgpIp(rs.getString("bgp_ip"));
+                        return networkSwitch;
+                    }
+
+                });
     }
+
 
 }

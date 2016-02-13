@@ -1,0 +1,72 @@
+
+import sys
+sys.path.append('../gen-py') 
+sys.path.append('./twisted-telnet-client')
+
+from qbgp import BgpConfigurator
+from qbgp.ttypes import * 
+from thrift.transport import TSocket
+from thrift.transport import TTransport
+from thrift.protocol import TBinaryProtocol
+from thrift.server import TServer 
+
+
+
+import socket
+
+class BgpHandler:
+	def __init__(self):
+		self.log = {}
+
+	def startBgpServer(self, asNumber, routerId, port, holdTime, keepAliveTime):
+		print "StartBGP: " + str(asNumber) + ", "+ str(routerId) + ", " + str(port) + ", " + str(holdTime) + ", " + str(keepAliveTime)
+		return 0
+
+	def stopBgpServer(self):
+		print "StopBGP: "
+		return 0
+
+	def createPeer(self, ipAddress, asNumber):
+		print "CreatePeer: " + str(ipAddress) + ", " + str(asNumber)
+		return 0
+
+	def deletePeer(self, ipAddress):
+		print "delete peer"	
+		return 0	
+
+	def addVrf(self, rd, irts, erts):
+		print "add vrf"
+
+		print rd
+		print irts
+		print erts
+
+		return 0
+
+	def delVrf(self, rd):
+		print "del vrf"		
+		return 0
+
+	def pushRoute(self, prefix, nexthop, rd, label):
+		print "push route"
+		return 0
+
+	def withdrawRoute(self, prefix, rd):
+		print "withdrawRoute"
+		return 0
+
+	def getRoutes(self,optype,winsize):
+		print "get routes"
+		
+
+
+handler = BgpHandler()
+processor = BgpConfigurator.Processor(handler)
+transport = TSocket.TServerSocket(port=7644)
+tfactory = TTransport.TBufferedTransportFactory()
+pfactory = TBinaryProtocol.TBinaryProtocolFactory()
+
+server = TServer.TSimpleServer(processor, transport, tfactory, pfactory) 
+print "Starting python server..."
+server.serve()
+print "done!"

@@ -11,13 +11,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import lombok.extern.slf4j.Slf4j;
 import net.geant.coco.agent.portal.dao.NetworkSite;
+import net.geant.coco.agent.portal.dao.NetworkSwitch;
 import net.geant.coco.agent.portal.service.NetworkSitesService;
 import net.geant.coco.agent.portal.service.NetworkSwitchesService;
 
 import org.jgrapht.DirectedGraph;
+import org.jgrapht.Graph;
 import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -26,9 +30,12 @@ import org.json.simple.parser.JSONParser;
  * @author rvdp
  *
  */
+@Slf4j
 public class Topology {
 
-    private DirectedGraph<CoCoNode, CoCoLink> graph = new DefaultDirectedGraph<CoCoNode, CoCoLink>(
+	//private DirectedGraph<CoCoNode, CoCoLink> graph = new DefaultDirectedWeightedGraph<CoCoNode, CoCoLink>(CoCoLink.class);
+	// adding weights to break symmetry in the topology
+    private DefaultDirectedWeightedGraph<CoCoNode, CoCoLink> graph = new DefaultDirectedWeightedGraph<CoCoNode, CoCoLink>(
             CoCoLink.class);
     private HashMap<String, CoCoNode> nodeMap = new HashMap<String, CoCoNode>();
     private List<CoCoLink> edges = new ArrayList<CoCoLink>();
@@ -36,15 +43,23 @@ public class Topology {
     private String id;
     private static int flowId = 1;
     private int activeVpn = 1;
+    
+    private List<CoCoNode> listOfEndNodes = new ArrayList<CoCoNode>();
+    private List<CoCoNode> listOfEdgeSwitches = new ArrayList<CoCoNode>();
 
-    public Topology(List<NetworkSite> networkSites) {
+    private RestClient restClient;
+    
+    public Topology(RestClient restClient, List<NetworkSite> networkSites, List<NetworkSwitch> networkSwitches, List<NetworkSwitch> networkSwitchesWithEnni) {
         // remove all forwarding entries from switches
         // RestClient.clearAll();
 
-        System.out.println("Topology init");
+    	this.restClient = restClient;
+        log.info("Topology init");
         // make REST call to OpenDaylight to get topology info in JSON format
-        String jsonTopo = RestClient.getJsonTopo();
+        String jsonTopo = this.restClient.getJsonTopo();
 
+        double edgeWeight = 1;
+        
         // Parse the JSON info in 'jsonTopo'
         try {
             // Store nodes in HashMap 'nodeMap' with 'node-id' as key
@@ -52,10 +67,9 @@ public class Topology {
             // termination points
             JSONParser jsonParser = new JSONParser();
             JSONObject json = (JSONObject) jsonParser.parse(jsonTopo);
-            JSONObject networkTopology = (JSONObject) json
-                    .get("network-topology");
-            JSONArray topologyList = (JSONArray) networkTopology
-                    .get("topology");
+            JSONObject networkTopology = (JSONObject) json.get("network-topology");
+            JSONArray topologyList = (JSONArray) networkTopology.get("topology");
+            log.info("Topology - store nodes");
             for (int i = 0; i < topologyList.size(); i++) {
                 JSONObject topo = (JSONObject) topologyList.get(i);
                 JSONArray nodeList = (JSONArray) topo.get("node");
@@ -65,23 +79,24 @@ public class Topology {
                     CoCoNode n = new CoCoNode(nodeId);
                     JSONArray tpList = (JSONArray) node
                             .get("termination-point");
-                    System.out.printf("Topology node %s: ", nodeId);
+                    log.trace(String.format("Topology node %s: ", nodeId));
                     // add all termination points to the CoCoNode object n
                     for (int k = 0; k < tpList.size(); k++) {
                         JSONObject tp = (JSONObject) tpList.get(k);
                         String tpId = (String) tp.get("tp-id");
-                        System.out.printf("%s ", tpId);
+                        log.trace(String.format("%s ", tpId));
                         n.addTp(tpId);
                     }
-                    System.out.println();
                     nodeMap.put(nodeId, n);
                     // Store the node in the graph too
                     graph.addVertex(n);
                 }
 
+                log.info("Topology - store links");
                 // Parse JSON info and store links
                 JSONArray linkList = (JSONArray) topo.get("link");
                 for (int m = 0; m < linkList.size(); m++) {
+                	log.info(Integer.toString(m) + " out of " + Integer.toString(linkList.size()));
                     JSONObject link = (JSONObject) linkList.get(m);
                     String linkId = (String) link.get("link-id");
 
@@ -103,13 +118,26 @@ public class Topology {
                     String dstTpNr = getPortName(dstNode, dstTp);
                     e.setSrcTpNr(sourceTpNr);
                     e.setDstTpNr(dstTpNr);
-                    System.out.printf(
+                    log.trace(String.format(
                             "link %s: from %s port %s to %s port %s\n", linkId,
-                            sourceNode, sourceTpNr, dstNode, dstTpNr);
+                            sourceNode, sourceTpNr, dstNode, dstTpNr));
 
                     CoCoNode src = nodeMap.get(sourceNode);
                     CoCoNode dst = nodeMap.get(dstNode);
                     graph.addEdge(src, dst, e);
+                    
+                    CoCoLink oppositeEdge = graph.getEdge(dst, src);
+                    
+                    if (oppositeEdge != null) {
+                    	graph.setEdgeWeight(e, oppositeEdge.weight);
+                    	e.weight = oppositeEdge.weight;
+                    }
+                    else {
+                    	graph.setEdgeWeight(e, edgeWeight);
+                    	e.weight = edgeWeight;
+                        edgeWeight = edgeWeight*2;
+                    }
+                    
                     edges.add(e);
 
                     // update interface types of termination points in src and
@@ -122,7 +150,7 @@ public class Topology {
 
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            log.trace(e.getMessage());
         }
 
         try {
@@ -133,10 +161,11 @@ public class Topology {
             CoCoLink dstsrc;
             CoCoNode src;
             CoCoNode dst;
-            int MplsLabel = 5100;
+            //int MplsLabel = 5100;
 
             // add sites to graph
             for (NetworkSite s : networkSites) {
+            	log.info("Topology - setting up site " + s.getName());
                 siteName = s.getName();
                 site = new CoCoNode(siteName);
                 // Node type is Customer Edge
@@ -146,8 +175,20 @@ public class Topology {
                 site.setMac(s.getMacAddress());
                 nodeMap.put(s.getName(), site);
                 nodeMap.get(s.getProviderSwitch()).setType(NodeType.PE);
-                nodeMap.get(s.getProviderSwitch()).setPeMplsLabel(
-                        Integer.toString(MplsLabel++));
+                
+                site.setPeSwitch(s.getProviderSwitch());
+                
+                CoCoNode currentSwitch = nodeMap.get(s.getProviderSwitch());
+               
+                for (NetworkSwitch netSwitch : networkSwitches) {
+                	if (netSwitch.getName().equalsIgnoreCase(currentSwitch.getId())) {
+                		currentSwitch.setPeMplsLabel(Integer.toString(netSwitch.getMplsLabel()));
+                	}
+                }
+                
+                //curentSwitch.setPeMplsLabel(Integer.toString(MplsLabel++));
+                
+                
                 srcdst = new CoCoLink(siteName, siteName, siteName
                         + Integer.toHexString(s.getCustomerPort()),
                         s.getProviderSwitch(), s.getProviderSwitch()
@@ -163,160 +204,51 @@ public class Topology {
                 dst = nodeMap.get(s.getProviderSwitch());
                 graph.addVertex(src);
                 graph.addEdge(src, dst, srcdst);
+                graph.setEdgeWeight(srcdst, edgeWeight);
+                srcdst.weight = edgeWeight;
                 edges.add(srcdst);
                 graph.addEdge(dst, src, dstsrc);
+                graph.setEdgeWeight(dstsrc, edgeWeight);
+                dstsrc.weight = edgeWeight;
+                edgeWeight = edgeWeight*2;
                 edges.add(dstsrc);
-                System.out.println("addsite: " + src.getId() + " to "
+                log.trace("addsite: " + src.getId() + " to "
                         + dst.getId());
             }
 
-            /*
-             * // add site1 siteName = "site1"; site = new CoCoNode(siteName);
-             * // Node type is Customer Edge site.setType(NodeType.CE);
-             * site.setVlan("101"); site.setIpv4Prefix("10.101.0.0/24");
-             * site.setMac("fa:16:3e:bd:03:4a"); nodeMap.put("site1", site);
-             * nodeMap.get("openflow:1").setType(NodeType.PE);
-             * nodeMap.get("openflow:1").setPeMplsLabel("5101"); srcdst = new
-             * CoCoLink(siteName, siteName, siteName + ":1", "openflow:1",
-             * "openflow:1:51"); srcdst.setSrcTpNr("1");
-             * srcdst.setDstTpNr("51"); dstsrc = new CoCoLink(siteName,
-             * "openflow:1", "openflow:1:51", siteName, siteName + ":1");
-             * dstsrc.setSrcTpNr("51"); dstsrc.setDstTpNr("1"); src =
-             * nodeMap.get(siteName); dst = nodeMap.get("openflow:1");
-             * graph.addVertex(src); graph.addEdge(src, dst, srcdst);
-             * edges.add(srcdst); graph.addEdge(dst, src, dstsrc);
-             * edges.add(dstsrc); System.out .println("addsite: " + src.getId()
-             * + " to " + dst.getId());
-             * 
-             * // add site2 siteName = "site2"; site = new CoCoNode(siteName);
-             * // Node type is Customer Edge site.setType(NodeType.CE);
-             * site.setVlan("102"); site.setIpv4Prefix("10.102.0.0/24");
-             * site.setMac("fa:16:3e:27:81:97"); nodeMap.put("site2", site);
-             * nodeMap.get("openflow:1").setType(NodeType.PE);
-             * nodeMap.get("openflow:1").setPeMplsLabel("5101"); srcdst = new
-             * CoCoLink(siteName, siteName, siteName + ":1", "openflow:1",
-             * "openflow:1:51"); srcdst.setSrcTpNr("1");
-             * srcdst.setDstTpNr("51"); dstsrc = new CoCoLink(siteName,
-             * "openflow:1", "openflow:1:51", siteName, siteName + ":1");
-             * dstsrc.setSrcTpNr("51"); dstsrc.setDstTpNr("1"); src =
-             * nodeMap.get(siteName); dst = nodeMap.get("openflow:1");
-             * graph.addVertex(src); graph.addEdge(src, dst, srcdst);
-             * edges.add(srcdst); graph.addEdge(dst, src, dstsrc);
-             * edges.add(dstsrc); System.out .println("addsite: " + src.getId()
-             * + " to " + dst.getId());
-             * 
-             * // add site3 siteName = "site3"; site = new CoCoNode(siteName);
-             * // Node type is Customer Edge site.setType(NodeType.CE);
-             * site.setVlan("103"); site.setIpv4Prefix("10.103.0.0/24");
-             * site.setMac("fa:16:3e:9e:55:db"); nodeMap.put("site3", site);
-             * nodeMap.get("openflow:4").setType(NodeType.PE);
-             * nodeMap.get("openflow:4").setPeMplsLabel("5104"); srcdst = new
-             * CoCoLink(siteName, siteName, siteName + ":1", "openflow:4",
-             * "openflow:4:50"); srcdst.setSrcTpNr("1");
-             * srcdst.setDstTpNr("50"); dstsrc = new CoCoLink(siteName,
-             * "openflow:4", "openflow:4:50", siteName, siteName + ":1");
-             * dstsrc.setSrcTpNr("50"); dstsrc.setDstTpNr("1"); src =
-             * nodeMap.get(siteName); dst = nodeMap.get("openflow:4");
-             * graph.addVertex(src); graph.addEdge(src, dst, srcdst);
-             * edges.add(srcdst); graph.addEdge(dst, src, dstsrc);
-             * edges.add(dstsrc); System.out .println("addsite: " + src.getId()
-             * + " to " + dst.getId());
-             * 
-             * // add site4 siteName = "site4"; site = new CoCoNode(siteName);
-             * // Node type is Customer Edge site.setType(NodeType.CE);
-             * site.setVlan("104"); site.setIpv4Prefix("10.104.0.0/24");
-             * site.setMac("fa:16:3e:d1:5a:02"); nodeMap.put("site4", site);
-             * nodeMap.get("openflow:4").setType(NodeType.PE);
-             * nodeMap.get("openflow:4").setPeMplsLabel("5104"); srcdst = new
-             * CoCoLink(siteName, siteName, siteName + ":1", "openflow:4",
-             * "openflow:4:50"); srcdst.setSrcTpNr("1");
-             * srcdst.setDstTpNr("50"); dstsrc = new CoCoLink(siteName,
-             * "openflow:4", "openflow:4:50", siteName, siteName + ":1");
-             * dstsrc.setSrcTpNr("50"); dstsrc.setDstTpNr("1"); src =
-             * nodeMap.get(siteName); dst = nodeMap.get("openflow:4");
-             * graph.addVertex(src); graph.addEdge(src, dst, srcdst);
-             * edges.add(srcdst); graph.addEdge(dst, src, dstsrc);
-             * edges.add(dstsrc); System.out .println("addsite: " + src.getId()
-             * + " to " + dst.getId());
-             * 
-             * // add site7 siteName = "site7"; site = new CoCoNode(siteName);
-             * // Node type is Customer Edge site.setType(NodeType.CE);
-             * site.setVlan("107"); site.setIpv4Prefix("10.107.0.0/24");
-             * site.setMac("fa:16:3e:c6:dc:82"); nodeMap.put("site7", site);
-             * nodeMap.get("openflow:3").setType(NodeType.PE);
-             * nodeMap.get("openflow:3").setPeMplsLabel("5103"); srcdst = new
-             * CoCoLink(siteName, siteName, siteName + ":1", "openflow:3",
-             * "openflow:3:37"); srcdst.setSrcTpNr("1");
-             * srcdst.setDstTpNr("37"); dstsrc = new CoCoLink(siteName,
-             * "openflow:3", "openflow:3:37", siteName, siteName + ":1");
-             * dstsrc.setSrcTpNr("37"); dstsrc.setDstTpNr("1"); src =
-             * nodeMap.get(siteName); dst = nodeMap.get("openflow:3");
-             * graph.addVertex(src); graph.addEdge(src, dst, srcdst);
-             * edges.add(srcdst); graph.addEdge(dst, src, dstsrc);
-             * edges.add(dstsrc); System.out .println("addsite: " + src.getId()
-             * + " to " + dst.getId());
-             * 
-             * // add site8 siteName = "site8"; site = new CoCoNode(siteName);
-             * // Node type is Customer Edge site.setType(NodeType.CE);
-             * site.setVlan("108"); site.setIpv4Prefix("10.108.0.0/24");
-             * site.setMac("fa:16:3e:0e:cb:7d"); nodeMap.put("site8", site);
-             * nodeMap.get("openflow:3").setType(NodeType.PE);
-             * nodeMap.get("openflow:3").setPeMplsLabel("5103"); srcdst = new
-             * CoCoLink(siteName, siteName, siteName + ":1", "openflow:3",
-             * "openflow:3:37"); srcdst.setSrcTpNr("1");
-             * srcdst.setDstTpNr("37"); dstsrc = new CoCoLink(siteName,
-             * "openflow:3", "openflow:3:37", siteName, siteName + ":1");
-             * dstsrc.setSrcTpNr("37"); dstsrc.setDstTpNr("1"); src =
-             * nodeMap.get(siteName); dst = nodeMap.get("openflow:3");
-             * graph.addVertex(src); graph.addEdge(src, dst, srcdst);
-             * edges.add(srcdst); graph.addEdge(dst, src, dstsrc);
-             * edges.add(dstsrc); System.out .println("addsite: " + src.getId()
-             * + " to " + dst.getId());
-             * 
-             * // add uva1 siteName = "uva1"; site = new CoCoNode(siteName); //
-             * Node type is Customer Edge site.setType(NodeType.CE);
-             * site.setVlan("109"); site.setIpv4Prefix("10.109.0.0/24");
-             * site.setMac("fa:00:00:00:00:00"); nodeMap.put("uva1", site);
-             * nodeMap.get("openflow:3").setType(NodeType.PE);
-             * nodeMap.get("openflow:3").setPeMplsLabel("5103"); srcdst = new
-             * CoCoLink(siteName, siteName, siteName + ":1", "openflow:3",
-             * "openflow:3:52"); srcdst.setSrcTpNr("1");
-             * srcdst.setDstTpNr("52"); dstsrc = new CoCoLink(siteName,
-             * "openflow:3", "openflow:3:52", siteName, siteName + ":1");
-             * dstsrc.setSrcTpNr("52"); dstsrc.setDstTpNr("1"); src =
-             * nodeMap.get(siteName); dst = nodeMap.get("openflow:3");
-             * graph.addVertex(src); graph.addEdge(src, dst, srcdst);
-             * edges.add(srcdst); graph.addEdge(dst, src, dstsrc);
-             * edges.add(dstsrc); System.out .println("addsite: " + src.getId()
-             * + " to " + dst.getId());
-             * 
-             * // add uva2 siteName = "uva2"; site = new CoCoNode(siteName); //
-             * Node type is Customer Edge site.setType(NodeType.CE);
-             * site.setVlan("110"); site.setIpv4Prefix("10.110.0.0/24");
-             * site.setMac("fa:00:00:00:00:00"); nodeMap.put("uva2", site);
-             * nodeMap.get("openflow:3").setType(NodeType.PE);
-             * nodeMap.get("openflow:3").setPeMplsLabel("5103"); srcdst = new
-             * CoCoLink(siteName, siteName, siteName + ":1", "openflow:3",
-             * "openflow:3:52"); srcdst.setSrcTpNr("1");
-             * srcdst.setDstTpNr("52"); dstsrc = new CoCoLink(siteName,
-             * "openflow:3", "openflow:3:52", siteName, siteName + ":1");
-             * dstsrc.setSrcTpNr("52"); dstsrc.setDstTpNr("1"); src =
-             * nodeMap.get(siteName); dst = nodeMap.get("openflow:3");
-             * graph.addVertex(src); graph.addEdge(src, dst, srcdst);
-             * edges.add(srcdst); graph.addEdge(dst, src, dstsrc);
-             * edges.add(dstsrc); System.out .println("addsite: " + src.getId()
-             * + " to " + dst.getId());
-             */
-
-            System.out.println("graph = " + graph.toString());
+            log.trace("graph = " + graph.toString());
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            log.trace(e.getMessage());
         }
+        
+        
+       	for (CoCoNode node : nodeMap.values()) {
+       		if (node.getType() == NodeType.CE) {
+       			listOfEndNodes.add(node);
+       		}
+       	}
+
+       	for (CoCoNode node : nodeMap.values()) {
+       		if (node.getType() == NodeType.PE) {
+       			listOfEdgeSwitches.add(node);
+       		}
+       	}
+       	
+        for (NetworkSwitch netSwitch : networkSwitchesWithEnni) {
+        	log.debug("Setting up PE on network switch");
+        	
+        	CoCoNode switchWithEnni = nodeMap.get(netSwitch.getName());
+        	log.debug("Setting up PE on network switch " + switchWithEnni.getId());
+        	switchWithEnni.setType(NodeType.PE);
+        	nodeMap.put(switchWithEnni.getId(), switchWithEnni);
+        	listOfEdgeSwitches.add(switchWithEnni);
+        }
+       	
     }
 
     private String getPortName(String nodeId, String portId) {
         try {
-            String r = RestClient.getJSONPortInfo(nodeId, portId);
+            String r = this.restClient.getJSONPortInfo(nodeId, portId);
 
             JSONParser jsonParser = new JSONParser();
             JSONObject json = (JSONObject) jsonParser.parse(r);
@@ -334,7 +266,7 @@ public class Topology {
             }
 
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            log.trace(e.getMessage());
         }
         return null;
     }
@@ -353,6 +285,10 @@ public class Topology {
             }
             System.out.println();
         }
+    }
+    
+    public Graph<CoCoNode, CoCoLink> getGraph() {
+    	return graph;
     }
 
     public Set<String> getUniPorts() {
@@ -381,13 +317,12 @@ public class Topology {
             for (int i = 0; i < sites.length; i++) {
                 for (int j = 0; j < sites.length; j++) {
                     if (i != j) {
-                        System.out.printf("find path %s to %s\n", sites[i],
-                                sites[j]);
+                        log.trace(String.format("find path %s to %s\n", sites[i], sites[j]));
                         CoCoNode src = nodeMap.get(sites[i]);
                         src.setInUse(true);
                         CoCoNode dst = nodeMap.get(sites[j]);
-                        // System.out.println("getpath site1 " + src);
-                        // System.out.println("getpath site3 " + dst);
+                        // log.trace("getpath site1 " + src);
+                        // log.trace("getpath site3 " + dst);
                         // DijkstraShortestPath<CoCoNode, CoCoLink> path = new
                         // DijkstraShortestPath<CoCoNode, CoCoLink>(
                         // graph, src, dst);
@@ -395,7 +330,7 @@ public class Topology {
                         List<CoCoLink> newEdges = new ArrayList<CoCoLink>();
                         List<CoCoLink> edges = DijkstraShortestPath
                                 .findPathBetween(graph, src, dst);
-                        System.out.println("edges = " + edges);
+                        log.trace("edges = " + edges);
                         newEdges.addAll(edges);
                         newEdges.addAll(vpn.getEdges());
                         vpn.setEdges(newEdges);
@@ -406,10 +341,10 @@ public class Topology {
                         while (iter.hasNext()) {
                             CoCoLink edge = iter.next();
 
-                            System.out.printf(
+                            log.trace(String.format(
                                     "path link: %s port %s to %s port %s\n",
                                     edge.getSrcNode(), edge.getSrcTpNr(),
-                                    edge.getDstNode(), edge.getDstTpNr());
+                                    edge.getDstNode(), edge.getDstTpNr()));
 
                             if (inPort != null) {
                                 CoCoNode s = nodeMap.get(edge.getSrcNode());
@@ -419,14 +354,13 @@ public class Topology {
                                     // Provision Provider Edge switches
                                     if (s.getTp(edge.getSrcTp()).getType() == InterfaceType.NNI) {
                                         // Provision ingress flow
-                                        System.out
-                                                .printf("flow rule on %s match inport %s, vlan %s, dst prefix %s, action set_vlan %s, add_mpls %s, output %s\n",
+                                    	log.trace(String.format("flow rule on %s match inport %s, vlan %s, dst prefix %s, action set_vlan %s, add_mpls %s, output %s\n",
                                                         s.getId(), inPort,
                                                         src.getVlan(),
                                                         dst.getIpv4Prefix(),
                                                         vpn.getVpnVlanId(),
                                                         dst.getPeMplsLabel(),
-                                                        edge.getSrcTpNr());
+                                                        edge.getSrcTpNr()));
                                         flow = new Flow(s.getId(), flowId);
                                         flow.inPort(inPort);
                                         flow.matchVlan(src.getVlan());
@@ -444,18 +378,17 @@ public class Topology {
                                         flow.setDstMAC(dst.getMac());
                                         flow.outPort(edge.getSrcTpNr());
                                         f = flow.buildFlow();
-                                        RestClient.sendtoSwitch(s.getId(),
+                                        this.restClient.sendtoSwitch(s.getId(),
                                                 "add", f,
                                                 String.valueOf(flowId));
                                     } else {
                                         // Provision egress flow
-                                        System.out
-                                                .printf("flow rule on %s match inport %s, mpls %s, action set_vlan %s, pop_mpls, set_mac %s, output %s\n",
+                                    	log.trace(String.format("flow rule on %s match inport %s, mpls %s, action set_vlan %s, pop_mpls, set_mac %s, output %s\n",
                                                         s.getId(), inPort,
                                                         dst.getPeMplsLabel(),
                                                         dst.getVlan(),
                                                         dst.getMac(),
-                                                        edge.getSrcTpNr());
+                                                        edge.getSrcTpNr()));
                                         flow = new Flow(s.getId(), flowId);
                                         flow.inPort(inPort);
                                         flow.matchEthertype(0x0800);
@@ -468,17 +401,16 @@ public class Topology {
                                         // flow.setDstMAC(dst.getMac());
                                         flow.outPort(edge.getSrcTpNr());
                                         f = flow.buildFlow();
-                                        RestClient.sendtoSwitch(s.getId(),
+                                        this.restClient.sendtoSwitch(s.getId(),
                                                 "add", f,
                                                 String.valueOf(flowId));
                                     }
                                 } else {
                                     // Provision Provider (P) switches
-                                    System.out
-                                            .printf("flow rule on %s match %s, action to %s\n",
+                                	log.trace(String.format("flow rule on %s match %s, action to %s\n",
                                                     s.getId(),
                                                     dst.getPeMplsLabel(),
-                                                    edge.getSrcTpNr());
+                                                    edge.getSrcTpNr()));
                                     flow = new Flow(s.getId(), flowId);
                                     flow.inPort(inPort);
                                     flow.matchEthertype(0x8847);
@@ -494,7 +426,7 @@ public class Topology {
                                     }
                                     flow.outPort(edge.getSrcTpNr());
                                     f = flow.buildFlow();
-                                    RestClient.sendtoSwitch(s.getId(), "add",
+                                    this.restClient.sendtoSwitch(s.getId(), "add",
                                             f, String.valueOf(flowId));
                                 }
                             }
@@ -509,20 +441,37 @@ public class Topology {
             vpns.add(vpn);
 
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            log.trace(e.getMessage());
         }
     }
 
     public List<CoCoLink> calculatePath(String fromSwitch, String toSwitch) {
         List<CoCoLink> path = new ArrayList<CoCoLink>();
-        System.out.printf("find path %s to %s\n", fromSwitch, toSwitch);
+        log.trace(String.format("find path %s to %s\n", fromSwitch, toSwitch));
+        
+        DefaultDirectedWeightedGraph<CoCoNode, CoCoLink> tempGraph = (DefaultDirectedWeightedGraph<CoCoNode, CoCoLink>) graph.clone();
+        
         try {
             CoCoNode src = nodeMap.get(fromSwitch);
             CoCoNode dst = nodeMap.get(toSwitch);
 
-            path = DijkstraShortestPath.findPathBetween(graph, src, dst);
+           	for (CoCoNode node : listOfEndNodes) {
+           		if (!node.getId().equalsIgnoreCase(fromSwitch) && !node.getId().equalsIgnoreCase(toSwitch)) {
+           			tempGraph.removeVertex(node);
+           		}
+           	}
+
+           	
+           	for (CoCoNode node : listOfEdgeSwitches) {
+           		
+           		if ((src.getType() != NodeType.PE && !src.getPeSwitch().equals(node.getId())) && dst.getType() != NodeType.PE && !dst.getPeSwitch().equals(node.getId())) {
+           			tempGraph.removeVertex(node);
+           		}
+           	}
+
+            path = DijkstraShortestPath.findPathBetween(tempGraph, src, dst);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            log.trace(e.getMessage());
         }
         return path;
     }
@@ -536,7 +485,7 @@ public class Topology {
             }
         }
         vpns.clear();
-        RestClient.clearAll();
+        this.restClient.clearAll();
         flowId = 1;
     }
 

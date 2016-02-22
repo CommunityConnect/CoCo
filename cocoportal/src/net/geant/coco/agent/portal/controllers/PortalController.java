@@ -33,6 +33,7 @@ import net.geant.coco.agent.portal.service.VpnsService;
 import net.geant.coco.agent.portal.utils.NodeType;
 import net.geant.coco.agent.portal.utils.Pce;
 import net.geant.coco.agent.portal.utils.RestClient;
+import net.geant.coco.agent.portal.utils.VpnProvisioner;
 import net.geant.coco.agent.portal.threads.BgpThread;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,33 +61,32 @@ import lombok.extern.slf4j.Slf4j;
 @PropertySource("classpath:/net/geant/coco/agent/portal/props/config.properties")
 public class PortalController {
 
-	
-	@Autowired
+    @Autowired
     Environment env;
-	
+
     private NetworkSwitchesService networkSwitchesService;
     private NetworkLinksService networkLinksService;
     private NetworkSitesService networkSitesService;
     private VpnsService vpnsService;
     private TopologyService topologyService;
-    
+
     List<NetworkSwitch> networkSwitches;
     List<NetworkSwitch> networkSwitchesWithEnni;
     List<NetworkLink> networkLinks;
     List<NetworkSite> networkSites;
     List<Vpn> vpns;
-    
+
     private Pce pce;
 
-	private BgpRouter bgpRouter;
+    private BgpRouter bgpRouter;
 
-	private String neighborIp;
-	private String neighborName;
-    
-	Map<String, String> sitesNameToPrefixMap;
-	
-	boolean networkChanged = false;
-	
+    private String neighborIp;
+    private String neighborName;
+
+    Map<String, String> sitesNameToPrefixMap;
+
+    boolean networkChanged = false;
+
     @Autowired
     public void setNetworkSwitchService(
             NetworkSwitchesService networkSwitchesService) {
@@ -107,7 +107,7 @@ public class PortalController {
     public void setVpnsService(VpnsService vpnsService) {
         this.vpnsService = vpnsService;
     }
-    
+
     @Autowired
     public void setTopologyService(TopologyService topologyService) {
         this.topologyService = topologyService;
@@ -129,18 +129,18 @@ public class PortalController {
 
         // offersService.throwTestException();
 
-    	// switches, links and sites are only for drawing the portal
+        // switches, links and sites are only for drawing the portal
         model.addAttribute("switches", this.networkSwitches);
         model.addAttribute("links", this.networkLinks);
         model.addAttribute("sites", this.networkSites);
-       // vpns are used in the menu to use vpns
+        // vpns are used in the menu to use vpns
         model.addAttribute("vpns", this.vpns);
-        
+
         setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
         return "portal";
 
     }
-    
+
     @RequestMapping("/addsite")
     public String addSite(Model model) {
 
@@ -172,6 +172,7 @@ public class PortalController {
             @RequestParam(value = "addsite", defaultValue = "") String addSiteName,
             @RequestParam(value = "showvpn", defaultValue = "") String showVpn,
             @RequestParam(value = "newvpn", defaultValue = "") String newVpn,
+            @RequestParam(value = "newvpnname", defaultValue = "") String newVpnName,
             @RequestParam(value = "addswitch", defaultValue = "") String addSwitch,
             @RequestParam(value = "done", defaultValue = "") String done,
             Model model) {
@@ -179,8 +180,7 @@ public class PortalController {
         List<NetworkSite> networkSites;
         List<NetworkSite> freeSites = networkSitesService
                 .getNetworkSites("all");
-        List<NetworkSite> vpnSites = networkSitesService
-        .getNetworkSites("vpn");
+        List<NetworkSite> vpnSites = networkSitesService.getNetworkSites("vpn");
         List<NetworkSwitch> networkSwitches = networkSwitchesService
                 .getNetworkSwitches();
         List<NetworkLink> networkLinks = networkLinksService.getNetworkLinks();
@@ -188,12 +188,14 @@ public class PortalController {
         log.info("updatevpn vpn: " + vpnName);
         log.info("updatevpn add site: " + addSiteName);
         log.info("updatevpn delete site: " + deleteSiteName);
-        
-        List<NetworkSwitch> networkSwitchesWithNni = networkSwitchesService.getNetworkSwitchesWithNni();
+        log.info("new vpn name: " + newVpnName);
 
-        //System.out.println(networkSitesService.getNetworkSite("site1"));
-        
-        //pce.addSiteToVpn(foo, vpnSites);
+        List<NetworkSwitch> networkSwitchesWithNni = networkSwitchesService
+                .getNetworkSwitchesWithNni();
+
+        // System.out.println(networkSitesService.getNetworkSite("site1"));
+
+        // pce.addSiteToVpn(foo, vpnSites);
 
         model.addAttribute("switches", networkSwitches);
         model.addAttribute("links", networkLinks);
@@ -202,9 +204,16 @@ public class PortalController {
         model.addAttribute("vpns", vpns);
         model.addAttribute("vpnname", vpnName);
         model.addAttribute("ext_switches", networkSwitchesWithNni);
-        
+
         if (!addSiteName.equals("")) {
 
+        }
+
+        // Create new VPN.
+        if (!newVpn.equals("")) {
+            VpnProvisioner vpnProvisioner = new VpnProvisioner();
+            int status = vpnProvisioner.createVpn(newVpnName);
+            log.info("createVpn returns: " + status);
         }
 
         // show another VPN
@@ -254,470 +263,488 @@ public class PortalController {
         }
 
         if (!addSiteName.equals("")) {
-        	
-        	restAddSiteToVpn(vpnName, addSiteName);
-        	
-        	networkAddSiteToVpn(vpnName, addSiteName);
+
+            restAddSiteToVpn(vpnName, addSiteName);
+
+            networkAddSiteToVpn(vpnName, addSiteName);
         }
 
         if (!deleteSiteName.equals("")) {
-        	
-        	restDeleteSiteFromVpn(vpnName, deleteSiteName);
-        	
-        	networkDeleteSiteFromVpn(vpnName, deleteSiteName);
-        	
+
+            restDeleteSiteFromVpn(vpnName, deleteSiteName);
+
+            networkDeleteSiteFromVpn(vpnName, deleteSiteName);
+
         }
 
         networkSites = networkSitesService.getNetworkSites(vpnName);
-        List<NetworkSite> freeSites = networkSitesService.getNetworkSites("all");
+        List<NetworkSite> freeSites = networkSitesService
+                .getNetworkSites("all");
         model.addAttribute("sites", networkSites);
         model.addAttribute("freesites", freeSites);
-        
+
         return "updatevpn";
     }
-    
-    
-    
+
     private RestSite getRestSiteByName(String siteName) {
-		for (RestSite restSite : restSiteData.values()) {
-			if (restSite.getName().equalsIgnoreCase(siteName)) {
-				return restSite;
-			}
-		}
-		// FIXME something can go very wrong here 
-		return null;
-	}
-    
+        for (RestSite restSite : restSiteData.values()) {
+            if (restSite.getName().equalsIgnoreCase(siteName)) {
+                return restSite;
+            }
+        }
+        // FIXME something can go very wrong here
+        return null;
+    }
+
     private RestVpn getRestVpnByName(String vpnName) {
-		for (RestVpn restVpn : restVpnData.values()) {
-			if (restVpn.getName().equalsIgnoreCase(vpnName)) {
-				return restVpn;
-			}
-		}
-		// FIXME something can go very wrong here 
-		return null;
-	}
-    
+        for (RestVpn restVpn : restVpnData.values()) {
+            if (restVpn.getName().equalsIgnoreCase(vpnName)) {
+                return restVpn;
+            }
+        }
+        // FIXME something can go very wrong here
+        return null;
+    }
+
     private void restAddSiteToVpn(String vpnName, String addSiteName) {
-    	RestSite restSiteToAdd = getRestSiteByName(addSiteName);
-    	RestVpn restVpn = getRestVpnByName(vpnName);
-    	restVpn.addSiteToVpn(restSiteToAdd);	
+        RestSite restSiteToAdd = getRestSiteByName(addSiteName);
+        RestVpn restVpn = getRestVpnByName(vpnName);
+        restVpn.addSiteToVpn(restSiteToAdd);
     }
-    
+
     private void restDeleteSiteFromVpn(String vpnName, String deleteSiteName) {
-    	RestSite restSiteToDelete = getRestSiteByName(deleteSiteName);
-    	RestVpn restVpn = getRestVpnByName(vpnName);
-    	restVpn.deleteSiteFromVpn(restSiteToDelete);	
+        RestSite restSiteToDelete = getRestSiteByName(deleteSiteName);
+        RestVpn restVpn = getRestVpnByName(vpnName);
+        restVpn.deleteSiteFromVpn(restSiteToDelete);
     }
-    
+
     private void networkAddSiteToVpn(String vpnName, String addSiteName) {
-    	vpnsService.addSite(vpnName, addSiteName);
+
+        vpnsService.addSite(vpnName, addSiteName);
         // find site object
         for (NetworkSite networkSite : networkSitesService.getNetworkSites()) {
             if (networkSite.getName().equals(addSiteName)) {
                 Vpn vpn = vpnsService.getVpn(vpnName);
-                log.info("MPLS label for " + vpnName + " is " + vpn.getMplsLabel());
-                pce.addSiteToVpn(networkSite, vpn.getMplsLabel(), networkSitesService.getNetworkSites(vpnName));
-                
-                //bgpRouter.addVpn(aclNum, routeMapNum, seqNum, networkSite.getIpv4Prefix(), "0.0.0.255", "", vpnNew.getId());
+                log.info("MPLS label for " + vpnName + " is "
+                        + vpn.getMplsLabel());
+//                pce.addSiteToVpn(networkSite, vpn.getMplsLabel(),
+//                        networkSitesService.getNetworkSites(vpnName));
+
+                // bgpRouter.addVpn(aclNum, routeMapNum, seqNum,
+                // networkSite.getIpv4Prefix(), "0.0.0.255", "",
+                // vpnNew.getId());
+                VpnProvisioner vpnProvisioner = new VpnProvisioner();
+                int status = vpnProvisioner.addSite(vpnName, addSiteName,
+                        networkSite.getIpv4Prefix(), networkSite.getProviderSwitch()
+                                + ":" + networkSite.getProviderPort());
+                log.info("addSite returns: " + status);
             }
         }
+
     }
-    
+
     private void networkDeleteSiteFromVpn(String vpnName, String deleteSiteName) {
-    	vpnsService.deleteSite(deleteSiteName);
+        vpnsService.deleteSite(deleteSiteName);
         // find site object
         for (NetworkSite networkSite : networkSitesService.getNetworkSites()) {
             if (networkSite.getName().equals(deleteSiteName)) {
                 Vpn vpn = vpnsService.getVpn(vpnName);
-                log.info("MPLS label for " + vpnName + " is " + vpn.getMplsLabel());
-                pce.deleteSiteFromVpn(networkSite, vpn.getMplsLabel(), networkSitesService.getNetworkSites(vpnName));
+                log.info("MPLS label for " + vpnName + " is "
+                        + vpn.getMplsLabel());
+                pce.deleteSiteFromVpn(networkSite, vpn.getMplsLabel(),
+                        networkSitesService.getNetworkSites(vpnName));
             }
         }
     }
 
-	@RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY, method=RequestMethod.GET)  
-    public @ResponseBody  
-    List<NetworkInterface> getTopology() {  
-     return topologyService.getNetworkInterfaces();
+    @RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY, method = RequestMethod.GET)
+    public @ResponseBody List<NetworkInterface> getTopology() {
+        return topologyService.getNetworkInterfaces();
     }
-    
-    @RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_VIS, method=RequestMethod.GET)  
-    public @ResponseBody  
-    String getTopologyVis() {
-    	StringBuilder visJson = new StringBuilder();
-    	
-    	Set<NetworkElement> nodeSet = new HashSet<NetworkElement>();
-    	
-    	List<NetworkInterface> networkInterfaces = topologyService.getNetworkInterfaces();
-    	
-    	for (NetworkInterface networkInterface : networkInterfaces) {
-    		if (!nodeSet.contains(networkInterface.source)) {
-    			nodeSet.add(networkInterface.source);
-    		}
-    		
-    		if (!nodeSet.contains(networkInterface.neighbour)) {
-    			nodeSet.add(networkInterface.neighbour);
-    		}
-		}
-    	visJson.append("{\"nodes\" : [ ");
-    	for (NetworkElement networkElement : nodeSet) {
-    		int fakeId = 0;
-    		if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-    			fakeId = networkElement.id;
-			}
-			else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.id;
-			}
-	    	else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-	    		fakeId = 200 + networkElement.id;
-			}
-			visJson.append("{\"id\": \"");
-			visJson.append(fakeId);
-			visJson.append("\", \"label\": \"");
-			visJson.append(networkElement.name);
-			visJson.append("\", \"group\": \"");
-			visJson.append(networkElement.nodeType);
-			visJson.append("\"}, ");
-		}
 
-    	visJson.deleteCharAt(visJson.lastIndexOf(","));
-    	visJson.append("],");
-    	visJson.append("\"edges\" : [");
-    	
-    	for (NetworkInterface networkInterface : networkInterfaces) {
-    		int fakeId = 0;
-    		NetworkElement networkElement;
-    		
-    		networkElement = networkInterface.source;
-    		fakeId = 0;
-    		if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-    			fakeId = networkElement.id;
-			}
-			else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.id;
-			}
-	    	else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-	    		fakeId = 200 + networkElement.id;
-			}
-    		visJson.append("{\"from\": \"");
-    		visJson.append(fakeId);
-    		
-    		networkElement = networkInterface.neighbour;
-    		fakeId = 0;
-    		if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-    			fakeId = networkElement.id;
-			}
-			else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.id;
-			}
-	    	else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-	    		fakeId = 200 + networkElement.id;
-			}
-    		visJson.append("\", \"to\": \"");
-    		visJson.append(fakeId);
-    		visJson.append("\"}, ");
-		}
-    	visJson.deleteCharAt(visJson.lastIndexOf(","));
-    	visJson.append("]}");
-    	
-    	return visJson.toString();
+    @RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_VIS, method = RequestMethod.GET)
+    public @ResponseBody String getTopologyVis() {
+        StringBuilder visJson = new StringBuilder();
+
+        Set<NetworkElement> nodeSet = new HashSet<NetworkElement>();
+
+        List<NetworkInterface> networkInterfaces = topologyService
+                .getNetworkInterfaces();
+
+        for (NetworkInterface networkInterface : networkInterfaces) {
+            if (!nodeSet.contains(networkInterface.source)) {
+                nodeSet.add(networkInterface.source);
+            }
+
+            if (!nodeSet.contains(networkInterface.neighbour)) {
+                nodeSet.add(networkInterface.neighbour);
+            }
+        }
+        visJson.append("{\"nodes\" : [ ");
+        for (NetworkElement networkElement : nodeSet) {
+            int fakeId = 0;
+            if (networkElement.nodeType
+                    .equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
+                fakeId = networkElement.id;
+            } else if (networkElement.nodeType
+                    .equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
+                fakeId = 100 + networkElement.id;
+            } else if (networkElement.nodeType
+                    .equals(NetworkElement.NODE_TYPE.SWITCH)) {
+                fakeId = 200 + networkElement.id;
+            }
+            visJson.append("{\"id\": \"");
+            visJson.append(fakeId);
+            visJson.append("\", \"label\": \"");
+            visJson.append(networkElement.name);
+            visJson.append("\", \"group\": \"");
+            visJson.append(networkElement.nodeType);
+            visJson.append("\"}, ");
+        }
+
+        visJson.deleteCharAt(visJson.lastIndexOf(","));
+        visJson.append("],");
+        visJson.append("\"edges\" : [");
+
+        for (NetworkInterface networkInterface : networkInterfaces) {
+            int fakeId = 0;
+            NetworkElement networkElement;
+
+            networkElement = networkInterface.source;
+            fakeId = 0;
+            if (networkElement.nodeType
+                    .equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
+                fakeId = networkElement.id;
+            } else if (networkElement.nodeType
+                    .equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
+                fakeId = 100 + networkElement.id;
+            } else if (networkElement.nodeType
+                    .equals(NetworkElement.NODE_TYPE.SWITCH)) {
+                fakeId = 200 + networkElement.id;
+            }
+            visJson.append("{\"from\": \"");
+            visJson.append(fakeId);
+
+            networkElement = networkInterface.neighbour;
+            fakeId = 0;
+            if (networkElement.nodeType
+                    .equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
+                fakeId = networkElement.id;
+            } else if (networkElement.nodeType
+                    .equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
+                fakeId = 100 + networkElement.id;
+            } else if (networkElement.nodeType
+                    .equals(NetworkElement.NODE_TYPE.SWITCH)) {
+                fakeId = 200 + networkElement.id;
+            }
+            visJson.append("\", \"to\": \"");
+            visJson.append(fakeId);
+            visJson.append("\"}, ");
+        }
+        visJson.deleteCharAt(visJson.lastIndexOf(","));
+        visJson.append("]}");
+
+        return visJson.toString();
     }
-    
-    @RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_IS_CHANGED, method=RequestMethod.GET)  
-    public @ResponseBody  
-    boolean getTopologyChange() {
-    	
-    	if (networkChanged == true) {
-    		networkChanged = false;
-    		return true;
-    	}
-    	
-    	return networkChanged;
+
+    @RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_IS_CHANGED, method = RequestMethod.GET)
+    public @ResponseBody boolean getTopologyChange() {
+
+        if (networkChanged == true) {
+            networkChanged = false;
+            return true;
+        }
+
+        return networkChanged;
     }
-    
+
     /*
-    @RequestMapping(value="student", method=RequestMethod.GET)  
-    public @ResponseBody  
-    Student getStudent() {  
-     return new Student(23, "meghna", "Naidu", "meghna@gmail.com",  
-       "8978767878");  
-    }  
-     
-    @RequestMapping(value="studentlist", method=RequestMethod.GET)  
-    public @ResponseBody  
-    List<Student> getStudentList() {  
-     List<Student> studentList = new ArrayList<Student>();  
-     studentList.add(new Student(23, "Meghna", "Naidu", "meghna@gmail.com",  
-       "8978767878"));  
-     studentList.add(new Student(3, "Robert", "Parera", "robert@gmail.com",  
-       "8978767878"));  
-     studentList.add(new Student(93, "Andrew", "Strauss",  
-       "andrew@gmail.com", "8978767878"));  
-     studentList.add(new Student(239, "Eddy", "Knight", "knight@gmail.com",  
-       "7978767878"));  
-     
-     return studentList;  
-    }
-    
-    @RequestMapping(value = "{name}", method = RequestMethod.GET)
-	public @ResponseBody
-	Shop getShopInJSON(@PathVariable String name) {
+     * @RequestMapping(value="student", method=RequestMethod.GET) public
+     * @ResponseBody Student getStudent() { return new Student(23, "meghna",
+     * "Naidu", "meghna@gmail.com", "8978767878"); }
+     * 
+     * @RequestMapping(value="studentlist", method=RequestMethod.GET) public
+     * @ResponseBody List<Student> getStudentList() { List<Student> studentList
+     * = new ArrayList<Student>(); studentList.add(new Student(23, "Meghna",
+     * "Naidu", "meghna@gmail.com", "8978767878")); studentList.add(new
+     * Student(3, "Robert", "Parera", "robert@gmail.com", "8978767878"));
+     * studentList.add(new Student(93, "Andrew", "Strauss", "andrew@gmail.com",
+     * "8978767878")); studentList.add(new Student(239, "Eddy", "Knight",
+     * "knight@gmail.com", "7978767878"));
+     * 
+     * return studentList; }
+     * 
+     * @RequestMapping(value = "{name}", method = RequestMethod.GET) public
+     * @ResponseBody Shop getShopInJSON(@PathVariable String name) {
+     * 
+     * Shop shop = new Shop(); shop.setName(name); shop.setStaffName(new
+     * String[] { "mkyong1", "mkyong2" });
+     * 
+     * return shop;
+     * 
+     * }
+     */
 
-		Shop shop = new Shop();
-		shop.setName(name);
-		shop.setStaffName(new String[] { "mkyong1", "mkyong2" });
-
-		return shop;
-
-	}*/
-    
-    
-    //Map to store vpns, ideally we should use database
+    // Map to store vpns, ideally we should use database
     Map<Integer, RestVpn> restVpnData = new HashMap<Integer, RestVpn>();
-    
-    //Map to store sites, ideally we should use database
+
+    // Map to store sites, ideally we should use database
     Map<Integer, RestSite> restSiteData = new HashMap<Integer, RestSite>();
 
     @RequestMapping(value = RestVpnURIConstants.DUMMY_VPN, method = RequestMethod.GET)
     public @ResponseBody RestVpn getDummyVpn() {
-    	log.info("Start getDummyVpn");
+        log.info("Start getDummyVpn");
         RestVpn vpn = new RestVpn();
         vpn.setId(9999);
         vpn.setName("Dummy");
-        //emp.setCreatedDate(new Date());
+        // emp.setCreatedDate(new Date());
         restVpnData.put(9999, vpn);
         return vpn;
     }
-     
+
     @RequestMapping(value = RestVpnURIConstants.GET_VPN, method = RequestMethod.GET)
     public @ResponseBody RestVpn getVpn(@PathVariable("id") int vpnId) {
-    	log.info("Start getVpn. ID="+vpnId);
-         
+        log.info("Start getVpn. ID=" + vpnId);
+
         return restVpnData.get(vpnId);
     }
-    
+
     @RequestMapping(value = RestVpnURIConstants.UPDATE_VPN, method = RequestMethod.POST)
-    public @ResponseBody RestVpn updateVpn(@PathVariable("id") int vpnId, @RequestBody RestVpn vpn) {
-    	log.info("Start updateVpn. ID="+vpnId);
-    	
-    	Assert.isTrue(vpn.getId() == vpnId, "VPN id and ID from the rest path are not the same. REST PATH:" + String.valueOf(vpnId) + " VPN ID" + String.valueOf(vpn.getId()));
-    	
-    	RestVpn vpnNew = vpn;
-    	RestVpn vpnCurrent = restVpnData.get(vpnId);
-    	
-    	List<RestSite> sitesToAdd = new ArrayList<RestSite>(vpnNew.getSites());
-    	sitesToAdd.removeAll(vpnCurrent.getSites());
-    	List<RestSite> sitesToRemove = new ArrayList<RestSite>(vpnCurrent.getSites());
-    	sitesToRemove.removeAll(vpnNew.getSites());
-    	
-    	for (RestSite restSite : sitesToAdd) {
-    		restAddSiteToVpn(vpnCurrent.getName(), restSite.getName());	
-        	networkAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
-		}
-    	
-    	for (RestSite restSite : sitesToRemove) {
-    		restDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());	
-    		networkDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
-		}
-    	
+    public @ResponseBody RestVpn updateVpn(@PathVariable("id") int vpnId,
+            @RequestBody RestVpn vpn) {
+        log.info("Start updateVpn. ID=" + vpnId);
+
+        Assert.isTrue(
+                vpn.getId() == vpnId,
+                "VPN id and ID from the rest path are not the same. REST PATH:"
+                        + String.valueOf(vpnId) + " VPN ID"
+                        + String.valueOf(vpn.getId()));
+
+        RestVpn vpnNew = vpn;
+        RestVpn vpnCurrent = restVpnData.get(vpnId);
+
+        List<RestSite> sitesToAdd = new ArrayList<RestSite>(vpnNew.getSites());
+        sitesToAdd.removeAll(vpnCurrent.getSites());
+        List<RestSite> sitesToRemove = new ArrayList<RestSite>(
+                vpnCurrent.getSites());
+        sitesToRemove.removeAll(vpnNew.getSites());
+
+        for (RestSite restSite : sitesToAdd) {
+            restAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
+            networkAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
+        }
+
+        for (RestSite restSite : sitesToRemove) {
+            restDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
+            networkDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
+        }
+
         return restVpnData.get(vpnId);
     }
-    
-    
+
     @RequestMapping(value = RestVpnURIConstants.SET_VPN_PRIVACY, method = RequestMethod.POST)
-    public @ResponseBody RestVpn setVpnPrivacy(@PathVariable("id") int vpnId, @RequestBody RestVpn vpn) {
-    	log.info("Start setVpnPrivacy. ID="+vpnId);
-    	
-    	Assert.isTrue(vpn.getId() == vpnId, "VPN id and ID from the rest path are not the same. REST PATH:" + String.valueOf(vpnId) + " VPN ID" + String.valueOf(vpn.getId()));
-    	
+    public @ResponseBody RestVpn setVpnPrivacy(@PathVariable("id") int vpnId,
+            @RequestBody RestVpn vpn) {
+        log.info("Start setVpnPrivacy. ID=" + vpnId);
 
-    	RestVpn vpnCurrent = restVpnData.get(vpnId);
-    	vpnCurrent.setPublic(vpn.getIsPublic());
-    	
-    	if (vpn.getIsPublic()) {
-    		// make it public to all neighbors using BGP
-    		log.info("making vpn public");
+        Assert.isTrue(
+                vpn.getId() == vpnId,
+                "VPN id and ID from the rest path are not the same. REST PATH:"
+                        + String.valueOf(vpnId) + " VPN ID"
+                        + String.valueOf(vpn.getId()));
 
-        	List<RestSite> sites = vpn.getSites();
-        	for (RestSite restSite : sites) {
-        		String siteName = restSite.getName();
-        		if (!siteName.contains(neighborName)) {
-	        		String siteIpPrefix = this.sitesNameToPrefixMap.get(siteName);
-	        		bgpRouter.addVpn(siteIpPrefix, this.neighborIp, vpnId);
-        		}
-			}
-    	}
-    	else {
-    		// make it not public to all neighbors using BGP
-    		log.info("making vpn private");
-    		
-    		List<RestSite> sites = vpn.getSites();
-        	for (RestSite restSite : sites) {
-        		String siteName = restSite.getName();
-        		if (!siteName.contains(neighborName)) {
-	        		String siteIpPrefix = this.sitesNameToPrefixMap.get(siteName);
-	        		bgpRouter.delVpn(siteIpPrefix, this.neighborIp, vpnId);
-        		}
-			}
-    	}
-    	
-		return vpn;
+        RestVpn vpnCurrent = restVpnData.get(vpnId);
+        vpnCurrent.setPublic(vpn.getIsPublic());
+
+        if (vpn.getIsPublic()) {
+            // make it public to all neighbors using BGP
+            log.info("making vpn public");
+
+            List<RestSite> sites = vpn.getSites();
+            for (RestSite restSite : sites) {
+                String siteName = restSite.getName();
+                if (!siteName.contains(neighborName)) {
+                    String siteIpPrefix = this.sitesNameToPrefixMap
+                            .get(siteName);
+                    bgpRouter.addVpn(siteIpPrefix, this.neighborIp, vpnId);
+                }
+            }
+        } else {
+            // make it not public to all neighbors using BGP
+            log.info("making vpn private");
+
+            List<RestSite> sites = vpn.getSites();
+            for (RestSite restSite : sites) {
+                String siteName = restSite.getName();
+                if (!siteName.contains(neighborName)) {
+                    String siteIpPrefix = this.sitesNameToPrefixMap
+                            .get(siteName);
+                    bgpRouter.delVpn(siteIpPrefix, this.neighborIp, vpnId);
+                }
+            }
+        }
+
+        return vpn;
 
     }
-    
-    public void setUpPce(List<NetworkSwitch> networkSwitches, List<NetworkSite> networkSites,
-			List<NetworkSwitch> networkSwitchesWithEnni) {
 
-		class SetupThread implements Runnable {
+    public void setUpPce(List<NetworkSwitch> networkSwitches,
+            List<NetworkSite> networkSites,
+            List<NetworkSwitch> networkSwitchesWithEnni) {
 
-			RestClient restClient;
-			List<NetworkSwitch> networkSwitches;
-			List<NetworkSite> networkSites;
-			List<NetworkSwitch> networkSwitchesWithEnni;
+        class SetupThread implements Runnable {
 
-			public SetupThread(RestClient restClient, List<NetworkSwitch> networkSwitches, List<NetworkSite> networkSites,
-					List<NetworkSwitch> networkSwitchesWithEnni) {
-				this.restClient = restClient;
-				this.networkSwitches = networkSwitches;
-				this.networkSites = networkSites;
-				this.networkSwitchesWithEnni = networkSwitchesWithEnni;
-			}
+            RestClient restClient;
+            List<NetworkSwitch> networkSwitches;
+            List<NetworkSite> networkSites;
+            List<NetworkSwitch> networkSwitchesWithEnni;
 
-			public void run() {
-				pce = new Pce(restClient, networkSwitches, networkSites, networkSwitchesWithEnni);
-				pce.setupCoreForwarding();
-			}
-		}
-		
-		String controllerUrl = env.getProperty("controller.url");
-		RestClient restClient = new RestClient(controllerUrl);
-		Runnable setupThreadRunnable = new SetupThread(restClient, networkSwitches, networkSites, networkSwitchesWithEnni);
-		log.debug("Starting core provisioning thread");
-		new Thread(setupThreadRunnable).start();
-		log.debug("Started core provisioning thread");
-	}
-    
+            public SetupThread(RestClient restClient,
+                    List<NetworkSwitch> networkSwitches,
+                    List<NetworkSite> networkSites,
+                    List<NetworkSwitch> networkSwitchesWithEnni) {
+                this.restClient = restClient;
+                this.networkSwitches = networkSwitches;
+                this.networkSites = networkSites;
+                this.networkSwitchesWithEnni = networkSwitchesWithEnni;
+            }
+
+            public void run() {
+                pce = new Pce(restClient, networkSwitches, networkSites,
+                        networkSwitchesWithEnni);
+                pce.setupCoreForwarding();
+            }
+        }
+
+        String controllerUrl = env.getProperty("controller.url");
+        RestClient restClient = new RestClient(controllerUrl);
+        Runnable setupThreadRunnable = new SetupThread(restClient,
+                networkSwitches, networkSites, networkSwitchesWithEnni);
+        log.debug("Starting core provisioning thread");
+        new Thread(setupThreadRunnable).start();
+        log.debug("Started core provisioning thread");
+    }
+
     public void initializeNetworkSitesData(boolean doGetSites) {
-    	if (doGetSites) {
-    		this.networkSites = networkSitesService.getNetworkSites();
-    	}
-    	
-    	setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
-    	
-    	List<Vpn> vpnsFromDao = vpnsService.getVpns();
-    	
+        if (doGetSites) {
+            this.networkSites = networkSitesService.getNetworkSites();
+        }
 
-    	log.info("Initialize rest data");
+        setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
+
+        List<Vpn> vpnsFromDao = vpnsService.getVpns();
+
+        log.info("Initialize rest data");
         // TODO - this is from database, synch with state in vpnData
         // where should I get the data from?
-		for (Vpn vpnFromDao : vpnsFromDao) {
-			List<NetworkSite> networkSites = networkSitesService.getNetworkSites(vpnFromDao.getName());
-			RestVpn restVpn = new RestVpn(vpnFromDao);
-			restVpn.setSites(siteToRest(networkSites));
-			restVpnData.put(restVpn.getId(), restVpn);
-		}
-		
-		List<RestSite> restSites = siteToRest(networkSites);
-		
-		for (RestSite restSite : restSites) {
-			restSiteData.put(restSite.getId(), restSite);
-		}
-		
-		
-    	Map<String, String> sitesNameToPrefixMap = new HashMap<String, String>();
-    	
-    	for (NetworkSite site : networkSites) {
-    		sitesNameToPrefixMap.put(site.getName(), site.getIpv4Prefix());
-		}
-    	
-    	this.sitesNameToPrefixMap = sitesNameToPrefixMap;
-    	
-    	this.networkChanged = true;
+        for (Vpn vpnFromDao : vpnsFromDao) {
+            List<NetworkSite> networkSites = networkSitesService
+                    .getNetworkSites(vpnFromDao.getName());
+            RestVpn restVpn = new RestVpn(vpnFromDao);
+            restVpn.setSites(siteToRest(networkSites));
+            restVpnData.put(restVpn.getId(), restVpn);
+        }
+
+        List<RestSite> restSites = siteToRest(networkSites);
+
+        for (RestSite restSite : restSites) {
+            restSiteData.put(restSite.getId(), restSite);
+        }
+
+        Map<String, String> sitesNameToPrefixMap = new HashMap<String, String>();
+
+        for (NetworkSite site : networkSites) {
+            sitesNameToPrefixMap.put(site.getName(), site.getIpv4Prefix());
+        }
+
+        this.sitesNameToPrefixMap = sitesNameToPrefixMap;
+
+        this.networkChanged = true;
     }
-    
+
     @PostConstruct
     @RequestMapping("/setupAll")
     public @ResponseBody String initializeEverything() {
-    	log.info("Initialize everything");
-    	
-    	log.warn(env.getProperty("ip"));
-    	
-    	log.info("Initialize network elements");
-    	this.networkSwitches = networkSwitchesService.getNetworkSwitches();
-    	this.networkSwitchesWithEnni = networkSwitchesService.getNetworkSwitchesWithNni();
-    	this.networkLinks = networkLinksService.getNetworkLinks();
-    	this.networkSites = networkSitesService.getNetworkSites();
-    	this.vpns = vpnsService.getVpns();
-    	
-    	log.info("Initialize PCE object");
-		String bgpIp = env.getProperty("ip");
-    	bgpRouter = new BgpRouter(bgpIp, 7644);
-    	
-    	initializeNetworkSitesData(false);
-    	
-		
-		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter, this);
-		log.debug("Starting bgp thread");
-		new Thread(bgpThreadRunnable).start();
-		log.debug("Started bgp thread");
-		
-		
-		this.neighborIp = env.getProperty("bgpNeighborIps");
-		this.neighborName = env.getProperty("neighborName");
+        log.info("Initialize everything");
 
-		return "everything initialized succesfully";
-		
+        log.warn(env.getProperty("ip"));
+
+        log.info("Initialize network elements");
+        this.networkSwitches = networkSwitchesService.getNetworkSwitches();
+        this.networkSwitchesWithEnni = networkSwitchesService
+                .getNetworkSwitchesWithNni();
+        this.networkLinks = networkLinksService.getNetworkLinks();
+        this.networkSites = networkSitesService.getNetworkSites();
+        this.vpns = vpnsService.getVpns();
+
+        log.info("Initialize PCE object");
+        String bgpIp = env.getProperty("ip");
+        bgpRouter = new BgpRouter(bgpIp, 7644);
+
+        initializeNetworkSitesData(false);
+
+        Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService,
+                networkLinksService, networkSitesService, bgpRouter, this);
+        log.debug("Starting bgp thread");
+        new Thread(bgpThreadRunnable).start();
+        log.debug("Started bgp thread");
+
+        this.neighborIp = env.getProperty("bgpNeighborIps");
+        this.neighborName = env.getProperty("neighborName");
+
+        return "everything initialized succesfully";
+
     }
-     
+
     @RequestMapping(value = RestVpnURIConstants.GET_ALL_VPN, method = RequestMethod.GET)
     public @ResponseBody List<RestVpn> getAllVpns() {
         log.info("Start getAllVpns.");
 
         return new ArrayList<RestVpn>(restVpnData.values());
     }
-    
+
     @RequestMapping(value = RestVpnURIConstants.GET_ALL_SITES, method = RequestMethod.GET)
-    public @ResponseBody List<NetworkSite> getAllSites(@PathVariable("id") int vpnID) {
+    public @ResponseBody List<NetworkSite> getAllSites(
+            @PathVariable("id") int vpnID) {
         log.info("Start getall sites.");
 
         Vpn vpn = vpnsService.getVpn(vpnID);
         return networkSitesService.getNetworkSites(vpn.getName());
     }
-     
+
     @RequestMapping(value = RestVpnURIConstants.CREATE_VPN, method = RequestMethod.POST)
     public @ResponseBody RestVpn createVpn(@RequestBody RestVpn vpn) {
-    	log.info("Start createVpn.");
-    
+        log.info("Start createVpn.");
+
         restVpnData.put(vpn.getId(), vpn);
         return vpn;
     }
-     
+
     @RequestMapping(value = RestVpnURIConstants.DELETE_VPN, method = RequestMethod.PUT)
     public @ResponseBody RestVpn deleteVpn(@PathVariable("id") int vpnId) {
-    	log.info("Start deleteVpn.");
+        log.info("Start deleteVpn.");
         RestVpn vpn = restVpnData.get(vpnId);
         restVpnData.remove(vpnId);
         return vpn;
     }
-    
+
     private List<RestVpn> vpnToRest(List<Vpn> vpns) {
-    	List<RestVpn> restVpns = new ArrayList<RestVpn>();
-    	
-    	for (Vpn vpn : vpns) {
-    		restVpns.add(new RestVpn(vpn));
-		}
-    	
-    	return restVpns;
+        List<RestVpn> restVpns = new ArrayList<RestVpn>();
+
+        for (Vpn vpn : vpns) {
+            restVpns.add(new RestVpn(vpn));
+        }
+
+        return restVpns;
     }
-    
+
     private List<RestSite> siteToRest(List<NetworkSite> sites) {
-    	List<RestSite> restSites = new ArrayList<RestSite>();
-    	
-    	for (NetworkSite site : sites) {
-    		restSites.add(new RestSite(site));
-		}
-    	
-    	return restSites;
+        List<RestSite> restSites = new ArrayList<RestSite>();
+
+        for (NetworkSite site : sites) {
+            restSites.add(new RestSite(site));
+        }
+
+        return restSites;
     }
 }

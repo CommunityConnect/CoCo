@@ -180,6 +180,7 @@
 						<button name="vpn" value="<c:out value="${vpn.name}"></c:out>">update</button>
 						<br>
 					</c:forEach>
+					<input type="text" name="newvpnname">
 					<button name="newvpn" value="newvpn">Create new VPN</button>
 				</form>
 			</div>

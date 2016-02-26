@@ -21,8 +21,6 @@ import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.NetworkSwitch;
 import net.geant.coco.agent.portal.dao.Vpn;
 import net.geant.coco.agent.portal.rest.RestVpnURIConstants;
-import net.geant.coco.agent.portal.rest.Shop;
-import net.geant.coco.agent.portal.rest.Student;
 import net.geant.coco.agent.portal.rest.RestSite;
 import net.geant.coco.agent.portal.rest.RestVpn;
 import net.geant.coco.agent.portal.service.NetworkLinksService;
@@ -458,32 +456,6 @@ public class PortalController {
         return networkChanged;
     }
 
-    /*
-     * @RequestMapping(value="student", method=RequestMethod.GET) public
-     * @ResponseBody Student getStudent() { return new Student(23, "meghna",
-     * "Naidu", "meghna@gmail.com", "8978767878"); }
-     * 
-     * @RequestMapping(value="studentlist", method=RequestMethod.GET) public
-     * @ResponseBody List<Student> getStudentList() { List<Student> studentList
-     * = new ArrayList<Student>(); studentList.add(new Student(23, "Meghna",
-     * "Naidu", "meghna@gmail.com", "8978767878")); studentList.add(new
-     * Student(3, "Robert", "Parera", "robert@gmail.com", "8978767878"));
-     * studentList.add(new Student(93, "Andrew", "Strauss", "andrew@gmail.com",
-     * "8978767878")); studentList.add(new Student(239, "Eddy", "Knight",
-     * "knight@gmail.com", "7978767878"));
-     * 
-     * return studentList; }
-     * 
-     * @RequestMapping(value = "{name}", method = RequestMethod.GET) public
-     * @ResponseBody Shop getShopInJSON(@PathVariable String name) {
-     * 
-     * Shop shop = new Shop(); shop.setName(name); shop.setStaffName(new
-     * String[] { "mkyong1", "mkyong2" });
-     * 
-     * return shop;
-     * 
-     * }
-     */
 
     // Map to store vpns, ideally we should use database
     Map<Integer, RestVpn> restVpnData = new HashMap<Integer, RestVpn>();

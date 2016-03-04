@@ -378,6 +378,7 @@ public class PortalController {
                 nodeSet.add(networkInterface.neighbour);
             }
         }
+        
         visJson.append("{\"nodes\" : [ ");
         for (NetworkElement networkElement : nodeSet) {
             int fakeId = 0;
@@ -387,6 +388,10 @@ public class PortalController {
             } else if (networkElement.nodeType
                     .equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
                 fakeId = 100 + networkElement.id;
+                
+                //TODO continue to ignore external as sites
+                continue;
+                
             } else if (networkElement.nodeType
                     .equals(NetworkElement.NODE_TYPE.SWITCH)) {
                 fakeId = 200 + networkElement.id;

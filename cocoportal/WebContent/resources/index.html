@@ -291,6 +291,9 @@ function vpn_list_on_click(id){
 	currentVPN = id;//$(this).attr('id');
 	populate_sitelist(currentVPN);
 	
+	color_all_nodes(1);
+	color_nodes(currentVPN);
+	
 }
 
 			
@@ -384,6 +387,27 @@ function populate_remote_vpn_list(valueName)
 
 //populate_sitelist(1);
 
+function color_all_nodes(typeOfColoring)
+{
+	color_nodes(1, typeOfColoring);
+	color_nodes(2, typeOfColoring);
+	color_nodes(3, typeOfColoring);
+	color_nodes(4, typeOfColoring);
+}
+
+function color_nodes(vpnID, typeOfColoring)
+{
+	$.getJSON("../rest/sites/" + vpnID, function(data) {
+		//var vpn = data["vpn"][0];
+		var sites = data;
+		var i;
+		for ( i =0; i < sites.length; i++)
+		{
+			var site = sites[i];
+			colorNodeWithId(site.id, typeOfColoring);
+		}	
+	});
+}
 function populate_sitelist(vpnID)
 {
 	// empty the list

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.UriBuilder;
 
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
@@ -106,30 +110,51 @@ public class VpnProvisioner {
     /**
      * Create a new VPN.
      * 
-     * @param name Name of the VPN to be created.
-     * @return HTTP return status code (int)
+     * @param name
+     *            Name of the VPN to be created.
+     * @return true if the VPN insertion succeeded, false otherwise
      */
-    public int createVpn(String name) {
+    public boolean createVpn(String name) {
+        boolean isSuccessful = true;
         Gson gson = new Gson();
         Vpn vpn = new Vpn(name, "true", "fast-reroute");
         VpnIntents vpnIntents = new VpnIntents(vpn);
         String jsonData = gson.toJson(vpnIntents);
         log.info("json data = " + jsonData);
-        ClientResponse response = service.path("config/vpnintent:vpns")
-                .type(javax.ws.rs.core.MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .post(ClientResponse.class, jsonData);
-        log.info("json vpn response is " + response.getStatus());
-        return response.getStatus();
+
+        ClientResponse response = null;
+        try {
+            response = service.path("config/vpnintent:vpns")
+                    .type(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .post(ClientResponse.class, jsonData);
+            log.info("json vpn response is " + response.getStatus());
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                isSuccessful = false;
+            }
+        } catch (UniformInterfaceException e) {
+            log.info(e.getMessage());
+            isSuccessful = false;
+        } catch (ClientHandlerException e) {
+            log.info(e.getMessage());
+            isSuccessful = false;
+        }
+
+        return isSuccessful;
     }
 
     /**
      * Add a site to a VPN.
      * 
-     * @param vpnName Name of the VPN.
-     * @param siteName Name of the site.
-     * @param ipPrefix IPv4 prefix used at the site.
-     * @param switchPortId Concatenation of the OpenFlow switch name and port id (e.g. openflow:1:1).
+     * @param vpnName
+     *            Name of the VPN.
+     * @param siteName
+     *            Name of the site.
+     * @param ipPrefix
+     *            IPv4 prefix used at the site.
+     * @param switchPortId
+     *            Concatenation of the OpenFlow switch name and port id (e.g.
+     *            openflow:1:1).
      * @return HTTP return status code (int)
      */
     public int addSite(String vpnName, String siteName, String ipPrefix,

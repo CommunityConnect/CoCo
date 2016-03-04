@@ -7,6 +7,9 @@ import java.util.List;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
+
+import org.springframework.context.annotation.PropertySource;
+
 import javax.ws.rs.core.UriBuilder;
 
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +36,7 @@ import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
  *
  */
 @Slf4j
+@PropertySource("classpath:/net/geant/coco/agent/portal/props/config.properties")
 public class VpnProvisioner {
     private WebResource service;
 
@@ -95,14 +99,14 @@ public class VpnProvisioner {
      * Initializes VpnProvisioner object. Set URL of OpenDaylight controller.
      * Set connecting and reading timouts.
      */
-    public VpnProvisioner() {
+    public VpnProvisioner(String controllerUrl) {
         ClientConfig config = new DefaultClientConfig();
         Client client = Client.create(config);
         client.setConnectTimeout(TIMEOUT);
         client.setReadTimeout(TIMEOUT);
         client.addFilter(new HTTPBasicAuthFilter("admin", "admin"));
         // FIXME get IP from config file
-        URI uri = UriBuilder.fromUri("http://192.168.56.125:8181/restconf")
+        URI uri = UriBuilder.fromUri(controllerUrl)
                 .build();
         service = client.resource(uri);
     }

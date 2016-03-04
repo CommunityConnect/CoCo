@@ -84,6 +84,8 @@ public class PortalController {
     Map<String, String> sitesNameToPrefixMap;
 
     boolean networkChanged = false;
+    
+    VpnProvisioner vpnProvisioner;
 
     @Autowired
     public void setNetworkSwitchService(
@@ -209,7 +211,6 @@ public class PortalController {
 
         // Create new VPN.
         if (!newVpn.equals("")) {
-            VpnProvisioner vpnProvisioner = new VpnProvisioner();
             boolean status = vpnProvisioner.createVpn(newVpnName);
             log.info("createVpn returns: " + status);
         }
@@ -331,7 +332,6 @@ public class PortalController {
                 // bgpRouter.addVpn(aclNum, routeMapNum, seqNum,
                 // networkSite.getIpv4Prefix(), "0.0.0.255", "",
                 // vpnNew.getId());
-                VpnProvisioner vpnProvisioner = new VpnProvisioner();
                 int status = vpnProvisioner.addSite(vpnName, addSiteName,
                         networkSite.getIpv4Prefix(), networkSite.getProviderSwitch()
                                 + ":" + networkSite.getProviderPort());
@@ -507,14 +507,19 @@ public class PortalController {
         sitesToRemove.removeAll(vpnNew.getSites());
 
         for (RestSite restSite : sitesToAdd) {
-            restAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
-            networkAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
-        }
-
-        for (RestSite restSite : sitesToRemove) {
-            restDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
-            networkDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
-        }
+    		restAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
+		}
+    	
+    	for (RestSite restSite : sitesToRemove) {
+    		restDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());	
+		}
+    	
+    	for (RestSite restSite : sitesToAdd) {
+        	networkAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
+		}
+    	for (RestSite restSite : sitesToRemove) {
+    		networkDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
+		}
 
         return restVpnData.get(vpnId);
     }
@@ -655,19 +660,23 @@ public class PortalController {
         this.vpns = vpnsService.getVpns();
 
         log.info("Initialize PCE object");
-        String bgpIp = env.getProperty("ip");
-        bgpRouter = new BgpRouter(bgpIp, 7644);
+        //String bgpIp = env.getProperty("ip");
+        //bgpRouter = new BgpRouter(bgpIp, 7644);
 
         initializeNetworkSitesData(false);
 
-        Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService,
-                networkLinksService, networkSitesService, bgpRouter, this);
-        log.debug("Starting bgp thread");
-        new Thread(bgpThreadRunnable).start();
-        log.debug("Started bgp thread");
+        // INTENT - disable bgp
+//        Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService,
+//                networkLinksService, networkSitesService, bgpRouter, this);
+//        log.debug("Starting bgp thread");
+//        new Thread(bgpThreadRunnable).start();
+//        log.debug("Started bgp thread");
 
         this.neighborIp = env.getProperty("bgpNeighborIps");
         this.neighborName = env.getProperty("neighborName");
+        
+        String controllerUrl = env.getProperty("controller.url");
+        vpnProvisioner = new VpnProvisioner(controllerUrl);
 
         return "everything initialized succesfully";
 

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class VpnDao {
     private NamedParameterJdbcTemplate jdbc;
+    private static int mplsLabel = 6000;
 
     @Autowired
     public void setDataSource(DataSource jdbc) {
@@ -40,6 +41,24 @@ public class VpnDao {
                         return vpn;
                     }
                 });
+    }
+
+    /**
+     * Insert a new VPN in the MySQL database.
+     * 
+     * @param name
+     *            Name of the VPN to be inserted
+     * @return Return true if the insertion succeeded, false otherwise
+     */
+    public boolean createVpn(String name) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("name", name);
+        params.addValue("mplslabel", mplsLabel++);
+        // FIXME is_public not used
+        String query = "INSERT INTO vpns (`name`, `mpls_label`, `is_public`) "
+                + "VALUES (:name, :mplslabel, '0');";
+        log.info("createVpn " + query);
+        return (jdbc.update(query, params) == 1);
     }
 
     public Vpn getVpn(String vpnName) {
@@ -87,7 +106,7 @@ public class VpnDao {
         }
         return vpns.get(0);
     }
-    
+
     public boolean addSite(String vpnName, String siteName) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("vpn", vpnName);

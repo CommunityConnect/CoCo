@@ -25,6 +25,16 @@ public class VpnsService {
         return vpnDao.getVpn(vpnName);
     }
     
+    /**
+     * Insert new VPN in the database.
+     * 
+     * @param name Name of the VPN to be inserted.
+     * @return Return true if the insertion succeeded, false otherwise.
+     */
+    public boolean createVpn(String name) {
+        return vpnDao.createVpn(name);
+    }
+    
     public Vpn getVpn(int vpnId) {
         return vpnDao.getVpn(vpnId);
     }

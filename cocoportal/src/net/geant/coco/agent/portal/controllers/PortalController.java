@@ -74,16 +74,13 @@ public class PortalController {
     List<NetworkSite> networkSites;
     List<Vpn> vpns;
 
-    private Pce pce;
-
-    private BgpRouter bgpRouter;
-
     private String neighborIp;
     private String neighborName;
 
     Map<String, String> sitesNameToPrefixMap;
 
     boolean networkChanged = false;
+    //BgpRouter bgpRouter;
     
     VpnProvisioner vpnProvisioner;
 
@@ -111,178 +108,6 @@ public class PortalController {
     @Autowired
     public void setTopologyService(TopologyService topologyService) {
         this.topologyService = topologyService;
-    }
-
-    @RequestMapping(value = "/test", method = RequestMethod.GET)
-    public String showTest(Model model, @RequestParam("id") String id) {
-        log.info("Id is: " + id);
-        return "portal";
-    }
-
-    /*
-     * @ExceptionHandler(DataAccessException.class) public String
-     * handleDatabaseException(DataAccessException ex) { return "error"; }
-     */
-
-    @RequestMapping("/")
-    public String showCoCoPortal(Model model) {
-
-        // offersService.throwTestException();
-
-        // switches, links and sites are only for drawing the portal
-        model.addAttribute("switches", this.networkSwitches);
-        model.addAttribute("links", this.networkLinks);
-        model.addAttribute("sites", this.networkSites);
-        // vpns are used in the menu to use vpns
-        model.addAttribute("vpns", this.vpns);
-
-        setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
-        return "portal";
-
-    }
-
-    @RequestMapping("/addsite")
-    public String addSite(Model model) {
-
-        model.addAttribute("site", new NetworkSite());
-        return "addsite";
-    }
-
-    @RequestMapping("/vpns")
-    public String manageVpns(@RequestParam("vpn") String vpnName, Model model) {
-
-        List<Vpn> vpns = vpnsService.getVpns();
-        List<NetworkSite> networkSites = networkSitesService
-                .getNetworkSites(vpnName);
-        List<NetworkSite> freeSites = networkSitesService
-                .getNetworkSites("all");
-
-        log.info("vpns: " + vpnName);
-        model.addAttribute("vpns", vpns);
-        model.addAttribute("vpnname", vpnName);
-        model.addAttribute("sites", networkSites);
-        model.addAttribute("freesites", freeSites);
-        return "vpns";
-    }
-
-    @RequestMapping("/updatevpn")
-    public String updateVpn(
-            @RequestParam(value = "vpn", defaultValue = "") String vpnName,
-            @RequestParam(value = "deletesite", defaultValue = "") String deleteSiteName,
-            @RequestParam(value = "addsite", defaultValue = "") String addSiteName,
-            @RequestParam(value = "showvpn", defaultValue = "") String showVpn,
-            @RequestParam(value = "newvpn", defaultValue = "") String newVpn,
-            @RequestParam(value = "newvpnname", defaultValue = "") String newVpnName,
-            @RequestParam(value = "addswitch", defaultValue = "") String addSwitch,
-            @RequestParam(value = "done", defaultValue = "") String done,
-            Model model) {
-        List<Vpn> vpns = vpnsService.getVpns();
-        List<NetworkSite> networkSites;
-        List<NetworkSite> freeSites = networkSitesService
-                .getNetworkSites("all");
-        List<NetworkSite> vpnSites = networkSitesService.getNetworkSites("vpn");
-        List<NetworkSwitch> networkSwitches = networkSwitchesService
-                .getNetworkSwitches();
-        List<NetworkLink> networkLinks = networkLinksService.getNetworkLinks();
-
-        log.info("updatevpn vpn: " + vpnName);
-        log.info("updatevpn add site: " + addSiteName);
-        log.info("updatevpn delete site: " + deleteSiteName);
-        log.info("new vpn name: " + newVpnName);
-
-        List<NetworkSwitch> networkSwitchesWithNni = networkSwitchesService
-                .getNetworkSwitchesWithNni();
-
-        // System.out.println(networkSitesService.getNetworkSite("site1"));
-
-        // pce.addSiteToVpn(foo, vpnSites);
-
-        model.addAttribute("switches", networkSwitches);
-        model.addAttribute("links", networkLinks);
-        model.addAttribute("freesites", freeSites);
-        model.addAttribute("vpnname", vpnName);
-        model.addAttribute("vpns", vpns);
-        model.addAttribute("vpnname", vpnName);
-        model.addAttribute("ext_switches", networkSwitchesWithNni);
-
-        if (!addSiteName.equals("")) {
-
-        }
-
-        // Create new VPN.
-        if (!newVpn.equals("")) {
-            boolean status = vpnProvisioner.createVpn(newVpnName);
-            log.info("createVpn returns: " + status);
-        }
-
-        // show another VPN
-        if (!showVpn.equals("") || (!done.equals(""))) {
-            networkSites = networkSitesService.getNetworkSites();
-            model.addAttribute("sites", networkSites);
-            return "portal";
-        }
-
-        // manage VPN
-        networkSites = networkSitesService.getNetworkSites(vpnName);
-        model.addAttribute("sites", networkSites);
-        return "updatevpn";
-    }
-
-    @RequestMapping("/doupdatevpn")
-    public String doUpdateVpn(
-            @RequestParam(value = "vpn", defaultValue = "") String vpnName,
-            @RequestParam(value = "deletesite", defaultValue = "") String deleteSiteName,
-            @RequestParam(value = "addsite", defaultValue = "") String addSiteName,
-            @RequestParam(value = "showvpn", defaultValue = "") String showVpn,
-            @RequestParam(value = "newvpn", defaultValue = "") String newVpn,
-            @RequestParam(value = "addswitch", defaultValue = "") String addSwitch,
-            @RequestParam(value = "done", defaultValue = "") String done,
-            Model model) {
-
-        List<NetworkSite> networkSites;
-        List<Vpn> vpns = vpnsService.getVpns();
-
-        List<NetworkSwitch> networkSwitches = networkSwitchesService
-                .getNetworkSwitches();
-        List<NetworkLink> networkLinks = networkLinksService.getNetworkLinks();
-
-        log.info("doupdatevpn vpn: " + vpnName);
-        log.info("doupdatevpn add site: " + addSiteName);
-        log.info("doupdatevpn delete site: " + deleteSiteName);
-        model.addAttribute("switches", networkSwitches);
-        model.addAttribute("links", networkLinks);
-        model.addAttribute("vpnname", vpnName);
-        model.addAttribute("vpns", vpns);
-        model.addAttribute("vpnname", vpnName);
-
-        if (done.equals("done")) {
-            networkSites = networkSitesService.getNetworkSites();
-            model.addAttribute("sites", networkSites);
-            return "portal";
-        }
-
-        if (!addSiteName.equals("")) {
-
-            restAddSiteToVpn(vpnName, addSiteName);
-
-            networkAddSiteToVpn(vpnName, addSiteName);
-        }
-
-        if (!deleteSiteName.equals("")) {
-
-            restDeleteSiteFromVpn(vpnName, deleteSiteName);
-
-            networkDeleteSiteFromVpn(vpnName, deleteSiteName);
-
-        }
-
-        networkSites = networkSitesService.getNetworkSites(vpnName);
-        List<NetworkSite> freeSites = networkSitesService
-                .getNetworkSites("all");
-        model.addAttribute("sites", networkSites);
-        model.addAttribute("freesites", freeSites);
-
-        return "updatevpn";
     }
 
     private RestSite getRestSiteByName(String siteName) {
@@ -326,12 +151,7 @@ public class PortalController {
                 Vpn vpn = vpnsService.getVpn(vpnName);
                 log.info("MPLS label for " + vpnName + " is "
                         + vpn.getMplsLabel());
-//                pce.addSiteToVpn(networkSite, vpn.getMplsLabel(),
-//                        networkSitesService.getNetworkSites(vpnName));
 
-                // bgpRouter.addVpn(aclNum, routeMapNum, seqNum,
-                // networkSite.getIpv4Prefix(), "0.0.0.255", "",
-                // vpnNew.getId());
                 int status = vpnProvisioner.addSite(vpnName, addSiteName,
                         networkSite.getIpv4Prefix(), networkSite.getProviderSwitch()
                                 + ":" + networkSite.getProviderPort());
@@ -349,8 +169,10 @@ public class PortalController {
                 Vpn vpn = vpnsService.getVpn(vpnName);
                 log.info("MPLS label for " + vpnName + " is "
                         + vpn.getMplsLabel());
-                pce.deleteSiteFromVpn(networkSite, vpn.getMplsLabel(),
-                        networkSitesService.getNetworkSites(vpnName));
+                int status = vpnProvisioner.deleteSite(vpnName, deleteSiteName,
+                        networkSite.getIpv4Prefix(), networkSite.getProviderSwitch()
+                                + ":" + networkSite.getProviderPort());
+                log.info("addSite returns: " + status);
             }
         }
     }
@@ -548,7 +370,7 @@ public class PortalController {
                 if (!siteName.contains(neighborName)) {
                     String siteIpPrefix = this.sitesNameToPrefixMap
                             .get(siteName);
-                    bgpRouter.addVpn(siteIpPrefix, this.neighborIp, vpnId);
+                    //bgpRouter.addVpn(siteIpPrefix, this.neighborIp, vpnId);
                 }
             }
         } else {
@@ -561,7 +383,7 @@ public class PortalController {
                 if (!siteName.contains(neighborName)) {
                     String siteIpPrefix = this.sitesNameToPrefixMap
                             .get(siteName);
-                    bgpRouter.delVpn(siteIpPrefix, this.neighborIp, vpnId);
+                    //bgpRouter.delVpn(siteIpPrefix, this.neighborIp, vpnId);
                 }
             }
         }
@@ -570,49 +392,14 @@ public class PortalController {
 
     }
 
-    public void setUpPce(List<NetworkSwitch> networkSwitches,
-            List<NetworkSite> networkSites,
-            List<NetworkSwitch> networkSwitchesWithEnni) {
-
-        class SetupThread implements Runnable {
-
-            RestClient restClient;
-            List<NetworkSwitch> networkSwitches;
-            List<NetworkSite> networkSites;
-            List<NetworkSwitch> networkSwitchesWithEnni;
-
-            public SetupThread(RestClient restClient,
-                    List<NetworkSwitch> networkSwitches,
-                    List<NetworkSite> networkSites,
-                    List<NetworkSwitch> networkSwitchesWithEnni) {
-                this.restClient = restClient;
-                this.networkSwitches = networkSwitches;
-                this.networkSites = networkSites;
-                this.networkSwitchesWithEnni = networkSwitchesWithEnni;
-            }
-
-            public void run() {
-                pce = new Pce(restClient, networkSwitches, networkSites,
-                        networkSwitchesWithEnni);
-                pce.setupCoreForwarding();
-            }
-        }
-
-        String controllerUrl = env.getProperty("controller.url");
-        RestClient restClient = new RestClient(controllerUrl);
-        Runnable setupThreadRunnable = new SetupThread(restClient,
-                networkSwitches, networkSites, networkSwitchesWithEnni);
-        log.debug("Starting core provisioning thread");
-        new Thread(setupThreadRunnable).start();
-        log.debug("Started core provisioning thread");
-    }
-
+    
     public void initializeNetworkSitesData(boolean doGetSites) {
         if (doGetSites) {
             this.networkSites = networkSitesService.getNetworkSites();
         }
-
-        setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
+        
+        String controllerUrl = env.getProperty("controller.url");
+        vpnProvisioner = new VpnProvisioner(controllerUrl);
 
         List<Vpn> vpnsFromDao = vpnsService.getVpns();
 
@@ -675,9 +462,7 @@ public class PortalController {
         this.neighborIp = env.getProperty("bgpNeighborIps");
         this.neighborName = env.getProperty("neighborName");
         
-        String controllerUrl = env.getProperty("controller.url");
-        vpnProvisioner = new VpnProvisioner(controllerUrl);
-
+        vpnProvisioner.createVpn("vpn1");
         return "everything initialized succesfully";
 
     }

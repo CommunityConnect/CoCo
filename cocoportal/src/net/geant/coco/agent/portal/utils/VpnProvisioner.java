@@ -124,6 +124,9 @@ public class VpnProvisioner {
         Vpn vpn = new Vpn(name, "true", "fast-reroute");
         VpnIntents vpnIntents = new VpnIntents(vpn);
         String jsonData = gson.toJson(vpnIntents);
+        
+        jsonData = "{ \"vpns\": " + jsonData + " }";
+        
         log.info("json data = " + jsonData);
 
         ClientResponse response = null;
@@ -175,4 +178,18 @@ public class VpnProvisioner {
         log.info("json vpn response is " + response.getStatus());
         return response.getStatus();
     }
+
+	public int deleteSite(String vpnName, String siteName, String ipPrefix, String switchPortId) {
+		Gson gson = new Gson();
+        Input input = new Input(vpnName, siteName, ipPrefix, switchPortId);
+        String jsonData = gson.toJson(input);
+        log.info("json data = " + jsonData);
+        ClientResponse response = service
+                .path("operations/vpnintent:remove-vpn-endpoint")
+                .type(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .post(ClientResponse.class, jsonData);
+        log.info("json vpn response is " + response.getStatus());
+        return response.getStatus();
+	}
 }

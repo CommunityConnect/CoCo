@@ -138,7 +138,8 @@ function drawNet(nodes,edges) {
 function colorNodeWithId(idNumber, typeOfColoring) {
 	var newColor;
 	if (typeOfColoring == 1) {
-		newColor = '#D2E5FF';
+		newColor = '#97C2FC';
+		//newColor = '#D2E5FF';
 	}
 	else {
 		newColor = '#FF9289';

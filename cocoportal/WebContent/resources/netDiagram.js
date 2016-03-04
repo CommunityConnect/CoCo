@@ -123,6 +123,10 @@ function drawNet(nodes,edges) {
     };
     network = new vis.Network(container, data, options);
 	
+    clusterSwitches(network);
+    
+    //colorNodeWithId(1);
+
 	/*
 	network.on("click", function (params) {
         params.event = "[original event]";
@@ -130,3 +134,26 @@ function drawNet(nodes,edges) {
 		//document.getElementById('eventSpan').innerHTML( '<h2>Click event:</h2>' + JSON.stringify(params, null, 4) );
     }); */
 };
+
+function colorNodeWithId(idNumber, typeOfColoring) {
+	var newColor;
+	if (typeOfColoring == 1) {
+		newColor = '#97C2FC';
+		//newColor = '#D2E5FF';
+	}
+	else {
+		newColor = '#FF9289';
+	}
+    
+    nodes.update([{id: idNumber, color:{background:newColor}}]);
+}
+
+function clusterSwitches(network) {
+    var clusterOptions = {
+        joinCondition:function(childOptions) {
+            return childOptions.group == "SWITCH";
+        },
+        clusterNodeProperties: {id:'network', label:'network', borderWidth:3, shape:'eclipse', image:'images/cloud.png'}
+    };
+    network.cluster(clusterOptions);
+}

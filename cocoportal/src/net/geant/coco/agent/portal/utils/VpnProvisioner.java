@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
+
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
+
 import javax.ws.rs.core.UriBuilder;
 
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +36,10 @@ import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
  *
  */
 @Slf4j
+@PropertySource("classpath:/net/geant/coco/agent/portal/props/config.properties")
 public class VpnProvisioner {
     private WebResource service;
+    private Environment env;
 
     private class Vpn {
         @SerializedName("vpn-name")
@@ -93,7 +98,7 @@ public class VpnProvisioner {
 
     /**
      * Initializes VpnProvisioner object. Set URL of OpenDaylight controller.
-     * Set connecting and reading timouts.
+     * Set connecting and reading timeouts.
      */
     public VpnProvisioner() {
         ClientConfig config = new DefaultClientConfig();
@@ -102,7 +107,8 @@ public class VpnProvisioner {
         client.setReadTimeout(TIMEOUT);
         client.addFilter(new HTTPBasicAuthFilter("admin", "admin"));
         // FIXME get IP from config file
-        URI uri = UriBuilder.fromUri("http://192.168.56.125:8181/restconf")
+        String controllerUrl = env.getProperty("controller.url");
+        URI uri = UriBuilder.fromUri(controllerUrl)
                 .build();
         service = client.resource(uri);
     }
@@ -120,6 +126,9 @@ public class VpnProvisioner {
         Vpn vpn = new Vpn(name, "true", "fast-reroute");
         VpnIntents vpnIntents = new VpnIntents(vpn);
         String jsonData = gson.toJson(vpnIntents);
+        
+        jsonData = "{ \"vpns\": " + jsonData + " }";
+        
         log.info("json data = " + jsonData);
 
         ClientResponse response = null;
@@ -171,4 +180,18 @@ public class VpnProvisioner {
         log.info("json vpn response is " + response.getStatus());
         return response.getStatus();
     }
+
+	public int deleteSite(String vpnName, String siteName, String ipPrefix, String switchPortId) {
+		Gson gson = new Gson();
+        Input input = new Input(vpnName, siteName, ipPrefix, switchPortId);
+        String jsonData = gson.toJson(input);
+        log.info("json data = " + jsonData);
+        ClientResponse response = service
+                .path("operations/vpnintent:remove-vpn-endpoint")
+                .type(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .post(ClientResponse.class, jsonData);
+        log.info("json vpn response is " + response.getStatus());
+        return response.getStatus();
+	}
 }

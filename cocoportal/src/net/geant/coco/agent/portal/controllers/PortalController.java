@@ -210,7 +210,7 @@ public class PortalController {
         // Create new VPN.
         if (!newVpn.equals("")) {
             VpnProvisioner vpnProvisioner = new VpnProvisioner();
-            int status = vpnProvisioner.createVpn(newVpnName);
+            boolean status = vpnProvisioner.createVpn(newVpnName);
             log.info("createVpn returns: " + status);
         }
 

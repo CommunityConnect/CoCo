@@ -123,6 +123,7 @@ function drawNet(nodes,edges) {
     };
     network = new vis.Network(container, data, options);
 	
+    clusterSwitches(network);
 	/*
 	network.on("click", function (params) {
         params.event = "[original event]";
@@ -130,3 +131,14 @@ function drawNet(nodes,edges) {
 		//document.getElementById('eventSpan').innerHTML( '<h2>Click event:</h2>' + JSON.stringify(params, null, 4) );
     }); */
 };
+
+
+function clusterSwitches(network) {
+    var clusterOptions = {
+        joinCondition:function(childOptions) {
+            return childOptions.group == "SWITCH";
+        },
+        clusterNodeProperties: {id:'network', borderWidth:3, shape:'database'}
+    };
+    network.cluster(clusterOptions);
+}

@@ -100,7 +100,7 @@ public class VpnProvisioner {
      * Initializes VpnProvisioner object. Set URL of OpenDaylight controller.
      * Set connecting and reading timeouts.
      */
-    public VpnProvisioner() {
+    public VpnProvisioner(String controllerUrl) {
         ClientConfig config = new DefaultClientConfig();
         Client client = Client.create(config);
         client.setConnectTimeout(TIMEOUT);

@@ -74,16 +74,15 @@ public class PortalController {
     List<NetworkSite> networkSites;
     List<Vpn> vpns;
 
-    private Pce pce;
-
-    private BgpRouter bgpRouter;
-
     private String neighborIp;
     private String neighborName;
 
     Map<String, String> sitesNameToPrefixMap;
 
     boolean networkChanged = false;
+    //BgpRouter bgpRouter;
+    
+    VpnProvisioner vpnProvisioner;
 
     @Autowired
     public void setNetworkSwitchService(
@@ -325,13 +324,7 @@ public class PortalController {
                 Vpn vpn = vpnsService.getVpn(vpnName);
                 log.info("MPLS label for " + vpnName + " is "
                         + vpn.getMplsLabel());
-//                pce.addSiteToVpn(networkSite, vpn.getMplsLabel(),
-//                        networkSitesService.getNetworkSites(vpnName));
 
-                // bgpRouter.addVpn(aclNum, routeMapNum, seqNum,
-                // networkSite.getIpv4Prefix(), "0.0.0.255", "",
-                // vpnNew.getId());
-                VpnProvisioner vpnProvisioner = new VpnProvisioner();
                 int status = vpnProvisioner.addSite(vpnName, addSiteName,
                         networkSite.getIpv4Prefix(), networkSite.getProviderSwitch()
                                 + ":" + networkSite.getProviderPort());
@@ -349,8 +342,10 @@ public class PortalController {
                 Vpn vpn = vpnsService.getVpn(vpnName);
                 log.info("MPLS label for " + vpnName + " is "
                         + vpn.getMplsLabel());
-                pce.deleteSiteFromVpn(networkSite, vpn.getMplsLabel(),
-                        networkSitesService.getNetworkSites(vpnName));
+                int status = vpnProvisioner.deleteSite(vpnName, deleteSiteName,
+                        networkSite.getIpv4Prefix(), networkSite.getProviderSwitch()
+                                + ":" + networkSite.getProviderPort());
+                log.info("addSite returns: " + status);
             }
         }
     }
@@ -378,6 +373,7 @@ public class PortalController {
                 nodeSet.add(networkInterface.neighbour);
             }
         }
+        
         visJson.append("{\"nodes\" : [ ");
         for (NetworkElement networkElement : nodeSet) {
             int fakeId = 0;
@@ -387,6 +383,10 @@ public class PortalController {
             } else if (networkElement.nodeType
                     .equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
                 fakeId = 100 + networkElement.id;
+                
+                //TODO continue to ignore external as sites
+                continue;
+                
             } else if (networkElement.nodeType
                     .equals(NetworkElement.NODE_TYPE.SWITCH)) {
                 fakeId = 200 + networkElement.id;
@@ -502,14 +502,19 @@ public class PortalController {
         sitesToRemove.removeAll(vpnNew.getSites());
 
         for (RestSite restSite : sitesToAdd) {
-            restAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
-            networkAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
-        }
-
-        for (RestSite restSite : sitesToRemove) {
-            restDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
-            networkDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
-        }
+    		restAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
+		}
+    	
+    	for (RestSite restSite : sitesToRemove) {
+    		restDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());	
+		}
+    	
+    	for (RestSite restSite : sitesToAdd) {
+        	networkAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
+		}
+    	for (RestSite restSite : sitesToRemove) {
+    		networkDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
+		}
 
         return restVpnData.get(vpnId);
     }
@@ -538,7 +543,7 @@ public class PortalController {
                 if (!siteName.contains(neighborName)) {
                     String siteIpPrefix = this.sitesNameToPrefixMap
                             .get(siteName);
-                    bgpRouter.addVpn(siteIpPrefix, this.neighborIp, vpnId);
+                    //bgpRouter.addVpn(siteIpPrefix, this.neighborIp, vpnId);
                 }
             }
         } else {
@@ -551,7 +556,7 @@ public class PortalController {
                 if (!siteName.contains(neighborName)) {
                     String siteIpPrefix = this.sitesNameToPrefixMap
                             .get(siteName);
-                    bgpRouter.delVpn(siteIpPrefix, this.neighborIp, vpnId);
+                    //bgpRouter.delVpn(siteIpPrefix, this.neighborIp, vpnId);
                 }
             }
         }
@@ -560,49 +565,14 @@ public class PortalController {
 
     }
 
-    public void setUpPce(List<NetworkSwitch> networkSwitches,
-            List<NetworkSite> networkSites,
-            List<NetworkSwitch> networkSwitchesWithEnni) {
-
-        class SetupThread implements Runnable {
-
-            RestClient restClient;
-            List<NetworkSwitch> networkSwitches;
-            List<NetworkSite> networkSites;
-            List<NetworkSwitch> networkSwitchesWithEnni;
-
-            public SetupThread(RestClient restClient,
-                    List<NetworkSwitch> networkSwitches,
-                    List<NetworkSite> networkSites,
-                    List<NetworkSwitch> networkSwitchesWithEnni) {
-                this.restClient = restClient;
-                this.networkSwitches = networkSwitches;
-                this.networkSites = networkSites;
-                this.networkSwitchesWithEnni = networkSwitchesWithEnni;
-            }
-
-            public void run() {
-                pce = new Pce(restClient, networkSwitches, networkSites,
-                        networkSwitchesWithEnni);
-                pce.setupCoreForwarding();
-            }
-        }
-
-        String controllerUrl = env.getProperty("controller.url");
-        RestClient restClient = new RestClient(controllerUrl);
-        Runnable setupThreadRunnable = new SetupThread(restClient,
-                networkSwitches, networkSites, networkSwitchesWithEnni);
-        log.debug("Starting core provisioning thread");
-        new Thread(setupThreadRunnable).start();
-        log.debug("Started core provisioning thread");
-    }
-
+    
     public void initializeNetworkSitesData(boolean doGetSites) {
         if (doGetSites) {
             this.networkSites = networkSitesService.getNetworkSites();
         }
-
-        setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
+        
+        String controllerUrl = env.getProperty("controller.url");
+        vpnProvisioner = new VpnProvisioner(controllerUrl);
 
         List<Vpn> vpnsFromDao = vpnsService.getVpns();
 
@@ -650,20 +620,22 @@ public class PortalController {
         this.vpns = vpnsService.getVpns();
 
         log.info("Initialize PCE object");
-        String bgpIp = env.getProperty("ip");
-        bgpRouter = new BgpRouter(bgpIp, 7644);
+        //String bgpIp = env.getProperty("ip");
+        //bgpRouter = new BgpRouter(bgpIp, 7644);
 
         initializeNetworkSitesData(false);
 
-        Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService,
-                networkLinksService, networkSitesService, bgpRouter, this);
-        log.debug("Starting bgp thread");
-        new Thread(bgpThreadRunnable).start();
-        log.debug("Started bgp thread");
+        // INTENT - disable bgp
+//        Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService,
+//                networkLinksService, networkSitesService, bgpRouter, this);
+//        log.debug("Starting bgp thread");
+//        new Thread(bgpThreadRunnable).start();
+//        log.debug("Started bgp thread");
 
         this.neighborIp = env.getProperty("bgpNeighborIps");
         this.neighborName = env.getProperty("neighborName");
-
+        
+        vpnProvisioner.createVpn("vpn1");
         return "everything initialized succesfully";
 
     }

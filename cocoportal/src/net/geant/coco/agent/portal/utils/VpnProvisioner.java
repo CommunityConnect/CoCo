@@ -7,6 +7,7 @@ import java.util.List;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status.Family;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 
@@ -39,7 +40,6 @@ import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 @PropertySource("classpath:/net/geant/coco/agent/portal/props/config.properties")
 public class VpnProvisioner {
     private WebResource service;
-    private Environment env;
 
     private class Vpn {
         @SerializedName("vpn-name")
@@ -107,7 +107,6 @@ public class VpnProvisioner {
         client.setReadTimeout(TIMEOUT);
         client.addFilter(new HTTPBasicAuthFilter("admin", "admin"));
         // FIXME get IP from config file
-        String controllerUrl = env.getProperty("controller.url");
         URI uri = UriBuilder.fromUri(controllerUrl)
                 .build();
         service = client.resource(uri);

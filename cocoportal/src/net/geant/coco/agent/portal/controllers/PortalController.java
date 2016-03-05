@@ -133,7 +133,7 @@ public class PortalController {
         // vpns are used in the menu to use vpns
         model.addAttribute("vpns", this.vpns);
 
-        setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
+        //setUpPce(networkSwitches, networkSites, networkSwitchesWithEnni);
         return "portal";
 
     }
@@ -208,7 +208,8 @@ public class PortalController {
 
         // Create new VPN.
         if (!newVpn.equals("")) {
-            VpnProvisioner vpnProvisioner = new VpnProvisioner();
+            String controllerUrl = env.getProperty("controller.url");
+            VpnProvisioner vpnProvisioner = new VpnProvisioner(controllerUrl);
             boolean result = vpnProvisioner.createVpn(newVpnName);
             log.info("createVpn returns: " + result);
         }

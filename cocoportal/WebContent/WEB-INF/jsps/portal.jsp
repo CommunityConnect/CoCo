@@ -161,15 +161,11 @@
 
 		<div id="vpns">
 			<div id="vpns-inner">
-				<h3>Provisioned VPNs:</h3>
+				<h3>Manage VPNs</h3>
 				<form action="${pageContext.request.contextPath}/updatevpn"
 					method="post">
 					<c:forEach var="vpn" items="${vpns}">
-						<input type='radio' name='showvpn'
-							value='<c:out value="${vpn.name}"></c:out>'
-							onclick='this.form.submit()'>
-						<c:out value="${vpn.name}"></c:out>
-						<button name="vpn" value="<c:out value="${vpn.name}"></c:out>">update</button>
+						<button type="button" onclick='this.form.submit()' name="vpn" value="<c:out value="${vpn.name}"></c:out>">update ${vpn.name}</button>
 						<br>
 					</c:forEach>
 					<input type="text" name="newvpnname">

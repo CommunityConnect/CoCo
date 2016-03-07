@@ -209,8 +209,7 @@ public class PortalController {
         // Create new VPN.
         if (!newVpn.equals("")) {
             String controllerUrl = env.getProperty("controller.url");
-            VpnProvisioner vpnProvisioner = new VpnProvisioner(controllerUrl);
-            boolean result = vpnProvisioner.createVpn(newVpnName);
+            boolean result = vpnsService.createVpn(controllerUrl, newVpnName);
             log.info("createVpn returns: " + result);
         }
 

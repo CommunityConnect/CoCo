@@ -7,9 +7,7 @@ import java.util.List;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status.Family;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.core.env.Environment;
 
 import javax.ws.rs.core.UriBuilder;
 
@@ -99,6 +97,10 @@ public class VpnProvisioner {
     /**
      * Initializes VpnProvisioner object. Set URL of OpenDaylight controller.
      * Set connecting and reading timeouts.
+     * 
+     * @param controllerUrl
+     *            URL of the OpenDaylight controller, e.g.
+     *            http://127.0.0.1:8181/restconf
      */
     public VpnProvisioner(String controllerUrl) {
         ClientConfig config = new DefaultClientConfig();
@@ -106,9 +108,8 @@ public class VpnProvisioner {
         client.setConnectTimeout(TIMEOUT);
         client.setReadTimeout(TIMEOUT);
         client.addFilter(new HTTPBasicAuthFilter("admin", "admin"));
-        // FIXME get IP from config file
-        URI uri = UriBuilder.fromUri(controllerUrl)
-                .build();
+        log.info("controller URL is " + controllerUrl);
+        URI uri = UriBuilder.fromUri(controllerUrl).build();
         service = client.resource(uri);
     }
 
@@ -125,9 +126,9 @@ public class VpnProvisioner {
         Vpn vpn = new Vpn(name, "true", "fast-reroute");
         VpnIntents vpnIntents = new VpnIntents(vpn);
         String jsonData = gson.toJson(vpnIntents);
-        
-        jsonData = "{ \"vpns\": " + jsonData + " }";
-        
+
+        //jsonData = "{ \"vpns\": " + jsonData + " }";
+
         log.info("json data = " + jsonData);
 
         ClientResponse response = null;
@@ -180,8 +181,9 @@ public class VpnProvisioner {
         return response.getStatus();
     }
 
-	public int deleteSite(String vpnName, String siteName, String ipPrefix, String switchPortId) {
-		Gson gson = new Gson();
+    public int deleteSite(String vpnName, String siteName, String ipPrefix,
+            String switchPortId) {
+        Gson gson = new Gson();
         Input input = new Input(vpnName, siteName, ipPrefix, switchPortId);
         String jsonData = gson.toJson(input);
         log.info("json data = " + jsonData);
@@ -192,5 +194,5 @@ public class VpnProvisioner {
                 .post(ClientResponse.class, jsonData);
         log.info("json vpn response is " + response.getStatus());
         return response.getStatus();
-	}
+    }
 }

@@ -63,6 +63,15 @@ public class VpnProvisioner {
         }
     }
 
+    private class Vpns {
+        @SerializedName("vpns")
+        private VpnIntents vpnIntents;
+
+        private Vpns(VpnIntents vpnIntents) {
+            this.vpnIntents = vpnIntents;
+        }
+    }
+
     private class VpnSite {
         @SerializedName("vpn-name")
         private String vpnName;
@@ -127,7 +136,7 @@ public class VpnProvisioner {
         VpnIntents vpnIntents = new VpnIntents(vpn);
         String jsonData = gson.toJson(vpnIntents);
 
-        //jsonData = "{ \"vpns\": " + jsonData + " }";
+        // jsonData = "{ \"vpns\": " + jsonData + " }";
 
         log.info("json data = " + jsonData);
 
@@ -150,6 +159,41 @@ public class VpnProvisioner {
         }
 
         return isSuccessful;
+    }
+
+    /**
+     * This method get a list of all known VPN names in the OpenDaylight
+     * controller and returns a list of names.
+     * 
+     * @return Returns a List<String> containing all existing VPN names or null
+     *         when no VPNs are configured yet in OpenDaylight.
+     */
+    public List<String> getVpnNames() {
+        boolean isSuccessful = true;
+        Gson gson = new Gson();
+        List<String> vpnNames = new ArrayList<String>();
+        try {
+            String s = service.path("config/vpnintent:vpns")
+                    .type(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON).get(String.class);
+            log.info("json vpn response is " + s);
+            Vpns vpns = gson.fromJson(s, Vpns.class);
+            for (Vpn vpn : vpns.vpnIntents.vpnIntents) {
+                log.info("vpns = " + vpn.vpnName);
+                vpnNames.add(vpn.vpnName);
+            }
+        } catch (UniformInterfaceException e) {
+            log.info(e.getMessage());
+            isSuccessful = false;
+        } catch (ClientHandlerException e) {
+            log.info(e.getMessage());
+            isSuccessful = false;
+        }
+        if (isSuccessful) {
+            return vpnNames;
+        } else {
+            return null;
+        }
     }
 
     /**

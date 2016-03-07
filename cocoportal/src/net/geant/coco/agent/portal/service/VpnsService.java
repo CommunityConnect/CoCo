@@ -1,5 +1,6 @@
 package net.geant.coco.agent.portal.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,29 @@ public class VpnsService {
         this.vpnDao = vpnDao;
     }
 
-    public List<Vpn> getVpns() {
-        return vpnDao.getVpns();
+    /**
+     * @param controllerUrl
+     *            URL of the OpenDaylight controller, e.g.
+     *            http://127.0.0.1:8181/restconf
+     * @return List<Vpn> of all VPNs configured in OpenDaylight, or null when no
+     *         VPN is configured yet
+     */
+    public List<Vpn> getVpns(String controllerUrl) {
+        VpnProvisioner vpnProvisioner = new VpnProvisioner(controllerUrl);
+        List<String> vpnNames = vpnProvisioner.getVpnNames();
+        if (vpnNames == null) {
+            return null;
+        }
+        List<Vpn> vpns = new ArrayList<Vpn>();
+        for (String name : vpnNames) {
+            Vpn vpn = new Vpn();
+            vpn.setId(0); // not used
+            vpn.setName(name);
+            vpn.setMplsLabel(0); // not used
+            vpns.add(vpn);
+        }
+        // return vpnDao.getVpns();
+        return vpns;
     }
 
     public Vpn getVpn(String vpnName) {
@@ -42,7 +64,7 @@ public class VpnsService {
         VpnProvisioner vpnProvisioner = new VpnProvisioner(controllerUrl);
         boolean result = vpnProvisioner.createVpn(name);
         log.info("createVpn returns: " + result);
-        //return vpnDao.createVpn(name);
+        // return vpnDao.createVpn(name);
         return result;
     }
 

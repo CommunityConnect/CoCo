@@ -99,14 +99,15 @@ public class TestApp {
 		vpnsService = new VpnsService();
 		vpnsService.setVpnDao(vpnsDao);
 		
+        String controllerUrl = "http://134.221.121.203:8181/restconf";
+		
 		List<NetworkSwitch> networkSwitches = networkSwitchesService.getNetworkSwitches();
 		List<NetworkSwitch> networkSwitchesWithEnni = networkSwitchesService.getNetworkSwitchesWithNni();
 		List<NetworkLink> networkLinks = networkLinksService.getNetworkLinks();
         List<NetworkSite> networkSites = networkSitesService.getNetworkSites();
-        List<Vpn> vpns = vpnsService.getVpns();
+        List<Vpn> vpns = vpnsService.getVpns(controllerUrl);
         
         
-        String controllerUrl = "http://134.221.121.203:8181/restconf";
 		RestClient restClient = new RestClient(controllerUrl);
 		
         log.info("Creating Pce object...");

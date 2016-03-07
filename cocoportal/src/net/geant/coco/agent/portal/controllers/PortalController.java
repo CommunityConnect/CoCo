@@ -1,19 +1,13 @@
 package net.geant.coco.agent.portal.controllers;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.PostConstruct;
-import javax.validation.Valid;
-
-import net.geant.coco.agent.portal.bgp.BgpRouteEntry;
-import net.geant.coco.agent.portal.bgp.BgpRouter;
 import net.geant.coco.agent.portal.dao.NetworkElement;
 import net.geant.coco.agent.portal.dao.NetworkInterface;
 import net.geant.coco.agent.portal.dao.NetworkLink;
@@ -28,22 +22,14 @@ import net.geant.coco.agent.portal.service.NetworkSitesService;
 import net.geant.coco.agent.portal.service.NetworkSwitchesService;
 import net.geant.coco.agent.portal.service.TopologyService;
 import net.geant.coco.agent.portal.service.VpnsService;
-import net.geant.coco.agent.portal.utils.NodeType;
-import net.geant.coco.agent.portal.utils.Pce;
-import net.geant.coco.agent.portal.utils.RestClient;
 import net.geant.coco.agent.portal.utils.VpnProvisioner;
-import net.geant.coco.agent.portal.threads.BgpThread;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -74,7 +60,7 @@ public class PortalController {
     List<NetworkSite> networkSites;
     List<Vpn> vpns;
 
-    private String neighborIp;
+    //private String neighborIp;
     private String neighborName;
 
     Map<String, String> sitesNameToPrefixMap;
@@ -148,7 +134,8 @@ public class PortalController {
     @RequestMapping("/vpns")
     public String manageVpns(@RequestParam("vpn") String vpnName, Model model) {
 
-        List<Vpn> vpns = vpnsService.getVpns();
+        String controllerUrl = env.getProperty("controller.url");
+        List<Vpn> vpns = vpnsService.getVpns(controllerUrl);
         List<NetworkSite> networkSites = networkSitesService
                 .getNetworkSites(vpnName);
         List<NetworkSite> freeSites = networkSitesService
@@ -173,11 +160,12 @@ public class PortalController {
             @RequestParam(value = "addswitch", defaultValue = "") String addSwitch,
             @RequestParam(value = "done", defaultValue = "") String done,
             Model model) {
-        List<Vpn> vpns = vpnsService.getVpns();
+        String controllerUrl = env.getProperty("controller.url");
+        List<Vpn> vpns = vpnsService.getVpns(controllerUrl);
         List<NetworkSite> networkSites;
         List<NetworkSite> freeSites = networkSitesService
                 .getNetworkSites("all");
-        List<NetworkSite> vpnSites = networkSitesService.getNetworkSites("vpn");
+        //List<NetworkSite> vpnSites = networkSitesService.getNetworkSites("vpn");
         List<NetworkSwitch> networkSwitches = networkSwitchesService
                 .getNetworkSwitches();
         List<NetworkLink> networkLinks = networkLinksService.getNetworkLinks();
@@ -208,7 +196,6 @@ public class PortalController {
 
         // Create new VPN.
         if (!newVpn.equals("")) {
-            String controllerUrl = env.getProperty("controller.url");
             boolean result = vpnsService.createVpn(controllerUrl, newVpnName);
             log.info("createVpn returns: " + result);
         }
@@ -238,7 +225,8 @@ public class PortalController {
             Model model) {
 
         List<NetworkSite> networkSites;
-        List<Vpn> vpns = vpnsService.getVpns();
+        String controllerUrl = env.getProperty("controller.url");
+        List<Vpn> vpns = vpnsService.getVpns(controllerUrl);
 
         List<NetworkSwitch> networkSwitches = networkSwitchesService
                 .getNetworkSwitches();
@@ -574,7 +562,11 @@ public class PortalController {
         String controllerUrl = env.getProperty("controller.url");
         vpnProvisioner = new VpnProvisioner(controllerUrl);
 
-        List<Vpn> vpnsFromDao = vpnsService.getVpns();
+        List<Vpn> vpnsFromDao = vpnsService.getVpns(controllerUrl);
+        // FIXME just avoiding null reference here
+        if (vpnsFromDao == null) {
+            return;
+        }
 
         log.info("Initialize rest data");
         // TODO - this is from database, synch with state in vpnData
@@ -617,7 +609,8 @@ public class PortalController {
                 .getNetworkSwitchesWithNni();
         this.networkLinks = networkLinksService.getNetworkLinks();
         this.networkSites = networkSitesService.getNetworkSites();
-        this.vpns = vpnsService.getVpns();
+        String controllerUrl = env.getProperty("controller.url");
+        this.vpns = vpnsService.getVpns(controllerUrl);
 
         log.info("Initialize PCE object");
         //String bgpIp = env.getProperty("ip");
@@ -632,7 +625,7 @@ public class PortalController {
 //        new Thread(bgpThreadRunnable).start();
 //        log.debug("Started bgp thread");
 
-        this.neighborIp = env.getProperty("bgpNeighborIps");
+        //this.neighborIp = env.getProperty("bgpNeighborIps");
         this.neighborName = env.getProperty("neighborName");
         
         vpnProvisioner.createVpn("vpn1");

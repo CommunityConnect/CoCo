@@ -109,6 +109,72 @@
 			</div>
 		</div>
 		
+
+		<!-- Modal -->
+		<div class="modal fade" id="addVPNModal" role="dialog">
+			<div class="modal-dialog">
+			
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class="modal-title">Add VPN</h4>
+					</div>
+					<div class="modal-body">
+						<p>Create a new VPN</p>
+					
+					
+					<div class="form-group">
+					    <label for="vpnNameInput">Name</label>
+					    <input type="text" class="form-control" id="vpnNameInput" placeholder="VPN from TNO to Surfnet">
+					</div>
+					
+					<div class="checkbox">
+				        <label>
+				          <input type="checkbox" id="vpnAddPathProtection"> Enable path protection
+				        </label>
+				      </div>
+										
+					<div class="form-group">									
+						  <label for="sel2">Failover type:</label>
+						  <select class="form-control" id="vpnAddFailoverType">
+							<option>slow-reroute</option>
+							<option>fast-reroute</option>
+						  </select>
+					</div>	
+					
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal" id="btnAddVpn">Yes</button>
+					</div>
+				</div>
+			  
+			</div>
+		</div>
+		
+		
+		<!-- Modal -->
+		<div class="modal fade" id="delVPNModal" role="dialog">
+			<div class="modal-dialog">
+			
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class="modal-title">Delete VPN</h4>
+					</div>
+					<div class="modal-body">
+						<p>Delete selected VPN ?</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal" id="btnDelVpn">Yes</button>
+					</div>
+				</div>
+			  
+			</div>
+		</div>
+
+
 		
 		<!-- Modal -->
 		<div class="modal fade" id="enniModal" role="dialog">
@@ -199,8 +265,8 @@
 					<!-- vpns are added here --> 
 				</ul>
 	
-					<button type="button" class="btn btn-default">Add</button>
-					<button type="button" class="btn btn-default">Delete</button>
+					<button type="button" class="btn btn-default" data-toggle="modal" data-target="#addVPNModal" >Add</button>
+					<button type="button" class="btn btn-default" data-toggle="modal" data-target="#delVPNModal">Delete</button>
 
 				
 			</div>
@@ -489,6 +555,48 @@ $('#del-nodelist').on('click', function(event) {
 });
 
 
+function addVPN()
+{
+	var vpn = {};
+	vpn["id"] = 0;
+	vpn["name"] = $("#vpnNameInput").val();
+	vpn["path-protection"] = $("#vpnAddPathProtection").val().toString();
+	vpn["failover-type"] = $("#vpnAddFailoverType").val();
+	
+	console.log(vpn);
+	
+	console.log(JSON.stringify(vpn));
+	
+	
+	$.postJSON('../rest/vpn/add/', vpn, function(response) {
+		// Do something with the request
+		console.log(response);
+	}, 'json');	
+	
+}
+
+
+function delVPN()
+{
+	var vpn = {};
+		vpn["id"] = parseInt(currentVPN);
+		vpn["name"] = "die";
+		vpn["path-protection"] = "die";
+		vpn["failover-type"] = "fast-reroute";
+	
+	
+	console.log(vpn);
+	
+	console.log(JSON.stringify(vpn));
+	
+	
+	$.postJSON('../rest/vpn/del/', vpn, function(response) {
+		// Do something with the request
+		console.log(response);
+	}, 'json');	
+}
+
+
 function connect_sites()
 {
 	var sitelist = [];	
@@ -620,6 +728,19 @@ function setVpnPrivacy(vpn_id,vpn_public)
 	
 }
 
+
+$('#btnAddVpn').on('click', function(event) {
+	 event.preventDefault(); // To prevent following the link (optional)
+	 addVPN();
+});
+
+$('#btnDelVpn').on('click', function(event) {
+	 event.preventDefault(); // To prevent following the link (optional)
+	 delVPN();
+});
+
+
+//TODO: refactor this very nasty JS monstrosity
 
 //TODO: VPN context
 

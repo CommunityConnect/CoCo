@@ -7,8 +7,8 @@ public class RestVpnURIConstants {
     public static final String UPDATE_VPN = "/rest/vpn/update/{id}";
     public static final String SET_VPN_PRIVACY = "/rest/vpn/setPrivacy/{id}";
     public static final String GET_ALL_VPN = "/rest/vpns";
-    public static final String CREATE_VPN = "/rest/vpn/create";
-    public static final String DELETE_VPN = "/rest/vpn/delete/{id}";
+    public static final String CREATE_VPN = "/rest/vpn/add";
+    public static final String DELETE_VPN = "/rest/vpn/del/{id}";
     public static final String GET_ALL_SITES = "/rest/sites/{id}";
     
     public static final String GET_TOPOLOGY = "/topology";

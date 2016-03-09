@@ -12,37 +12,94 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 public class VpnDao {
     private NamedParameterJdbcTemplate jdbc;
-    private static int mplsLabel = 6000;
 
     @Autowired
     public void setDataSource(DataSource jdbc) {
         this.jdbc = new NamedParameterJdbcTemplate(jdbc);
     }
 
-    public List<Vpn> getVpns() {
-        // VPN with id equal to 1 is special; it contains all free sites
-        return jdbc.query("SELECT * FROM vpns WHERE id != 1",
-                new RowMapper<Vpn>() {
-                    @Override
-                    public Vpn mapRow(ResultSet rs, int rowNum)
-                            throws SQLException {
-                        Vpn vpn = new Vpn();
-
-                        vpn.setId(rs.getInt("id"));
-                        vpn.setName(rs.getString("name"));
-                        vpn.setMplsLabel(rs.getInt("mpls_label"));
-
-                        return vpn;
-                    }
-                });
+    public List<Vpn> getVpns() {    	
+    	String query = "SELECT * FROM vpns";
+        log.trace(query);
+        
+        List<Vpn> vpns = getVpnList(query, null);
+        
+        return vpns;
+    }
+    
+    public Vpn getVpn(String vpnName) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("name", vpnName);
+        
+        String query = "SELECT * FROM vpns WHERE name = :name ;";
+        log.trace(query);
+        
+        List<Vpn> vpns = getVpnList(query, params);
+        
+        if (vpns.isEmpty()) {
+            return null;
+        }
+        
+        return vpns.get(0);
     }
 
+    public Vpn getVpn(int vpnID) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("name", vpnID);
+        
+        String query = "SELECT * FROM vpns WHERE id = :name ;";
+        log.trace(query);
+        
+        List<Vpn> vpns = getVpnList(query, params);
+        
+        if (vpns.isEmpty()) {
+            return null;
+        }
+        
+        return vpns.get(0);
+    }
+    
+    private List<Vpn> getVpnList(String query, SqlParameterSource params) {
+    	if (params == null) {
+    		return jdbc.query(query, new RowMapper<Vpn>() {
+                @Override
+                public Vpn mapRow(ResultSet rs, int rowNum) throws SQLException {
+                    Vpn vpn = new Vpn();
+
+                    vpn.setId(rs.getInt("id"));
+                    vpn.setName(rs.getString("name"));
+                    vpn.setPathProtection(rs.getString("pathProtection"));
+                    vpn.setFailoverType(rs.getString("failoverType"));
+
+                    return vpn;
+                }
+            });
+    	}
+    	else {
+    		return jdbc.query(query, params, new RowMapper<Vpn>() {
+                @Override
+                public Vpn mapRow(ResultSet rs, int rowNum) throws SQLException {
+                    Vpn vpn = new Vpn();
+
+                    vpn.setId(rs.getInt("id"));
+                    vpn.setName(rs.getString("name"));
+                    vpn.setPathProtection(rs.getString("pathProtection"));
+                    vpn.setFailoverType(rs.getString("failoverType"));
+
+                    return vpn;
+                }
+            });
+    	}
+    	
+    }
+    
     /**
      * Insert a new VPN in the MySQL database.
      * 
@@ -50,62 +107,29 @@ public class VpnDao {
      *            Name of the VPN to be inserted
      * @return Return true if the insertion succeeded, false otherwise
      */
-    public boolean createVpn(String name) {
+    public boolean createVpn(Vpn vpn) {
         MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("name", name);
-        params.addValue("mplslabel", mplsLabel++);
-        // FIXME is_public not used
-        String query = "INSERT INTO vpns (`name`, `mpls_label`, `is_public`) "
-                + "VALUES (:name, :mplslabel, '0');";
+        params.addValue("name", vpn.getName());
+        params.addValue("pathProtection", vpn.getPathProtection());
+        params.addValue("failoverType", vpn.getFailoverType());
+        params.addValue("isPublic", 0);
+        
+        String query = "INSERT INTO vpns (`name`, `pathProtection`, `failoverType`, `isPublic`) "
+                + "VALUES (:name, :pathProtection, :failoverType, isPublic);";
         log.info("createVpn " + query);
+        
         return (jdbc.update(query, params) == 1);
     }
-
-    public Vpn getVpn(String vpnName) {
-        MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("name", vpnName);
-        String query = "SELECT * FROM vpns WHERE name = :name ;";
-        log.trace(query);
-        List<Vpn> vpns = jdbc.query(query, params, new RowMapper<Vpn>() {
-            @Override
-            public Vpn mapRow(ResultSet rs, int rowNum) throws SQLException {
-                Vpn vpn = new Vpn();
-
-                vpn.setId(rs.getInt("id"));
-                vpn.setName(rs.getString("name"));
-                vpn.setMplsLabel(rs.getInt("mpls_label"));
-
-                return vpn;
-            }
-        });
-        if (vpns.isEmpty()) {
-            return null;
-        }
-        return vpns.get(0);
-    }
-
-    public Vpn getVpn(int vpnID) {
-        MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("name", vpnID);
-        String query = "SELECT * FROM vpns WHERE id = :name ;";
-        log.trace(query);
-        List<Vpn> vpns = jdbc.query(query, params, new RowMapper<Vpn>() {
-            @Override
-            public Vpn mapRow(ResultSet rs, int rowNum) throws SQLException {
-                Vpn vpn = new Vpn();
-
-                vpn.setId(rs.getInt("id"));
-                vpn.setName(rs.getString("name"));
-                vpn.setMplsLabel(rs.getInt("mpls_label"));
-
-                return vpn;
-            }
-        });
-        if (vpns.isEmpty()) {
-            return null;
-        }
-        return vpns.get(0);
-    }
+    
+    public boolean deleteVpn(int vpnId) {
+    	 MapSqlParameterSource params = new MapSqlParameterSource();
+         params.addValue("id", vpnId);
+         
+         String query = "DELETE FROM vpns WHERE `id` = :id ;";
+         log.info("deleteVpn " + query);
+         
+         return (jdbc.update(query, params) == 1);
+	}
 
     public boolean addSite(String vpnName, String siteName) {
         MapSqlParameterSource params = new MapSqlParameterSource();

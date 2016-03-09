@@ -104,7 +104,7 @@ public class TestApp {
 		List<NetworkSwitch> networkSwitches = networkSwitchesService.getNetworkSwitches();
 		List<NetworkSwitch> networkSwitchesWithEnni = networkSwitchesService.getNetworkSwitchesWithNni();
 		List<NetworkLink> networkLinks = networkLinksService.getNetworkLinks();
-        List<NetworkSite> networkSites = networkSitesService.getNetworkSites();
+        List<NetworkSite> networkSites = new ArrayList<NetworkSite>(networkSitesService.getNetworkSites().values());
         List<Vpn> vpns = vpnsService.getVpns(controllerUrl);
         
         
@@ -305,7 +305,7 @@ public class TestApp {
 	public static void networkAddSiteToVpn(String vpnName, String addSiteName) {
     	vpnsService.addSite(vpnName, addSiteName);
         // find site object
-        for (NetworkSite networkSite : networkSitesService.getNetworkSites()) {
+        for (NetworkSite networkSite : networkSitesService.getNetworkSites().values()) {
             if (networkSite.getName().equals(addSiteName)) {
                 Vpn vpn = vpnsService.getVpn(vpnName);
                 log.info("MPLS label for " + vpnName + " is " + vpn.getMplsLabel());

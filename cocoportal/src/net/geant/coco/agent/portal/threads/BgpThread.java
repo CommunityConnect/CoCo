@@ -99,7 +99,7 @@ public class BgpThread implements Runnable {
 		}
 		
 		if (portalController == null && pce != null) {
-			List<NetworkSite> newNetworkSites = networkSitesService.getNetworkSites();
+			List<NetworkSite> newNetworkSites = new ArrayList<NetworkSite>(networkSitesService.getNetworkSites().values());
 			pce.updatePceElement(newNetworkSites);
 			pce.setupCoreForwarding();
 		}

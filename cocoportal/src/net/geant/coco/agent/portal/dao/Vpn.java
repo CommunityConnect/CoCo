@@ -1,18 +1,28 @@
 package net.geant.coco.agent.portal.dao;
 
-public class Vpn {
-    public Vpn() {
+import java.io.Serializable;
+import java.util.List;
 
-    }
+public class Vpn implements Serializable {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -259509495211419615L;
 
     private int id;
     private String name;
-    private int mplsLabel;
+    private String pathProtection;
+    private String failoverType;
+    private List<NetworkSite> sites;
+    
 
-    public Vpn(String name, int mplsLabel) {
+
+	public Vpn() {
+    }
+	
+    public Vpn(String name) {
         super();
         this.name = name;
-        this.mplsLabel = mplsLabel;
     }
 
     public int getId() {
@@ -23,6 +33,7 @@ public class Vpn {
         this.id = id;
     }
 
+    
     public String getName() {
         return name;
     }
@@ -30,12 +41,32 @@ public class Vpn {
     public void setName(String name) {
         this.name = name;
     }
-
-    public int getMplsLabel() {
-        return mplsLabel;
+    
+    public String getPathProtection() {
+        return pathProtection;
     }
 
-    public void setMplsLabel(int mplsLabel) {
-        this.mplsLabel = mplsLabel;
+    public void setPathProtection(String pathProtection) {
+        this.pathProtection = pathProtection;
     }
+    
+    public String getFailoverType() {
+        return failoverType;
+    }
+
+    public void setFailoverType(String failoverType) {
+        this.failoverType = failoverType;
+    }
+    
+    public List<NetworkSite> getSites() {
+        return sites;
+    }
+    
+    public void setSites(List<NetworkSite> sites) {
+        this.sites = sites;
+    }
+
+    public String toString() {
+		return "vpn(" + String.valueOf(id) + "," + name + ",sites:"+ sites.toString() + ")";
+	}
 }

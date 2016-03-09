@@ -300,8 +300,13 @@ var currentVPN = -1;
 
 // this should be in onload
 populate_vpnlist();
+function clean_vpnlist() {
+	$("#vpn-list").empty();
+}
 
 function populate_vpnlist(){
+	clean_vpnlist();
+	
 	$.getJSON("../rest/vpns", function(data) {
 		var vpns = data;
 		var i;
@@ -560,15 +565,16 @@ function addVPN()
 	var vpn = {};
 	vpn["id"] = 0;
 	vpn["name"] = $("#vpnNameInput").val();
-	vpn["path-protection"] = $("#vpnAddPathProtection").val().toString();
-	vpn["failover-type"] = $("#vpnAddFailoverType").val();
+	vpn["pathProtection"] = $("#vpnAddPathProtection").val().toString();
+	vpn["failoverType"] = $("#vpnAddFailoverType").val();
+	vpn["sites"] = [];
 	
 	console.log(vpn);
 	
 	console.log(JSON.stringify(vpn));
 	
 	
-	$.postJSON('../rest/vpn/add/', vpn, function(response) {
+	$.postJSON('../rest/vpn/add', vpn, function(response) {
 		// Do something with the request
 		console.log(response);
 	}, 'json');	
@@ -579,10 +585,10 @@ function addVPN()
 function delVPN()
 {
 	var vpn = {};
-		vpn["id"] = parseInt(currentVPN);
-		vpn["name"] = "die";
-		vpn["path-protection"] = "die";
-		vpn["failover-type"] = "fast-reroute";
+	vpn["id"] = parseInt(currentVPN);
+	vpn["name"] = "die";
+	vpn["pathProtection"] = "die";
+	vpn["failoverType"] = "fast-reroute";
 	
 	
 	console.log(vpn);
@@ -590,7 +596,7 @@ function delVPN()
 	console.log(JSON.stringify(vpn));
 	
 	
-	$.postJSON('../rest/vpn/del/', vpn, function(response) {
+	$.postJSON('../rest/vpn/del/' + vpn["id"], vpn, function(response) {
 		// Do something with the request
 		console.log(response);
 	}, 'json');	
@@ -732,11 +738,13 @@ function setVpnPrivacy(vpn_id,vpn_public)
 $('#btnAddVpn').on('click', function(event) {
 	 event.preventDefault(); // To prevent following the link (optional)
 	 addVPN();
+	 populate_vpnlist();
 });
 
 $('#btnDelVpn').on('click', function(event) {
 	 event.preventDefault(); // To prevent following the link (optional)
 	 delVPN();
+	 populate_vpnlist();
 });
 
 

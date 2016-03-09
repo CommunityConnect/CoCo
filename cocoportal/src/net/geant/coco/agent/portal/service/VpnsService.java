@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
+import net.geant.coco.agent.portal.dao.NetworkSite;
+import net.geant.coco.agent.portal.dao.NetworkSiteDao;
 import net.geant.coco.agent.portal.dao.Vpn;
 import net.geant.coco.agent.portal.dao.VpnDao;
 import net.geant.coco.agent.portal.utils.VpnProvisioner;
@@ -15,61 +17,50 @@ import org.springframework.stereotype.Service;
 @Service("vpnsService")
 public class VpnsService {
     private VpnDao vpnDao;
-
+    private NetworkSiteDao networkSiteDao;
+    
     @Autowired
     public void setVpnDao(VpnDao vpnDao) {
         this.vpnDao = vpnDao;
     }
+    
+    @Autowired
+    public void setNetworkSiteDao(NetworkSiteDao networkSiteDao) {
+        this.networkSiteDao = networkSiteDao;
+    }
 
-    /**
-     * @param controllerUrl
-     *            URL of the OpenDaylight controller, e.g.
-     *            http://127.0.0.1:8181/restconf
-     * @return List<Vpn> of all VPNs configured in OpenDaylight, or null when no
-     *         VPN is configured yet
-     */
-    public List<Vpn> getVpns(String controllerUrl) {
-        VpnProvisioner vpnProvisioner = new VpnProvisioner(controllerUrl);
-        List<String> vpnNames = vpnProvisioner.getVpnNames();
-        if (vpnNames == null) {
-            return null;
-        }
-        List<Vpn> vpns = new ArrayList<Vpn>();
-        for (String name : vpnNames) {
-            Vpn vpn = new Vpn();
-            vpn.setId(0); // not used
-            vpn.setName(name);
-            vpn.setMplsLabel(0); // not used
-            vpns.add(vpn);
-        }
-        // return vpnDao.getVpns();
+
+    public List<Vpn> getVpns() {
+    	List<Vpn> vpns = vpnDao.getVpns();
+    	
+    	for (Vpn vpn : vpns) {
+			List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
+			vpn.setSites(networkSitesFromVpn);
+		}
+    	
         return vpns;
     }
 
     public Vpn getVpn(String vpnName) {
-        return vpnDao.getVpn(vpnName);
+    	Vpn vpn = vpnDao.getVpn(vpnName);
+    	
+    	List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
+		vpn.setSites(networkSitesFromVpn);
+		
+		return vpn;
     }
-
-    /**
-     * Insert new VPN in the database.
-     * 
-     * @param controllerUrl
-     *            URL of the OpenDaylight controller (e.g.
-     *            http://127.0.0.1:8181/restconf)
-     * @param name
-     *            Name of the VPN to be inserted.
-     * @return Return true if the insertion succeeded, false otherwise.
-     */
-    public boolean createVpn(String controllerUrl, String name) {
-        VpnProvisioner vpnProvisioner = new VpnProvisioner(controllerUrl);
-        boolean result = vpnProvisioner.createVpn(name);
-        log.info("createVpn returns: " + result);
-        // return vpnDao.createVpn(name);
-        return result;
-    }
-
+    
     public Vpn getVpn(int vpnId) {
-        return vpnDao.getVpn(vpnId);
+    	Vpn vpn = vpnDao.getVpn(vpnId);
+    	
+    	List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
+		vpn.setSites(networkSitesFromVpn);
+		
+		return vpn;
+    }
+
+    public boolean createVpn(Vpn vpn) {
+        return vpnDao.createVpn(vpn);
     }
 
     public boolean addSite(String vpnName, String siteName) {
@@ -79,4 +70,8 @@ public class VpnsService {
     public boolean deleteSite(String siteName) {
         return vpnDao.deleteSite(siteName);
     }
+
+	public boolean deleteVpn(int vpnId) {
+		return vpnDao.deleteVpn(vpnId);
+	}
 }

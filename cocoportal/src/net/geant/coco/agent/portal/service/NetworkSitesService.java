@@ -1,6 +1,8 @@
 package net.geant.coco.agent.portal.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.NetworkSiteDao;
@@ -17,8 +19,15 @@ public class NetworkSitesService {
         this.networkSiteDao = networkSiteDao;
     }
 
-    public List<NetworkSite> getNetworkSites() {
-        return networkSiteDao.getNetworkSites();
+    public Map<String, NetworkSite> getNetworkSites() {
+        List<NetworkSite> networkSiteList = networkSiteDao.getNetworkSites();
+        
+        Map<String, NetworkSite> networkSiteToNameMap = new HashMap<>();
+        for (NetworkSite networkSite : networkSiteList) {
+        	networkSiteToNameMap.put(networkSite.getName(), networkSite);
+		}
+        
+		return networkSiteToNameMap;	
     }
     
     public List<NetworkSite> getNetworkSites(String vpnName) {

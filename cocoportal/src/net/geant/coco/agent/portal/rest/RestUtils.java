@@ -1,10 +1,7 @@
-package net.geant.coco.agent.portal.utils;
+package net.geant.coco.agent.portal.rest;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import net.geant.coco.agent.portal.rest.RestSite;
-import net.geant.coco.agent.portal.rest.RestVpn;
 
 public class RestUtils {
 

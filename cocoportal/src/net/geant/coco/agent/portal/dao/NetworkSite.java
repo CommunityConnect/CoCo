@@ -5,13 +5,10 @@ public class NetworkSite extends NetworkElement {
 
     }
 
-    public NetworkSite(int id, String name, int x, int y, String providerSwitch,
+    public NetworkSite(int id, String name, String providerSwitch,
             int providerPort, int customerPort, int vlanId, String ipv4Prefix,
             String macAddress, String vpnName) {
         super(id, name, NODE_TYPE.CUSTOMER);
-        this.name = name;
-        this.x = x;
-        this.y = y;
         this.providerSwitch = providerSwitch;
         this.providerPort = providerPort;
         this.customerPort = customerPort;
@@ -33,10 +30,6 @@ public class NetworkSite extends NetworkElement {
         return result.toString();
       }
 
-    private int id;
-    private String name;
-    private int x;
-    private int y;
     private String providerSwitch;
     private int providerPort;
     private int customerPort;
@@ -44,38 +37,6 @@ public class NetworkSite extends NetworkElement {
     private String ipv4Prefix;
     private String macAddress;
     private String vpnName;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public void setX(int x) {
-        this.x = x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public void setY(int y) {
-        this.y = y;
-    }
 
     public String getProviderSwitch() {
         return providerSwitch;

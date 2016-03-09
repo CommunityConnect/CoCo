@@ -27,9 +27,6 @@ import net.geant.coco.agent.portal.dao.NetworkElement;
 import net.geant.coco.agent.portal.dao.NetworkInterface;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.Vpn;
-import net.geant.coco.agent.portal.rest.RestSite;
-import net.geant.coco.agent.portal.rest.RestUtils;
-import net.geant.coco.agent.portal.rest.RestVpn;
 import net.geant.coco.agent.portal.rest.RestVpnURIConstants;
 import net.geant.coco.agent.portal.service.NetworkSitesService;
 import net.geant.coco.agent.portal.service.TopologyService;
@@ -73,20 +70,24 @@ public class PortalControllerIntent {
 	}
 	
 	private void networkAddSiteToVpn(String vpnName, String addSiteName) {
-		vpnsService.addSite(vpnName, addSiteName);
-		NetworkSite networkSite = networkSites.get(addSiteName);
-		int status = vpnProvisioner.addSite(vpnName, addSiteName, networkSite.getIpv4Prefix(),
-				networkSite.getProviderSwitch() + ":" + networkSite.getProviderPort());
-		log.info("addSite returns: " + status);
+		log.info("networkAddSiteToVpn vpnName=" + vpnName + "siteName=" + addSiteName);
+		
+		vpnsService.addSiteToVpn(vpnName, addSiteName);
+//		NetworkSite networkSite = networkSites.get(addSiteName);
+//		int status = vpnProvisioner.addSite(vpnName, addSiteName, networkSite.getIpv4Prefix(),
+//				networkSite.getProviderSwitch() + ":" + networkSite.getProviderPort());
+//		log.info("addSite returns: " + status);
 
 	}
 
 	private void networkDeleteSiteFromVpn(String vpnName, String deleteSiteName) {
-		vpnsService.deleteSite(deleteSiteName);
-		NetworkSite networkSite = networkSites.get(deleteSiteName);
-		int status = vpnProvisioner.deleteSite(vpnName, deleteSiteName, networkSite.getIpv4Prefix(),
-				networkSite.getProviderSwitch() + ":" + networkSite.getProviderPort());
-		log.info("addSite returns: " + status);
+		log.info("networkAddSiteToVpn vpnName=" + vpnName + "siteName=" + deleteSiteName);
+		
+		vpnsService.deleteSiteFromVpn(vpnName, deleteSiteName);
+//		NetworkSite networkSite = networkSites.get(deleteSiteName);
+//		int status = vpnProvisioner.deleteSite(vpnName, deleteSiteName, networkSite.getIpv4Prefix(),
+//				networkSite.getProviderSwitch() + ":" + networkSite.getProviderPort());
+//		log.info("addSite returns: " + status);
 	}
 	
 	
@@ -112,20 +113,20 @@ public class PortalControllerIntent {
 		for (NetworkElement networkElement : nodeSet) {
 			int fakeId = 0;
 			if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-				fakeId = networkElement.id;
+				fakeId = networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.id;
+				fakeId = 100 + networkElement.getId();
 
 				// TODO continue to ignore external as sites
 				continue;
 
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-				fakeId = 200 + networkElement.id;
+				fakeId = 200 + networkElement.getId();
 			}
 			visJson.append("{\"id\": \"");
 			visJson.append(fakeId);
 			visJson.append("\", \"label\": \"");
-			visJson.append(networkElement.name);
+			visJson.append(networkElement.getName());
 			visJson.append("\", \"group\": \"");
 			visJson.append(networkElement.nodeType);
 			visJson.append("\"}, ");
@@ -142,11 +143,11 @@ public class PortalControllerIntent {
 			networkElement = networkInterface.source;
 			fakeId = 0;
 			if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-				fakeId = networkElement.id;
+				fakeId = networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.id;
+				fakeId = 100 + networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-				fakeId = 200 + networkElement.id;
+				fakeId = 200 + networkElement.getId();
 			}
 			visJson.append("{\"from\": \"");
 			visJson.append(fakeId);
@@ -154,11 +155,11 @@ public class PortalControllerIntent {
 			networkElement = networkInterface.neighbour;
 			fakeId = 0;
 			if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-				fakeId = networkElement.id;
+				fakeId = networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.id;
+				fakeId = 100 + networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-				fakeId = 200 + networkElement.id;
+				fakeId = 200 + networkElement.getId();
 			}
 			visJson.append("\", \"to\": \"");
 			visJson.append(fakeId);
@@ -187,38 +188,32 @@ public class PortalControllerIntent {
 		return vpnsService.getVpn(vpnId);
 	}
 
-//	@RequestMapping(value = RestVpnURIConstants.UPDATE_VPN, method = RequestMethod.POST)
-//	public @ResponseBody RestVpn updateVpn(@PathVariable("id") int vpnId, @RequestBody RestVpn vpn) {
-//		log.info("Start updateVpn. ID=" + vpnId);
-//
-//		Assert.isTrue(vpn.getId() == vpnId, "VPN id and ID from the rest path are not the same. REST PATH:"
-//				+ String.valueOf(vpnId) + " VPN ID" + String.valueOf(vpn.getId()));
-//
-//		RestVpn vpnNew = vpn;
-//		RestVpn vpnCurrent = restUtils.restVpnData.get(vpnId);
-//
-//		List<RestSite> sitesToAdd = new ArrayList<RestSite>(vpnNew.getSites());
-//		sitesToAdd.removeAll(vpnCurrent.getSites());
-//		List<RestSite> sitesToRemove = new ArrayList<RestSite>(vpnCurrent.getSites());
-//		sitesToRemove.removeAll(vpnNew.getSites());
-//
-//		for (RestSite restSite : sitesToAdd) {
-//			restUtils.restAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
-//		}
-//
-//		for (RestSite restSite : sitesToRemove) {
-//			restUtils.restDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
-//		}
-//
-//		for (RestSite restSite : sitesToAdd) {
-//			networkAddSiteToVpn(vpnCurrent.getName(), restSite.getName());
-//		}
-//		for (RestSite restSite : sitesToRemove) {
-//			networkDeleteSiteFromVpn(vpnCurrent.getName(), restSite.getName());
-//		}
-//
-//		return restUtils.restVpnData.get(vpnId);
-//	}
+	@RequestMapping(value = RestVpnURIConstants.UPDATE_VPN, method = RequestMethod.POST)
+	public @ResponseBody Vpn updateVpn(@PathVariable("id") int vpnId, @RequestBody Vpn vpn) {
+		log.info("Start updateVpn. ID=" + vpnId);
+
+		Assert.isTrue(vpn.getId() == vpnId, "VPN id and ID from the rest path are not the same. REST PATH:"
+				+ String.valueOf(vpnId) + " VPN ID" + String.valueOf(vpn.getId()));
+
+		Vpn vpnNew = vpn;
+		Vpn vpnCurrent = vpnsService.getVpn(vpnId);
+
+		List<NetworkSite> sitesToAdd = new ArrayList<NetworkSite>(vpnNew.getSites());
+		sitesToAdd.removeAll(vpnCurrent.getSites());
+		List<NetworkSite> sitesToRemove = new ArrayList<NetworkSite>(vpnCurrent.getSites());
+		sitesToRemove.removeAll(vpnNew.getSites());
+
+
+		for (NetworkSite site : sitesToAdd) {
+			networkAddSiteToVpn(vpnCurrent.getName(), site.getName());
+		}
+		
+		for (NetworkSite site : sitesToRemove) {
+			networkDeleteSiteFromVpn(vpnCurrent.getName(), site.getName());
+		}
+
+		return vpnNew;
+	}
 	
 	
 	
@@ -241,38 +236,29 @@ public class PortalControllerIntent {
 	@RequestMapping(value = RestVpnURIConstants.GET_ALL_VPN, method = RequestMethod.GET)
 	public @ResponseBody List<Vpn> getAllVpns() {
 		log.info("Start getAllVpns.");
+		
 		return vpnsService.getVpns();
 	}
 
 	@RequestMapping(value = RestVpnURIConstants.GET_ALL_SITES, method = RequestMethod.GET)
-	public @ResponseBody List<NetworkSite> getAllSites(@PathVariable("id") int vpnID) {
+	public @ResponseBody List<NetworkSite> getSitesInVpn(@PathVariable("id") int vpnID) {
 		log.info("Start getall sites.");
 
-		Vpn vpn = vpnsService.getVpn(vpnID);
-
-		if (vpn == null) {
-			return new ArrayList<NetworkSite>();
-		}
-
-		return networkSitesService.getNetworkSites(vpn.getName());
+		return vpnsService.getSitesInVpn(vpnID);
 	}
 
 	@RequestMapping(value = RestVpnURIConstants.CREATE_VPN, method = RequestMethod.POST)
-	public @ResponseBody Vpn createVpn(@RequestBody Vpn vpn) {
+	public @ResponseBody boolean createVpn(@RequestBody Vpn vpn) {
 		log.info("Start createVpn.");
 
-		vpnsService.createVpn(vpn);
-
-		return vpn;
+		return vpnsService.createVpn(vpn);
 	}
 
 	@RequestMapping(value = RestVpnURIConstants.DELETE_VPN, method = RequestMethod.POST)
 	public @ResponseBody boolean deleteVpn(@PathVariable("id") int vpnId) {
 		log.info("Start deleteVpn.");
 		
-		boolean result = vpnsService.deleteVpn(vpnId);
-
-		return result;
+		return vpnsService.deleteVpn(vpnId);
 	}
 	
 }

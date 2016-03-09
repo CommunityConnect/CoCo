@@ -131,28 +131,30 @@ public class VpnDao {
          return (jdbc.update(query, params) == 1);
 	}
 
-    public boolean addSite(String vpnName, String siteName) {
+    public boolean addSiteToVpn(String vpnName, String siteName) {
         MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("vpn", vpnName);
-        params.addValue("site", siteName);
+        params.addValue("vpnName", vpnName);
+        params.addValue("siteName", siteName);
 
-        String query = "UPDATE site2vpn "
-                + "INNER JOIN vpns ON site2vpn.vpnid = vpns.id "
-                + "INNER JOIN sites ON site2vpn.siteid = sites.id, "
-                + "(SELECT id FROM vpns WHERE name=:vpn) vpn  "
-                + "SET site2vpn.vpnid = vpn.id  WHERE sites.name = :site ;";
+        String query = "INSERT INTO site2vpn (`vpnid`, `siteid`)"
+                + "VALUES ("
+                + "(SELECT id FROM vpns WHERE `name` = :vpnName),"
+                + "(SELECT id FROM sites WHERE `name` = :siteName)"
+                + ");";
         log.trace("vpnDao addSite: " + query);
         return jdbc.update(query, params) == 1;
     }
 
-    public boolean deleteSite(String siteName) {
-        MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("site", siteName);
-
-        String query = "UPDATE site2vpn "
-                + "INNER JOIN vpns ON site2vpn.vpnid = vpns.id "
-                + "INNER JOIN sites ON site2vpn.siteid = sites.id "
-                + "SET site2vpn.vpnid = 1  WHERE sites.name = :site ;";
+    public boolean deleteSiteFromVpn(String vpnName, String siteName) {
+    	MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("vpnName", vpnName);
+        params.addValue("siteName", siteName);
+        
+        String query = "DELETE s2v FROM site2vpn s2v "
+                + "INNER JOIN vpns v ON s2v.vpnid = v.id "
+                + "INNER JOIN sites s ON s2v.siteid = s.id "
+                + "WHERE s.name = :siteName AND v.name = :vpnName ;";
+        
         log.trace("vpnDao deleteSite: " + query);
         return jdbc.update(query, params) == 1;
     }

@@ -43,8 +43,6 @@ public class NetworkSiteDao {
 
                 networkSite.setId(rs.getInt("id"));
                 networkSite.setName(rs.getString("name"));
-                networkSite.setX(rs.getInt("x"));
-                networkSite.setY(rs.getInt("y"));
                 networkSite.setProviderSwitch(rs.getString("switch_name"));
                 networkSite.setProviderPort(rs.getInt("remote_port"));
                 networkSite.setCustomerPort(rs.getInt("local_port"));
@@ -75,8 +73,6 @@ public class NetworkSiteDao {
 
                 networkSite.setId(rs.getInt("id"));
                 networkSite.setName(rs.getString("name"));
-                networkSite.setX(rs.getInt("x"));
-                networkSite.setY(rs.getInt("y"));
                 networkSite.setProviderSwitch(rs.getString("switch_name"));
                 networkSite.setProviderPort(rs.getInt("remote_port"));
                 networkSite.setCustomerPort(rs.getInt("local_port"));
@@ -113,8 +109,6 @@ public class NetworkSiteDao {
 
                 networkSite.setId(rs.getInt("id"));
                 networkSite.setName(rs.getString("name"));
-                networkSite.setX(rs.getInt("x"));
-                networkSite.setY(rs.getInt("y"));
                 networkSite.setProviderSwitch(rs.getString("switch_name"));
                 networkSite.setProviderPort(rs.getInt("remote_port"));
                 networkSite.setCustomerPort(rs.getInt("local_port"));
@@ -151,8 +145,6 @@ public class NetworkSiteDao {
 
                 networkSite.setId(rs.getInt("id"));
                 networkSite.setName(rs.getString("name"));
-                networkSite.setX(rs.getInt("x"));
-                networkSite.setY(rs.getInt("y"));
                 networkSite.setProviderSwitch(rs.getString("switch_name"));
                 networkSite.setProviderPort(rs.getInt("remote_port"));
                 networkSite.setCustomerPort(rs.getInt("local_port"));
@@ -183,8 +175,6 @@ public class NetworkSiteDao {
 
                 networkSite.setId(rs.getInt("id"));
                 networkSite.setName(rs.getString("name"));
-                networkSite.setX(rs.getInt("x"));
-                networkSite.setY(rs.getInt("y"));
                 networkSite.setProviderSwitch(rs.getString("switch_name"));
                 networkSite.setProviderPort(rs.getInt("remote_port"));
                 networkSite.setCustomerPort(rs.getInt("local_port"));

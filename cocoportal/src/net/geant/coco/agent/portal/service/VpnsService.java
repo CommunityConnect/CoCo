@@ -63,15 +63,25 @@ public class VpnsService {
         return vpnDao.createVpn(vpn);
     }
 
-    public boolean addSite(String vpnName, String siteName) {
-        return vpnDao.addSite(vpnName, siteName);
+    public boolean addSiteToVpn(String vpnName, String siteName) {
+        return vpnDao.addSiteToVpn(vpnName, siteName);
     }
 
-    public boolean deleteSite(String siteName) {
-        return vpnDao.deleteSite(siteName);
+    public boolean deleteSiteFromVpn(String vpnName, String siteName) {
+        return vpnDao.deleteSiteFromVpn(vpnName, siteName);
     }
 
 	public boolean deleteVpn(int vpnId) {
 		return vpnDao.deleteVpn(vpnId);
+	}
+
+	public List<NetworkSite> getSitesInVpn(int vpnID) {
+		Vpn vpn = vpnDao.getVpn(vpnID);
+		
+		if (vpn == null) {
+			return new ArrayList<NetworkSite>();
+		}
+
+		return networkSiteDao.getNetworkSites(vpn.getName());
 	}
 }

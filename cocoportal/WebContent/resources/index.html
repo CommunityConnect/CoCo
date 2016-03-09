@@ -626,9 +626,9 @@ function connect_sites()
 	
 	var vpn = {};
 	vpn["id"] = parseInt(currentVPN);
-	vpn["name"] = "vpn" + (vpn["id"]-1).toString();
+	//vpn["name"] = "vpn" + (vpn["id"]-1).toString();
 	vpn["sites"] = sitelist;
-	vpn["isPublic"] = false;
+	//vpn["isPublic"] = false;
 	
 	console.log(vpn);
 	
@@ -683,7 +683,7 @@ function disconnect_sites()
 	vpn["id"] = parseInt(currentVPN);
 	vpn["name"] = "vpn" + (vpn["id"]-1).toString();
 	vpn["sites"] = sitelist;
-	vpn["isPublic"] = false;
+	//vpn["isPublic"] = false;
 	
 	console.log(vpn);
 	
@@ -722,7 +722,7 @@ function setVpnPrivacy(vpn_id,vpn_public)
 	vpn["id"] = vpn_id;
 	vpn["name"] = "vpn" + (vpn["id"]-1).toString();
 	vpn["sites"] = sitelist;
-	vpn["isPublic"] = vpn_public;
+	//vpn["isPublic"] = vpn_public;
 	
 	
 	console.log(JSON.stringify(vpn));

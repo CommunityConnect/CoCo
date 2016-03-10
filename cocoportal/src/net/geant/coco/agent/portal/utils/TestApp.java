@@ -105,7 +105,7 @@ public class TestApp {
 		List<NetworkSwitch> networkSwitchesWithEnni = networkSwitchesService.getNetworkSwitchesWithNni();
 		List<NetworkLink> networkLinks = networkLinksService.getNetworkLinks();
         List<NetworkSite> networkSites = new ArrayList<NetworkSite>(networkSitesService.getNetworkSites().values());
-        List<Vpn> vpns = vpnsService.getVpns(controllerUrl);
+        //List<Vpn> vpns = vpnsService.getVpns(controllerUrl);
         
         
 		RestClient restClient = new RestClient(controllerUrl);
@@ -303,13 +303,12 @@ public class TestApp {
 	}
 	
 	public static void networkAddSiteToVpn(String vpnName, String addSiteName) {
-    	vpnsService.addSite(vpnName, addSiteName);
+    	vpnsService.addSiteToVpn(vpnName, addSiteName);
         // find site object
         for (NetworkSite networkSite : networkSitesService.getNetworkSites().values()) {
             if (networkSite.getName().equals(addSiteName)) {
                 Vpn vpn = vpnsService.getVpn(vpnName);
-                log.info("MPLS label for " + vpnName + " is " + vpn.getMplsLabel());
-                pce.addSiteToVpn(networkSite, vpn.getMplsLabel(), networkSitesService.getNetworkSites(vpnName));
+                //pce.addSiteToVpn(networkSite, vpn.getMplsLabel(), networkSitesService.getNetworkSites(vpnName));
                 
                 //bgpRouter.addVpn(aclNum, routeMapNum, seqNum, networkSite.getIpv4Prefix(), "0.0.0.255", "", vpnNew.getId());
             }

@@ -129,9 +129,9 @@ public class PortalController {
 	}
 
 	private void networkAddSiteToVpn(String vpnName, String addSiteName) {
-		vpnsService.addSite(vpnName, addSiteName);
+		vpnsService.addSiteToVpn(vpnName, addSiteName);
 		// find site object
-		for (NetworkSite networkSite : networkSitesService.getNetworkSites()) {
+		for (NetworkSite networkSite : networkSitesService.getNetworkSites().values()) {
 			if (networkSite.getName().equals(addSiteName)) {
 
 				int status = vpnProvisioner.addSite(vpnName, addSiteName, networkSite.getIpv4Prefix(),
@@ -143,9 +143,9 @@ public class PortalController {
 	}
 
 	private void networkDeleteSiteFromVpn(String vpnName, String deleteSiteName) {
-		vpnsService.deleteSite(deleteSiteName);
+		vpnsService.deleteSiteFromVpn(vpnName, deleteSiteName);
 		// find site object
-		for (NetworkSite networkSite : networkSitesService.getNetworkSites()) {
+		for (NetworkSite networkSite : networkSitesService.getNetworkSites().values()) {
 			if (networkSite.getName().equals(deleteSiteName)) {
 
 				int status = vpnProvisioner.deleteSite(vpnName, deleteSiteName, networkSite.getIpv4Prefix(),
@@ -182,20 +182,20 @@ public class PortalController {
 		for (NetworkElement networkElement : nodeSet) {
 			int fakeId = 0;
 			if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-				fakeId = networkElement.id;
+				fakeId = networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.id;
+				fakeId = 100 + networkElement.getId();
 
 				// TODO continue to ignore external as sites
 				continue;
 
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-				fakeId = 200 + networkElement.id;
+				fakeId = 200 + networkElement.getId();
 			}
 			visJson.append("{\"id\": \"");
 			visJson.append(fakeId);
 			visJson.append("\", \"label\": \"");
-			visJson.append(networkElement.name);
+			visJson.append(networkElement.getName());
 			visJson.append("\", \"group\": \"");
 			visJson.append(networkElement.nodeType);
 			visJson.append("\"}, ");
@@ -212,11 +212,11 @@ public class PortalController {
 			networkElement = networkInterface.source;
 			fakeId = 0;
 			if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-				fakeId = networkElement.id;
+				fakeId = networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.id;
+				fakeId = 100 + networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-				fakeId = 200 + networkElement.id;
+				fakeId = 200 + networkElement.getId();
 			}
 			visJson.append("{\"from\": \"");
 			visJson.append(fakeId);
@@ -224,11 +224,11 @@ public class PortalController {
 			networkElement = networkInterface.neighbour;
 			fakeId = 0;
 			if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-				fakeId = networkElement.id;
+				fakeId = networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.id;
+				fakeId = 100 + networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-				fakeId = 200 + networkElement.id;
+				fakeId = 200 + networkElement.getId();
 			}
 			visJson.append("\", \"to\": \"");
 			visJson.append(fakeId);
@@ -350,13 +350,13 @@ public class PortalController {
 
 	public void initializeNetworkSitesData(boolean doGetSites) {
 		if (doGetSites) {
-			this.networkSites = networkSitesService.getNetworkSites();
+			this.networkSites = new ArrayList<NetworkSite>(networkSitesService.getNetworkSites().values());
 		}
 
 		String controllerUrl = env.getProperty("controller.url");
 		vpnProvisioner = new VpnProvisioner(controllerUrl);
 
-		List<Vpn> vpnsFromDao = vpnsService.getVpns(controllerUrl);
+		List<Vpn> vpnsFromDao = vpnsService.getVpns();
 		// FIXME just avoiding null reference here
 		if (vpnsFromDao == null) {
 			return;
@@ -400,9 +400,9 @@ public class PortalController {
 		this.networkSwitches = networkSwitchesService.getNetworkSwitches();
 		this.networkSwitchesWithEnni = networkSwitchesService.getNetworkSwitchesWithNni();
 		this.networkLinks = networkLinksService.getNetworkLinks();
-		this.networkSites = networkSitesService.getNetworkSites();
+		this.networkSites = new ArrayList<NetworkSite>(networkSitesService.getNetworkSites().values());
 		String controllerUrl = env.getProperty("controller.url");
-		this.vpns = vpnsService.getVpns(controllerUrl);
+		this.vpns = vpnsService.getVpns();
 
 		log.info("Initialize PCE object");
 		// String bgpIp = env.getProperty("ip");

@@ -54,6 +54,24 @@ public class VpnProvisioner {
         }
     }
 
+    private class DeleteVpnWrapper {
+        @SerializedName("input")
+        private DeleteVpn vpn;
+
+        private DeleteVpnWrapper(String vpnName) {
+            this.vpn = new DeleteVpn(vpnName);
+        }
+    }
+
+    private class DeleteVpn {
+        @SerializedName("vpn-name")
+        private String vpnName;
+
+        private DeleteVpn(String vpnName) {
+            this.vpnName = vpnName;
+        }
+    }
+
     private class VpnIntents {
         @SerializedName("vpn-intents")
         private List<Vpn> vpnIntents = new ArrayList<Vpn>();
@@ -72,7 +90,7 @@ public class VpnProvisioner {
         }
     }
 
-    private class VpnSite {
+    private class AddSite {
         @SerializedName("vpn-name")
         private String vpnName;
         @SerializedName("site-name")
@@ -81,23 +99,47 @@ public class VpnProvisioner {
         private String ipPrefix;
         @SerializedName("switch-port-id")
         private String switchPortId;
+        @SerializedName("server-mac-address")
+        private String macAddress;
 
-        private VpnSite(String vpnName, String siteName, String ipPrefix,
-                String switchPortId) {
+        private AddSite(String vpnName, String siteName, String ipPrefix,
+                String switchPortId, String macAddress) {
             this.vpnName = vpnName;
             this.siteName = siteName;
             this.ipPrefix = ipPrefix;
             this.switchPortId = switchPortId;
+            this.macAddress = macAddress;
         }
     }
 
-    private class Input {
+    private class AddVpnEndpoint {
         @SerializedName("input")
-        private VpnSite vpnSite;
+        private AddSite vpnSite;
 
-        private Input(String vpnName, String siteName, String ipPrefix,
-                String switchPortId) {
-            vpnSite = new VpnSite(vpnName, siteName, ipPrefix, switchPortId);
+        private AddVpnEndpoint(String vpnName, String siteName,
+                String ipPrefix, String switchPortId, String macAddress) {
+            vpnSite = new AddSite(vpnName, siteName, ipPrefix, switchPortId, macAddress);
+        }
+    }
+
+    private class DeleteSite {
+        @SerializedName("vpn-name")
+        private String vpnName;
+        @SerializedName("site-name")
+        private String siteName;
+
+        private DeleteSite(String vpnName, String siteName) {
+            this.vpnName = vpnName;
+            this.siteName = siteName;
+        }
+    }
+
+    private class DeleteVpnEndpoint {
+        @SerializedName("input")
+        private DeleteSite vpnSite;
+
+        private DeleteVpnEndpoint(String vpnName, String siteName) {
+            vpnSite = new DeleteSite(vpnName, siteName);
         }
     }
 
@@ -127,12 +169,24 @@ public class VpnProvisioner {
      * 
      * @param name
      *            Name of the VPN to be created.
+     * @param isProtected
+     *            True when a protected path needs to be provisioned, false when
+     *            an unprotected path needs to be provisioned.
+     * @param failover
+     *            Not implemented yet, slow rerouting is always used.
      * @return true if the VPN insertion succeeded, false otherwise
      */
-    public boolean createVpn(String name) {
+    public boolean createVpn(String name, boolean isProtected, String failover) {
         boolean isSuccessful = true;
+        String pathProtection;
         Gson gson = new Gson();
-        Vpn vpn = new Vpn(name, "true", "fast-reroute");
+        if (isProtected) {
+            pathProtection = "true";
+        } else {
+            pathProtection = "false";
+        }
+        // fast-reroute is not implemented, always use "slow-reroute"
+        Vpn vpn = new Vpn(name, pathProtection, "slow-reroute");
         VpnIntents vpnIntents = new VpnIntents(vpn);
         String jsonData = gson.toJson(vpnIntents);
 
@@ -196,6 +250,38 @@ public class VpnProvisioner {
         }
     }
 
+    public boolean deleteVpn(String name) {
+        boolean isSuccessful = true;
+        Gson gson = new Gson();
+
+        DeleteVpnWrapper vpn = new DeleteVpnWrapper(name);
+        String jsonData = gson.toJson(vpn);
+
+        // jsonData = "{ \"vpns\": " + jsonData + " }";
+
+        log.info("deleteVpn: json data = " + jsonData);
+
+        ClientResponse response = null;
+        try {
+            response = service.path("operations/vpnintent:remove-vpn")
+                    .type(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .post(ClientResponse.class, jsonData);
+            log.info("json vpn response is " + response.getStatus());
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                isSuccessful = false;
+            }
+        } catch (UniformInterfaceException e) {
+            log.info(e.getMessage());
+            isSuccessful = false;
+        } catch (ClientHandlerException e) {
+            log.info(e.getMessage());
+            isSuccessful = false;
+        }
+
+        return isSuccessful;
+    }
+
     /**
      * Add a site to a VPN.
      * 
@@ -204,17 +290,20 @@ public class VpnProvisioner {
      * @param siteName
      *            Name of the site.
      * @param ipPrefix
-     *            IPv4 prefix used at the site.
+     *            IPv4 prefix used at the site, e.g. 10.0.0.0/24.
      * @param switchPortId
-     *            Concatenation of the OpenFlow switch name and port id (e.g.
-     *            openflow:1:1).
+     *            Concatenation of the OpenFlow switch name and port id, e.g.
+     *            openflow:1:1.
+     * @param macAddress
+     *            MAC address of the router/host at the site.
      * @return HTTP return status code (int)
      */
     public int addSite(String vpnName, String siteName, String ipPrefix,
-            String switchPortId) {
+            String switchPortId, String macAddress) {
         Gson gson = new Gson();
-        Input input = new Input(vpnName, siteName, ipPrefix, switchPortId);
-        String jsonData = gson.toJson(input);
+        AddVpnEndpoint endpoint = new AddVpnEndpoint(vpnName, siteName,
+                ipPrefix, switchPortId, macAddress);
+        String jsonData = gson.toJson(endpoint);
         log.info("json data = " + jsonData);
         ClientResponse response = service
                 .path("operations/vpnintent:add-vpn-endpoint")
@@ -225,11 +314,10 @@ public class VpnProvisioner {
         return response.getStatus();
     }
 
-    public int deleteSite(String vpnName, String siteName, String ipPrefix,
-            String switchPortId) {
+    public int deleteSite(String vpnName, String siteName) {
         Gson gson = new Gson();
-        Input input = new Input(vpnName, siteName, ipPrefix, switchPortId);
-        String jsonData = gson.toJson(input);
+        DeleteVpnEndpoint endpoint = new DeleteVpnEndpoint(vpnName, siteName);
+        String jsonData = gson.toJson(endpoint);
         log.info("json data = " + jsonData);
         ClientResponse response = service
                 .path("operations/vpnintent:remove-vpn-endpoint")

@@ -163,7 +163,7 @@ public class NetworkSiteDao {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("name", siteName);
 
-        String query = "SELECT sites.* FROM sites "
+        String query = "SELECT sites.*, switches.name as switch_name FROM sites "
                 + "JOIN switches WHERE sites.switch = switches.id "
                 + "AND sites.name = :name;";
         log.trace("getNetworkSite " + siteName + "  " + query);
@@ -172,7 +172,10 @@ public class NetworkSiteDao {
             @Override
             public NetworkSite extractData(ResultSet rs) throws SQLException {
                 NetworkSite networkSite = new NetworkSite();
-
+                
+                //TODO fix here, if there are no results
+                rs.next();
+                
                 networkSite.setId(rs.getInt("id"));
                 networkSite.setName(rs.getString("name"));
                 networkSite.setProviderSwitch(rs.getString("switch_name"));
@@ -181,7 +184,6 @@ public class NetworkSiteDao {
                 networkSite.setVlanId(rs.getInt("vlanid"));
                 networkSite.setIpv4Prefix(rs.getString("ipv4prefix"));
                 networkSite.setMacAddress(rs.getString("mac_address"));
-                networkSite.setVpnName(rs.getString("vpn_name"));
 
                 return networkSite;
             }

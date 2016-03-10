@@ -85,10 +85,19 @@ public class VpnsService {
     }
 
     public boolean addSiteToVpn(String vpnName, String siteName) {
-        return vpnDao.addSiteToVpn(vpnName, siteName);
+    	log.info("addSiteToVpn - vpn: " + vpnName + " site: " + siteName);
+    	
+    	NetworkSite site = networkSiteDao.getNetworkSite(siteName);
+    	vpnProvisioner.addSite(vpnName, site.getName(), site.getIpv4Prefix(), site.getProviderSwitch() + ":" + site.getProviderPort(), site.getMacAddress());
+        
+    	return vpnDao.addSiteToVpn(vpnName, siteName);
     }
 
     public boolean deleteSiteFromVpn(String vpnName, String siteName) {
+    	log.info("deleteSiteFromVpn - vpn: " + vpnName + " site: " + siteName);
+    	
+    	vpnProvisioner.deleteSite(vpnName, siteName);
+    	
         return vpnDao.deleteSiteFromVpn(vpnName, siteName);
     }
 

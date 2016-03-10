@@ -135,7 +135,7 @@ public class PortalController {
 			if (networkSite.getName().equals(addSiteName)) {
 
 				int status = vpnProvisioner.addSite(vpnName, addSiteName, networkSite.getIpv4Prefix(),
-						networkSite.getProviderSwitch() + ":" + networkSite.getProviderPort());
+						networkSite.getProviderSwitch() + ":" + networkSite.getProviderPort(), networkSite.getMacAddress());
 				log.info("addSite returns: " + status);
 			}
 		}
@@ -148,96 +148,22 @@ public class PortalController {
 		for (NetworkSite networkSite : networkSitesService.getNetworkSites().values()) {
 			if (networkSite.getName().equals(deleteSiteName)) {
 
-				int status = vpnProvisioner.deleteSite(vpnName, deleteSiteName, networkSite.getIpv4Prefix(),
-						networkSite.getProviderSwitch() + ":" + networkSite.getProviderPort());
+				int status = vpnProvisioner.deleteSite(vpnName, deleteSiteName);
 				log.info("addSite returns: " + status);
 			}
 		}
 	}
 
-	@RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY, method = RequestMethod.GET)
-	public @ResponseBody List<NetworkInterface> getTopology() {
-		return topologyService.getNetworkInterfaces();
-	}
+//	@RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY, method = RequestMethod.GET)
+//	public @ResponseBody List<NetworkInterface> getTopology() {
+//		return topologyService.getNetworkInterfaces();
+//	}
 
 	@RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_VIS, method = RequestMethod.GET)
 	public @ResponseBody String getTopologyVis() {
-		StringBuilder visJson = new StringBuilder();
-
-		Set<NetworkElement> nodeSet = new HashSet<NetworkElement>();
-
-		List<NetworkInterface> networkInterfaces = topologyService.getNetworkInterfaces();
-
-		for (NetworkInterface networkInterface : networkInterfaces) {
-			if (!nodeSet.contains(networkInterface.source)) {
-				nodeSet.add(networkInterface.source);
-			}
-
-			if (!nodeSet.contains(networkInterface.neighbour)) {
-				nodeSet.add(networkInterface.neighbour);
-			}
-		}
-
-		visJson.append("{\"nodes\" : [ ");
-		for (NetworkElement networkElement : nodeSet) {
-			int fakeId = 0;
-			if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-				fakeId = networkElement.getId();
-			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.getId();
-
-				// TODO continue to ignore external as sites
-				continue;
-
-			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-				fakeId = 200 + networkElement.getId();
-			}
-			visJson.append("{\"id\": \"");
-			visJson.append(fakeId);
-			visJson.append("\", \"label\": \"");
-			visJson.append(networkElement.getName());
-			visJson.append("\", \"group\": \"");
-			visJson.append(networkElement.nodeType);
-			visJson.append("\"}, ");
-		}
-
-		visJson.deleteCharAt(visJson.lastIndexOf(","));
-		visJson.append("],");
-		visJson.append("\"edges\" : [");
-
-		for (NetworkInterface networkInterface : networkInterfaces) {
-			int fakeId = 0;
-			NetworkElement networkElement;
-
-			networkElement = networkInterface.source;
-			fakeId = 0;
-			if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-				fakeId = networkElement.getId();
-			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.getId();
-			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-				fakeId = 200 + networkElement.getId();
-			}
-			visJson.append("{\"from\": \"");
-			visJson.append(fakeId);
-
-			networkElement = networkInterface.neighbour;
-			fakeId = 0;
-			if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER)) {
-				fakeId = networkElement.getId();
-			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.EXTERNAL_AS)) {
-				fakeId = 100 + networkElement.getId();
-			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.SWITCH)) {
-				fakeId = 200 + networkElement.getId();
-			}
-			visJson.append("\", \"to\": \"");
-			visJson.append(fakeId);
-			visJson.append("\"}, ");
-		}
-		visJson.deleteCharAt(visJson.lastIndexOf(","));
-		visJson.append("]}");
-
-		return visJson.toString();
+		log.info("getTopologyVis");
+		
+		return topologyService.getTopologyJsonVis();
 	}
 
 	@RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_IS_CHANGED, method = RequestMethod.GET)
@@ -420,7 +346,6 @@ public class PortalController {
 		// this.neighborIp = env.getProperty("bgpNeighborIps");
 		this.neighborName = env.getProperty("neighborName");
 
-		vpnProvisioner.createVpn("vpn1");
 		return "everything initialized succesfully";
 
 	}

@@ -15,8 +15,8 @@ public class Vpn implements Serializable {
     private String failoverType;
     private List<NetworkSite> sites;
     
-
-
+    private static final String pathProtectionOnFromPortal = "on";
+    
 	public Vpn() {
     }
 	
@@ -44,6 +44,15 @@ public class Vpn implements Serializable {
     
     public String getPathProtection() {
         return pathProtection;
+    }
+    
+    public boolean getPathProtectionBoolean() {
+    	if (getPathProtection().equals(pathProtectionOnFromPortal)) {
+    		return true;
+    	}
+    	else {
+    		return false;
+    	}
     }
 
     public void setPathProtection(String pathProtection) {

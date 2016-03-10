@@ -1,10 +1,8 @@
 package net.geant.coco.agent.portal.controllers;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
@@ -21,15 +19,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import lombok.extern.slf4j.Slf4j;
-import net.geant.coco.agent.portal.dao.NetworkElement;
-import net.geant.coco.agent.portal.dao.NetworkInterface;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.Vpn;
 import net.geant.coco.agent.portal.rest.RestVpnURIConstants;
 import net.geant.coco.agent.portal.service.NetworkSitesService;
 import net.geant.coco.agent.portal.service.TopologyService;
 import net.geant.coco.agent.portal.service.VpnsService;
-import net.geant.coco.agent.portal.utils.VpnProvisioner;
 
 @Slf4j
 @Controller
@@ -39,23 +34,13 @@ public class PortalControllerIntent {
 
 	@Autowired
 	Environment env;
-	
-	private NetworkSitesService networkSitesService;
+
 	private VpnsService vpnsService;
 	private TopologyService topologyService;
 	
 	Map<String, NetworkSite> networkSites;
 	
 	boolean networkChanged = false;
-	
-	VpnProvisioner vpnProvisioner;
-	
-	//RestUtils restUtils = new RestUtils();
-	
-	@Autowired
-	public void setNetworkSitesService(NetworkSitesService networkSitesService) {
-		this.networkSitesService = networkSitesService;
-	}
 
 	@Autowired
 	public void setVpnsService(VpnsService vpnsService) {
@@ -100,13 +85,13 @@ public class PortalControllerIntent {
 	
 	@RequestMapping(value = RestVpnURIConstants.GET_VPN, method = RequestMethod.GET)
 	public @ResponseBody Vpn getVpn(@PathVariable("id") int vpnId) {
-		log.info("Start getVpn. ID=" + vpnId);
+		log.info("getVpn ID=" + vpnId);
 		return vpnsService.getVpn(vpnId);
 	}
 
 	@RequestMapping(value = RestVpnURIConstants.UPDATE_VPN, method = RequestMethod.POST)
 	public @ResponseBody Vpn updateVpn(@PathVariable("id") int vpnId, @RequestBody Vpn vpn) {
-		log.info("Start updateVpn. ID=" + vpnId);
+		log.info("updateVpn ID=" + vpnId);
 
 		Assert.isTrue(vpn.getId() == vpnId, "VPN id and ID from the rest path are not the same. REST PATH:"
 				+ String.valueOf(vpnId) + " VPN ID" + String.valueOf(vpn.getId()));
@@ -133,21 +118,16 @@ public class PortalControllerIntent {
 	
 	
 	
-	@PostConstruct
-	@RequestMapping("/setupAll")
-	public @ResponseBody String initializeEverything() {
-		log.info("Initialize everything Intent version");
-
-		this.networkSites = networkSitesService.getNetworkSites();
-		
-		String controllerUrl = env.getProperty("controller.url");
-		vpnProvisioner = new VpnProvisioner(controllerUrl);
-
-		this.networkChanged = true;
-		
-		return "everything initialized succesfully";
-
-	}
+//	@PostConstruct
+//	@RequestMapping("/setupAll")
+//	public @ResponseBody String initializeEverything() {
+//		log.info("Initialize everything Intent version");
+//
+//		this.networkChanged = true;
+//		
+//		return "everything initialized succesfully";
+//
+//	}
 	
 	@RequestMapping(value = RestVpnURIConstants.GET_ALL_VPN, method = RequestMethod.GET)
 	public @ResponseBody List<Vpn> getAllVpns() {

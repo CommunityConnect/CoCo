@@ -1,5 +1,7 @@
 var nodes = new vis.DataSet();
 var edges = new vis.DataSet();
+var shouldCluster = true;
+
 // alert($.getJSON("./json/getNetwork"));
 
 // $.getJSON("./json/getNetwork", function(data) {
@@ -122,8 +124,18 @@ function drawNet(nodes,edges) {
         }
     };
     network = new vis.Network(container, data, options);
-	
-    clusterSwitches(network);
+    network.on("selectNode", function(params) {
+        if (params.nodes.length == 1) {
+            if (network.isCluster(params.nodes[0]) == true) {
+                network.openCluster(params.nodes[0]);
+                shouldCluster = false;
+            }
+        }
+    });
+    
+    if (shouldCluster) {
+    	clusterSwitches(network);
+    }
     
     //colorNodeWithId(1);
 

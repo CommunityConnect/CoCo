@@ -221,6 +221,7 @@
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<div id="mynetwork"></div>
+				<button id="cluster-network" type="button" class="btn btn-default">Cluster network</button>
 			</div>
 		</div>
 		</p>
@@ -232,9 +233,9 @@
 						<div class="panel-default">
 							Sites in current VPN:
 							<ul id="site-list" class="list-group">
-								<li href="#" class="list-group-item">Site A</li>
+								<!-- <li href="#" class="list-group-item">Site A</li>
 								<li href="#" class="list-group-item">Site B</li>
-								<li href="#" class="list-group-item">Site C</li>
+								<li href="#" class="list-group-item">Site C</li> -->
 							</ul>
 							
 							<button id="add-nodelist" type="button" class="btn btn-default">Add to list</button>													
@@ -267,9 +268,10 @@
 	
 					<button type="button" class="btn btn-default" data-toggle="modal" data-target="#addVPNModal" >Add</button>
 					<button type="button" class="btn btn-default" data-toggle="modal" data-target="#delVPNModal">Delete</button>
-
 				
 			</div>
+			
+			
 			</div>
 		</div> <!-- end row -->
 	</div> <!-- /container -->	
@@ -362,8 +364,10 @@ function vpn_list_on_click(id){
 	currentVPN = id;//$(this).attr('id');
 	populate_sitelist(currentVPN);
 	
+	network.unselectAll();
+	
 	color_all_nodes(1);
-	color_nodes(currentVPN);
+	color_nodes(currentVPN, 2);
 	
 }
 
@@ -460,10 +464,19 @@ function populate_remote_vpn_list(valueName)
 
 function color_all_nodes(typeOfColoring)
 {
-	color_nodes(1, typeOfColoring);
-	color_nodes(2, typeOfColoring);
-	color_nodes(3, typeOfColoring);
-	color_nodes(4, typeOfColoring);
+	// retrieve a filtered subset of the data
+	var endpoints = nodes.get({
+	  filter: function (item) {
+	    return item.group == "CUSTOMER";
+	  }
+	});
+	for ( i =0; i < endpoints.length; i++)
+	{
+		var node = endpoints[i];
+		colorNodeWithId(node.id, typeOfColoring);
+	}	
+	
+	
 }
 
 function color_nodes(vpnID, typeOfColoring)
@@ -479,8 +492,13 @@ function color_nodes(vpnID, typeOfColoring)
 		}	
 	});
 }
+
 function populate_sitelist(vpnID)
 {
+	network.unselectAll();
+	color_all_nodes(1);
+	color_nodes(vpnID, 2);
+	
 	// empty the list
 	$('#site-list')
 		.find('li')
@@ -500,38 +518,6 @@ function populate_sitelist(vpnID)
 		}
 		add_list_on_click();
 
-		/*
-		edgs = vpn.edges;
-		
-		
-		// set width to 2 highly ineffeciently (but hey who cars its javascript)
-		//for ( i =0; i < edges.length; i++)
-		//{
-		//	edges[i]['width'] = 2;
-		//}
-		
-		// iterate over the list that we got from coco and make the edges in the vpn twice as wide
-		for ( i =0; i < edgs.length; i++)
-		{
-			edge = edgs[i];
-			var x;
-			var curr_edge;
-
-			edges.forEach( function (curr_edge)  {
-				if (edge['from'] == curr_edge['from'] && edge['to'] == curr_edge['to'])
-				{
-					
-					edges.update({"from" : curr_edge['from'], "to" : curr_edge['to'], "id" : curr_edge['id'], "width" : 5 });
-					//curr_edge['width'] = 20;
-				}
-			
-			} );
-			
-		
-		}
-		*/
-
-		
 	});
 
 }
@@ -565,7 +551,7 @@ function addVPN()
 	var vpn = {};
 	vpn["id"] = 0;
 	vpn["name"] = $("#vpnNameInput").val();
-	vpn["pathProtection"] = $("#vpnAddPathProtection").val().toString();
+	vpn["pathProtection"] = $("#vpnAddPathProtection").is(':checked');
 	vpn["failoverType"] = $("#vpnAddFailoverType").val();
 	vpn["sites"] = [];
 	
@@ -577,6 +563,7 @@ function addVPN()
 	$.postJSON('../rest/vpn/add', vpn, function(response) {
 		// Do something with the request
 		console.log(response);
+		populate_vpnlist();
 	}, 'json');	
 	
 }
@@ -599,6 +586,10 @@ function delVPN()
 	$.postJSON('../rest/vpn/del/' + vpn["id"], vpn, function(response) {
 		// Do something with the request
 		console.log(response);
+		populate_vpnlist();
+		
+		 populate_sitelist(currentVPN);
+		 
 	}, 'json');	
 }
 
@@ -638,9 +629,12 @@ function connect_sites()
 	$.postJSON('../rest/vpn/update/' + vpn["id"], vpn, function(response) {
 		// Do something with the request
 		console.log(response);
+		
+		var vpn = response;
+		
+		populate_sitelist(vpn["id"]);
+		
 	}, 'json');
-	
-	populate_sitelist(currentVPN);
 
 }
 
@@ -692,9 +686,15 @@ function disconnect_sites()
 	$.postJSON('../rest/vpn/update/' + vpn["id"], vpn, function(response) {
 		// Do something with the request
 		console.log(response);
+
+		var vpn = response;
+		populate_sitelist(vpn["id"]);
+		
+		color_all_nodes(1);
+		color_nodes(vpn["id"], 2);
+		
 	}, 'json');
 	
-	populate_sitelist(currentVPN);
 }
 
 
@@ -738,13 +738,17 @@ function setVpnPrivacy(vpn_id,vpn_public)
 $('#btnAddVpn').on('click', function(event) {
 	 event.preventDefault(); // To prevent following the link (optional)
 	 addVPN();
-	 populate_vpnlist();
 });
 
 $('#btnDelVpn').on('click', function(event) {
 	 event.preventDefault(); // To prevent following the link (optional)
 	 delVPN();
-	 populate_vpnlist();
+});
+
+$('#cluster-network').on('click', function(event) {
+	 event.preventDefault(); // To prevent following the link (optional)
+	 shouldCluster = !shouldCluster;
+	 drawNet(nodes,edges);
 });
 
 

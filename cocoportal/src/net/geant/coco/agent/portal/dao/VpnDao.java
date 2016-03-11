@@ -130,6 +130,12 @@ public class VpnDao {
         return (jdbc.update(query, params) == 1);
     }
     
+    /**
+     * Deletes VPN with a given id from a database.
+     * On the database side removing sites from this VPN should be implemented.
+     * @param vpnId
+     * @return
+     */
     public boolean deleteVpn(int vpnId) {
     	 MapSqlParameterSource params = new MapSqlParameterSource();
          params.addValue("id", vpnId);

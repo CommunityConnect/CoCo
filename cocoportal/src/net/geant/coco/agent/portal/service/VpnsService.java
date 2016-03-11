@@ -104,9 +104,7 @@ public class VpnsService {
 	public boolean deleteVpn(int vpnId) {
 		log.info("deleteVpn " + vpnId);
 		
-		
 		Vpn vpn = getVpn(vpnId);
-		// TODO remove sites from VPN here?
 		vpnProvisioner.deleteVpn(vpn.getName());
 		
 		return vpnDao.deleteVpn(vpnId);

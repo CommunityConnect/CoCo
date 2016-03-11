@@ -113,6 +113,7 @@ public class PortalControllerIntent {
 			networkDeleteSiteFromVpn(vpnCurrent.getName(), site.getName());
 		}
 
+		vpnNew = vpnsService.getVpn(vpnId);
 		return vpnNew;
 	}
 	

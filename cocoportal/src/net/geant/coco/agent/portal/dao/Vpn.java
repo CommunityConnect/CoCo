@@ -15,7 +15,7 @@ public class Vpn implements Serializable {
     private String failoverType;
     private List<NetworkSite> sites;
     
-    private static final String pathProtectionOnFromPortal = "on";
+    private static final String pathProtectionOnFromPortal = "true";
     
 	public Vpn() {
     }

@@ -23,6 +23,12 @@ public class VpnDao {
     @Autowired
     public void setDataSource(DataSource jdbc) {
         this.jdbc = new NamedParameterJdbcTemplate(jdbc);
+        try {
+            log.info("Using database: " + jdbc.getConnection().getCatalog());
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     public List<Vpn> getVpns() {    	
@@ -115,8 +121,11 @@ public class VpnDao {
         params.addValue("isPublic", 0);
         
         String query = "INSERT INTO vpns (`name`, `pathProtection`, `failoverType`, `isPublic`) "
-                + "VALUES (:name, :pathProtection, :failoverType, isPublic);";
+                + "VALUES (:name, :pathProtection, :failoverType, :isPublic);";
         log.info("createVpn " + query);
+        log.info("createVpn name=" + vpn.getName());
+        log.info("createVpn name=" + vpn.getPathProtection());
+        log.info("createVpn name=" + vpn.getFailoverType());
         
         return (jdbc.update(query, params) == 1);
     }

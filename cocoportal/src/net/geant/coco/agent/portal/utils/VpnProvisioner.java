@@ -99,8 +99,10 @@ public class VpnProvisioner {
         private String ipPrefix;
         @SerializedName("switch-port-id")
         private String switchPortId;
-        @SerializedName("server-mac-address")
-        private String macAddress;
+        
+        // transient makes it non-serializable property
+        //@SerializedName("server-mac-address")
+        private transient String macAddress;
 
         private AddSite(String vpnName, String siteName, String ipPrefix,
                 String switchPortId, String macAddress) {

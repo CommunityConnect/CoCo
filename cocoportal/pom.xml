@@ -2,12 +2,12 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.geant.coco.agent</groupId>
-	<artifactId>CoCo-agent</artifactId>
+	<artifactId>CoCo-agent2</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>war</packaging>
 
 	<properties>
-		<spring.version>3.2.2.RELEASE</spring.version>
+		<spring.version>4.3.0.RELEASE</spring.version>
 		<jackson.version>1.9.10</jackson.version>
 		<jdk.version>1.7</jdk.version>
 		<jackson.databind-version>2.2.3</jackson.databind-version>
@@ -50,7 +50,7 @@
 				<artifactId>tomcat7-maven-plugin</artifactId>
 				<version>2.1</version>
 				<configuration>
-					<url>http://134.221.121.203:9090/manager/text</url>
+					<url>http://${tomcatIpPort}/manager/text</url>
 				</configuration>
 			</plugin>
 			

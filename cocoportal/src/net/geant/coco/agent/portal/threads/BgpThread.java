@@ -11,7 +11,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import net.geant.coco.agent.portal.bgp.BgpRouteEntry;
 import net.geant.coco.agent.portal.bgp.BgpRouter;
-import net.geant.coco.agent.portal.controllers.PortalController;
+import net.geant.coco.agent.portal.controllers.PortalControllerIntent;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.service.NetworkLinksService;
 import net.geant.coco.agent.portal.service.NetworkSitesService;
@@ -27,7 +27,7 @@ public class BgpThread implements Runnable {
     private NetworkSitesService networkSitesService;
     private BgpRouter bgpRouter;
     private Pce pce;
-    private PortalController portalController;
+    private PortalControllerIntent portalController;
     
     private static final int SLEEP_INTERVAL = 2000;
     
@@ -41,7 +41,7 @@ public class BgpThread implements Runnable {
 		this.pce = pce;
 	}
 	
-	public BgpThread(NetworkSwitchesService networkSwitchesService, NetworkLinksService networkLinksService, NetworkSitesService networkSitesService, BgpRouter bgpRouter, PortalController portalController) {
+	public BgpThread(NetworkSwitchesService networkSwitchesService, NetworkLinksService networkLinksService, NetworkSitesService networkSitesService, BgpRouter bgpRouter, PortalControllerIntent portalController) {
 		this.networkSwitchesService = networkSwitchesService;
 		this.networkLinksService = networkLinksService;
 		this.networkSitesService = networkSitesService;
@@ -93,11 +93,6 @@ public class BgpThread implements Runnable {
 	private void addVirtualSiteExternal(String prefix, int vlanId, String neighborIp) {
 		networkSitesService.insertNetworkSite(prefix, vlanId, neighborIp);
 
-		// this may be redundant, core forwarding does not change here (?)
-		if (portalController != null) {
-			portalController.initializeNetworkSitesData(true);
-		}
-		
 		if (portalController == null && pce != null) {
 			List<NetworkSite> newNetworkSites = new ArrayList<NetworkSite>(networkSitesService.getNetworkSites().values());
 			pce.updatePceElement(newNetworkSites);

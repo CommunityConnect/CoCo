@@ -1,31 +1,12 @@
 package net.geant.coco.agent.portal.utils;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Scanner;
-
-import javax.sql.DataSource;
-
-import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.dbcp.BasicDataSource;
-import org.jgrapht.Graph;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import net.geant.coco.agent.portal.bgp.BgpRouteEntry;
+import lombok.extern.slf4j.Slf4j;
 import net.geant.coco.agent.portal.bgp.BgpRouter;
 import net.geant.coco.agent.portal.dao.NetworkLink;
 import net.geant.coco.agent.portal.dao.NetworkLinkDao;
@@ -39,7 +20,6 @@ import net.geant.coco.agent.portal.service.NetworkLinksService;
 import net.geant.coco.agent.portal.service.NetworkSitesService;
 import net.geant.coco.agent.portal.service.NetworkSwitchesService;
 import net.geant.coco.agent.portal.service.VpnsService;
-import net.geant.coco.agent.portal.threads.BgpThread;
 
 @Slf4j
 @Component
@@ -49,10 +29,7 @@ public class TestApp {
     private static NetworkLinksService networkLinksService;
     private static NetworkSitesService networkSitesService;
     private static VpnsService vpnsService;
-	private static long testTime;
-	
-	private static final String lastFlowFilename = "lastFlowNumber.txt";
-	    
+
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		log.info("Start test app");

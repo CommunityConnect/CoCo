@@ -10,7 +10,7 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 
-public class BgpRouter {
+public class BgpRouter implements BgpRouterInterface {
 
 	private String ipAddress;
 	private int port;

@@ -6,6 +6,9 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 
 import lombok.extern.slf4j.Slf4j;
+import net.geant.coco.agent.portal.bgp.BgpRouter;
+import net.geant.coco.agent.portal.bgp.BgpRouterFactory;
+import net.geant.coco.agent.portal.bgp.BgpRouterInterface;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.NetworkSiteDao;
 import net.geant.coco.agent.portal.dao.Vpn;
@@ -31,11 +34,20 @@ public class VpnsService {
     @Autowired
 	Environment env;
 	
+    BgpRouterInterface bgpRouter;
+    
 	@PostConstruct
 	public void setVpnProvisioner() {
 	    log.info("setVpnProvisioner");  // Displays as expected
 	    String controllerUrl = env.getProperty("controller.url");
 		vpnProvisioner = new VpnProvisioner(controllerUrl);
+	}
+	
+	@PostConstruct
+	public void setBgpRouter() {
+	    log.info("setBgpRouter");  // Displays as expected
+	    String bgpIp = env.getProperty("ip");
+	    bgpRouter = BgpRouterFactory.create(bgpIp, 7644);
 	}
 	
     @Autowired
@@ -90,6 +102,8 @@ public class VpnsService {
     	NetworkSite site = networkSiteDao.getNetworkSite(siteName);
     	vpnProvisioner.addSite(vpnName, site.getName(), site.getIpv4Prefix(), site.getProviderSwitch() + ":" + site.getProviderPort(), site.getMacAddress());
         
+    	bgpRouter.addPeer(site.getIpv4Prefix(), Integer.parseInt(env.getProperty("asNumber")));
+    	
     	return vpnDao.addSiteToVpn(vpnName, siteName);
     }
 
@@ -97,7 +111,7 @@ public class VpnsService {
     	log.info("deleteSiteFromVpn - vpn: " + vpnName + " site: " + siteName);
     	
     	vpnProvisioner.deleteSite(vpnName, siteName);
-    	
+
         return vpnDao.deleteSiteFromVpn(vpnName, siteName);
     }
 

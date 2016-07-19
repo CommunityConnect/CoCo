@@ -34,6 +34,6 @@
                maxActive="100" maxIdle="30" maxWait="10000"
                username="coco" password="cocorules!" driverClassName="com.mysql.jdbc.Driver"
                factory="org.apache.commons.dbcp.BasicDataSourceFactory"
-               url="jdbc:mysql://134.221.121.203:3306/CoCoBBF"/>
+               url="jdbc:mysql://134.221.121.204:3306/CoCoBBF"/>
                
 </Context>

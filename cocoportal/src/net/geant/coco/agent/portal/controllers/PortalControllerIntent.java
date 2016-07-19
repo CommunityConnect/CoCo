@@ -1,8 +1,6 @@
 package net.geant.coco.agent.portal.controllers;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -34,8 +32,6 @@ public class PortalControllerIntent {
 	private VpnsService vpnsService;
 	private TopologyService topologyService;
 	
-	Map<String, NetworkSite> networkSites;
-	
 	boolean networkChanged = false;
 
 	@Autowired
@@ -47,20 +43,7 @@ public class PortalControllerIntent {
 	public void setTopologyService(TopologyService topologyService) {
 		this.topologyService = topologyService;
 	}
-	
-	private void networkAddSiteToVpn(String vpnName, String addSiteName) {
-		log.info("networkAddSiteToVpn vpnName=" + vpnName + "siteName=" + addSiteName);
 		
-		vpnsService.addSiteToVpn(vpnName, addSiteName);
-	}
-
-	private void networkDeleteSiteFromVpn(String vpnName, String deleteSiteName) {
-		log.info("networkAddSiteToVpn vpnName=" + vpnName + "siteName=" + deleteSiteName);
-		
-		vpnsService.deleteSiteFromVpn(vpnName, deleteSiteName);
-	}
-	
-	
 	@RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_VIS, method = RequestMethod.GET)
 	public String getTopologyVis() {
 		log.info("getTopologyVis");
@@ -95,37 +78,25 @@ public class PortalControllerIntent {
 		Vpn vpnNew = vpn;
 		Vpn vpnCurrent = vpnsService.getVpn(vpnId);
 
-		List<NetworkSite> sitesToAdd = new ArrayList<NetworkSite>(vpnNew.getSites());
+		List<NetworkSite> sitesToAdd = vpnNew.getSites();
 		sitesToAdd.removeAll(vpnCurrent.getSites());
-		List<NetworkSite> sitesToRemove = new ArrayList<NetworkSite>(vpnCurrent.getSites());
+
+		List<NetworkSite> sitesToRemove = vpnCurrent.getSites();
 		sitesToRemove.removeAll(vpnNew.getSites());
 
 
 		for (NetworkSite site : sitesToAdd) {
-			networkAddSiteToVpn(vpnCurrent.getName(), site.getName());
+			vpnsService.addSiteToVpn(vpnCurrent.getName(), site.getName());
 		}
 		
 		for (NetworkSite site : sitesToRemove) {
-			networkDeleteSiteFromVpn(vpnCurrent.getName(), site.getName());
+			vpnsService.deleteSiteFromVpn(vpnCurrent.getName(), site.getName());
 		}
 
 		vpnNew = vpnsService.getVpn(vpnId);
 		return vpnNew;
 	}
-	
-	
-	
-//	@PostConstruct
-//	@RequestMapping("/setupAll")
-//	public @ResponseBody String initializeEverything() {
-//		log.info("Initialize everything Intent version");
-//
-//		this.networkChanged = true;
-//		
-//		return "everything initialized succesfully";
-//
-//	}
-	
+		
 	@RequestMapping(value = RestVpnURIConstants.GET_ALL_VPN, method = RequestMethod.GET)
 	public List<Vpn> getAllVpns() {
 		log.info("Start getAllVpns.");

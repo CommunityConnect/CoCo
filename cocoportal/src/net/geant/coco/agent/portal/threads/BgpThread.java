@@ -16,7 +16,7 @@ import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.service.NetworkLinksService;
 import net.geant.coco.agent.portal.service.NetworkSitesService;
 import net.geant.coco.agent.portal.service.NetworkSwitchesService;
-import net.geant.coco.agent.portal.utils.Pce;
+//import net.geant.coco.agent.portal.utils.Pce;
 import net.geant.coco.agent.portal.utils.TestApp;
 
 @Slf4j
@@ -26,19 +26,19 @@ public class BgpThread implements Runnable {
     private NetworkLinksService networkLinksService;
     private NetworkSitesService networkSitesService;
     private BgpRouter bgpRouter;
-    private Pce pce;
+    //private Pce pce;
     private PortalControllerIntent portalController;
     
     private static final int SLEEP_INTERVAL = 2000;
     
     private Map<String, BgpRouteEntry> prefixToBgpRouteEntry = new HashMap<String, BgpRouteEntry>();
     
-	public BgpThread(NetworkSwitchesService networkSwitchesService, NetworkLinksService networkLinksService, NetworkSitesService networkSitesService, BgpRouter bgpRouter, Pce pce) {
+	public BgpThread(NetworkSwitchesService networkSwitchesService, NetworkLinksService networkLinksService, NetworkSitesService networkSitesService, BgpRouter bgpRouter/*, Pce pce*/) {
 		this.networkSwitchesService = networkSwitchesService;
 		this.networkLinksService = networkLinksService;
 		this.networkSitesService = networkSitesService;
 		this.bgpRouter = bgpRouter;
-		this.pce = pce;
+		//this.pce = pce;
 	}
 	
 	public BgpThread(NetworkSwitchesService networkSwitchesService, NetworkLinksService networkLinksService, NetworkSitesService networkSitesService, BgpRouter bgpRouter, PortalControllerIntent portalController) {
@@ -93,10 +93,10 @@ public class BgpThread implements Runnable {
 	private void addVirtualSiteExternal(String prefix, int vlanId, String neighborIp) {
 		networkSitesService.insertNetworkSite(prefix, vlanId, neighborIp);
 
-		if (portalController == null && pce != null) {
+		if (portalController == null /*&& pce != null*/) {
 			List<NetworkSite> newNetworkSites = new ArrayList<NetworkSite>(networkSitesService.getNetworkSites().values());
-			pce.updatePceElement(newNetworkSites);
-			pce.setupCoreForwarding();
+			//pce.updatePceElement(newNetworkSites);
+			//pce.setupCoreForwarding();
 		}
 	}
 

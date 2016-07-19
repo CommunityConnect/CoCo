@@ -49,7 +49,6 @@ public class TestApp {
     private static NetworkLinksService networkLinksService;
     private static NetworkSitesService networkSitesService;
     private static VpnsService vpnsService;
-    public static Pce pce;
 	private static long testTime;
 	
 	private static final String lastFlowFilename = "lastFlowNumber.txt";
@@ -110,19 +109,11 @@ public class TestApp {
         
 		RestClient restClient = new RestClient(controllerUrl);
 		
-        log.info("Creating Pce object...");
-        pce = new Pce(restClient, networkSwitches, networkSites, networkSwitchesWithEnni);
-        log.info("Pce object creataion done");
-       
-        log.info("Setting up core forwarding...");
-        pce.setupCoreForwarding();
-        
-
         BgpRouter bgpRouter = new BgpRouter("134.221.121.203", 7644);
         
-		Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter, pce);
+		//Runnable bgpThreadRunnable = new BgpThread(networkSwitchesService, networkLinksService, networkSitesService, bgpRouter, pce);
 		log.debug("Starting bgp thread");
-		new Thread(bgpThreadRunnable).start();
+		//new Thread(bgpThreadRunnable).start();
 		log.debug("Started bgp thread");
 		
 		

@@ -21,13 +21,13 @@ public class BgpRouterDummy implements BgpRouterInterface {
 	}
 
 	@Override
-	public void addVpn(String prefix, String neighborIpAddress, int vpnNum) {
+	public void addSiteToVpn(String prefix, String neighborIpAddress, int vpnNum) {
 		log.info("addVpn " + prefix + " " + vpnNum);
 		
 	}
 
 	@Override
-	public void delVpn(String prefix, String neighborIpAddress, int vpnNum) {
+	public void delSiteFromVpn(String prefix, String neighborIpAddress, int vpnNum) {
 		log.info("delVpn " + prefix + " " + vpnNum);
 		
 	}

@@ -41,7 +41,7 @@ public class BgpRouter implements BgpRouterInterface {
 		
 	}
 	
-	public void addVpn(String prefix, String neighborIpAddress, int vpnNum)
+	public void addSiteToVpn(String prefix, String neighborIpAddress, int vpnNum)
 	{
 		try {
 		      TTransport transport;
@@ -63,7 +63,7 @@ public class BgpRouter implements BgpRouterInterface {
 		
 	}
 	
-	public void delVpn(String prefix, String neighborIpAddress, int vpnNum) {
+	public void delSiteFromVpn(String prefix, String neighborIpAddress, int vpnNum) {
 
 		try {
 			TTransport transport;

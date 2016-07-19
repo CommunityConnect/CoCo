@@ -100,9 +100,14 @@ public class VpnsService {
     	log.info("addSiteToVpn - vpn: " + vpnName + " site: " + siteName);
     	
     	NetworkSite site = networkSiteDao.getNetworkSite(siteName);
+    	Vpn currentVpn = vpnDao.getVpn(vpnName);
+    	
     	vpnProvisioner.addSite(vpnName, site.getName(), site.getIpv4Prefix(), site.getProviderSwitch() + ":" + site.getProviderPort(), site.getMacAddress());
         
     	bgpRouter.addPeer(site.getIpv4Prefix(), Integer.parseInt(env.getProperty("asNumber")));
+    	
+    	//TODO fix the neighbour IP address, how to handle multiple neighbours?
+    	bgpRouter.addSiteToVpn(site.getIpv4Prefix(), "0.0.0.0", currentVpn.getId());
     	
     	return vpnDao.addSiteToVpn(vpnName, siteName);
     }
@@ -110,7 +115,13 @@ public class VpnsService {
     public boolean deleteSiteFromVpn(String vpnName, String siteName) {
     	log.info("deleteSiteFromVpn - vpn: " + vpnName + " site: " + siteName);
     	
+    	NetworkSite site = networkSiteDao.getNetworkSite(siteName);
+    	Vpn currentVpn = vpnDao.getVpn(vpnName);
+    	
     	vpnProvisioner.deleteSite(vpnName, siteName);
+    	
+    	//TODO fix the neighbour IP address, how to handle multiple neighbours?
+    	bgpRouter.delSiteFromVpn(site.getIpv4Prefix(), "0.0.0.0", currentVpn.getId());
 
         return vpnDao.deleteSiteFromVpn(vpnName, siteName);
     }

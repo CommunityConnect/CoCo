@@ -105,7 +105,7 @@ public class TestApp {
     	String neighborIp = "10.3.0.254";
     	String neighborName = "tno-south";
     	
-    	bgpRouter.addVpn(siteIpPrefix, neighborIp, 1);
+    	bgpRouter.addSiteToVpn(siteIpPrefix, neighborIp, 1);
     	
     	/*
     	networkAddSiteToVpn("vpn1", "tn-ce1");

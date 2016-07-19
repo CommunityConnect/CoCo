@@ -107,7 +107,7 @@ public class TestApp {
         //List<Vpn> vpns = vpnsService.getVpns(controllerUrl);
         
         
-		RestClient restClient = new RestClient(controllerUrl);
+		//RestClient restClient = new RestClient(controllerUrl);
 		
         BgpRouter bgpRouter = new BgpRouter("134.221.121.203", 7644);
         

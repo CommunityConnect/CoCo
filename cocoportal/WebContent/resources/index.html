@@ -57,7 +57,8 @@
             <li><a href="#contact">Contact</a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
-            <li class="active"><a href="./logout">Logout<span class="sr-only">(current)</span></a></li>
+            <li><div id="username"></div></li>
+            <li class="active"><a href="../logout">Logout<span class="sr-only">(current)</span></a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -296,6 +297,11 @@
 $.fn.bootstrapSwitch.defaults.size = 'mini';			
 $("[name='VPN-1-checkbox']").bootstrapSwitch();
 
+//load user name
+$.getJSON("./getUser", function(data) {
+	var userdata = data;
+	$("#username").text(userdata.username);
+});
 
 // Very bad grobal variable
 var currentVPN = -1;

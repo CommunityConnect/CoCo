@@ -11,7 +11,22 @@
 	<context:component-scan base-package="net.geant.coco.agent.portal.dao">
 	</context:component-scan>
 
-	<jee:jndi-lookup jndi-name="jdbc/CoCoDB" id="dataSource"
+	<!-- jee:jndi-lookup jndi-name="jdbc/CoCoDB" id="dataSource"
 		expected-type="javax.sql.DataSource">
-	</jee:jndi-lookup>
+	</jee:jndi-lookup -->
+	
+	<context:property-placeholder location="classpath:/net/geant/coco/agent/portal/props/jdbc.properties" />
+	
+	<!-- MySQL data source -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+
+		<property name="driverClassName" value="${jdbc.driver}"></property>
+		<property name="url" value="${jdbc.url}"></property>
+		<property name="username" value="${jdbc.username}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+		<property name="maxActive" value="100" />
+		<property name="maxIdle" value="30" />
+		<property name="maxWait" value="10000" />
+	</bean>
 </beans>

@@ -6,11 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +22,7 @@ import net.geant.coco.agent.portal.dao.Vpn;
 import net.geant.coco.agent.portal.rest.RestVpnURIConstants;
 import net.geant.coco.agent.portal.service.TopologyService;
 import net.geant.coco.agent.portal.service.VpnsService;
+import net.geant.coco.agent.portal.utils.CoCoMail;
 
 @Slf4j
 @RestController
@@ -43,6 +47,19 @@ public class PortalControllerIntent {
 	public void setTopologyService(TopologyService topologyService) {
 		this.topologyService = topologyService;
 	}
+
+	
+	@RequestMapping(value="/emailtest", method = RequestMethod.GET)
+	public @ResponseBody String emailtest() {
+		String recipient = "SimonGunkel@googlemail.com";
+		String mail_subject = "Test Mail From CoCo Service";
+		String mail_message = "Hello Simon \n\n This is a testmail. \n Best regards!";
+		
+		boolean result = CoCoMail.sendMail(recipient, mail_subject, mail_message);
+				
+		return "The mail was send " + result;
+	}
+	
 		
 	@RequestMapping(value = RestVpnURIConstants.GET_TOPOLOGY_VIS, method = RequestMethod.GET)
 	public String getTopologyVis() {

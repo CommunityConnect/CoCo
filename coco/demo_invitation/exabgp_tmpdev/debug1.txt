@@ -1,0 +1,86 @@
+neighbor 134.221.121.201 {
+    router-id 134.221.121.202;
+    local-address 134.221.121.202;
+    local-as 202;
+    peer-as 201;
+    graceful-restart;
+
+    process announce-routes {
+	encoder json;
+	receive {
+		parsed;
+		update;
+		neighbor-changes;
+	}
+        run ./api-add-remove.run;
+    }
+}
+
+============
+
+		line = sys.stdin.readline().strip()
+		# print >> sys.stderr, "GOT A LINE"
+		sys.stdout.flush()
+		if line == "":
+			counter += 1
+			if counter > 100:
+				break
+			continue
+
+		counter = 0
+
+		print >> sys.stderr, _prefixed(sys.argv[1] if len(sys.argv) >= 2 else 'EXABGP PROCESS',line)
+
+===============
+Fri, 16 Sep 2016 15:10:22 | INFO     | 15693  | processes     | Forked process announce-routes
+Fri, 16 Sep 2016 15:10:25 | INFO     | 15693  | network       | Connected to peer neighbor 134.221.121.201 local-ip 134.221.121.202 local-as 202 peer-as 201 router-id 134.221.121.202 family-allowed in-open (out)
+Fri, 16 Sep 2016 15:10:30 | INFO     | 15693  | processes     | Command from process announce-routes : announce route 2.2.0.0/24 next-hop self extended-community 0x0002FDE800000001 extended-community 0x8ABCBEEFDEADBEEF 
+Fri, 16 Sep 2016 15:10:30 | INFO     | 15693  | reactor       | Route added to neighbor 134.221.121.201 local-ip 134.221.121.202 local-as 202 peer-as 201 router-id 134.221.121.202 family-allowed in-open : 2.2.0.0/24 next-hop 134.221.121.202 extended-community [ target:65000:0.0.0.1 0x8ABCBEEFDEADBEEF ]
+Fri, 16 Sep 2016 15:10:31 | INFO     | 15693  | reactor       | Performing dynamic route update
+Fri, 16 Sep 2016 15:10:31 | INFO     | 15693  | reactor       | Updated peers dynamic routes successfully
+Fri, 16 Sep 2016 15:10:31 EXABGP PROCESS 15696  { "exabgp": "3.4.8", "time": 1474031424, "host" : "TN2-ODL", "pid" : "15693", "ppid" : "2825", "counter": 1, "type": "state", "neighbor": { "ip": "134.221.121.201", "address": { "local": "134.221.121.202", "peer": "134.221.121.201"}, "asn": { "local": "202", "peer": "201"}, "state": "connected"} }
+Fri, 16 Sep 2016 15:10:31 EXABGP PROCESS 15696  { "exabgp": "3.4.8", "time": 1474031425, "host" : "TN2-ODL", "pid" : "15693", "ppid" : "2825", "counter": 2, "type": "state", "neighbor": { "ip": "134.221.121.201", "address": { "local": "134.221.121.202", "peer": "134.221.121.201"}, "asn": { "local": "202", "peer": "201"}, "state": "up"} }
+Fri, 16 Sep 2016 15:10:31 EXABGP PROCESS 15696  { "exabgp": "3.4.8", "time": 1474031426, "host" : "TN2-ODL", "pid" : "15693", "ppid" : "2825", "counter": 3, "type": "update", "neighbor": { "ip": "134.221.121.201", "address": { "local": "134.221.121.202", "peer": "134.221.121.201"}, "asn": { "local": "202", "peer": "201"}, "message": { "update": { "announce": { "ipv4 unicast": { "null": { "eor": { "afi" : "ipv4", "safi" : "unicast" } } } } } }} }
+Fri, 16 Sep 2016 15:11:57 EXABGP PROCESS 15696  { "exabgp": "3.4.8", "time": 1474031517, "host" : "TN2-ODL", "pid" : "15693", "ppid" : "2825", "counter": 4, "type": "update", "neighbor": { "ip": "134.221.121.201", "address": { "local": "134.221.121.202", "peer": "134.221.121.201"}, "asn": { "local": "202", "peer": "201"}, "message": { "update": { "attribute": { "origin": "igp", "as-path": [ 201 ], "confederation-path": [], "med": 0 }, "announce": { "ipv4 unicast": { "134.221.121.201": { "3.3.0.0/24": {  } } } } } }}
+
+
+=====
+coco     15696  0.0  0.0  24532  7336 pts/3    S    15:10   0:00 python /home/coco/demo_invitation/exabgp_tmpdev/api-add-remove.run
+
+
+
+######################
+######################
+
+group TN2_TS2 {
+        router-id 134.221.121.202;
+        local-as 202;
+        local-address 134.221.121.202;
+
+        neighbor 134.221.121.201 {
+	        peer-as 201;
+
+        }
+
+        process announce-routes {
+		encoder json;
+		receive {
+			parsed;
+			update;
+			neighbor-changes;
+		}
+	        run ./api-add-remove.run;
+	}
+}
+
+======================
+Fri, 16 Sep 2016 15:23:28 | INFO     | 15797  | processes     | Forked process announce-routes
+Fri, 16 Sep 2016 15:23:31 | INFO     | 15797  | network       | Connected to peer neighbor 134.221.121.201 local-ip 134.221.121.202 local-as 202 peer-as 201 router-id 134.221.121.202 family-allowed in-open (out)
+Fri, 16 Sep 2016 15:23:35 | INFO     | 15797  | processes     | Command from process announce-routes : announce route 2.2.0.0/24 next-hop self extended-community 0x0002FDE800000001 extended-community 0x8ABCBEEFDEADBEEF 
+Fri, 16 Sep 2016 15:23:35 | INFO     | 15797  | reactor       | Route added to neighbor 134.221.121.201 local-ip 134.221.121.202 local-as 202 peer-as 201 router-id 134.221.121.202 family-allowed in-open : 2.2.0.0/24 next-hop 134.221.121.202 extended-community [ target:65000:0.0.0.1 0x8ABCBEEFDEADBEEF ]
+Fri, 16 Sep 2016 15:23:36 | INFO     | 15797  | reactor       | Performing dynamic route update
+Fri, 16 Sep 2016 15:23:36 | INFO     | 15797  | reactor       | Updated peers dynamic routes successfully
+^CFri, 16 Sep 2016 15:40:49 | INFO     | 15797  | reactor       | ^C received
+Fri, 16 Sep 2016 15:40:49 | INFO     | 15797  | reactor       | Performing shutdown
+Fri, 16 Sep 2016 15:40:50 EXABGP PROCESS 15800  { "exabgp": "3.4.8", "time": 1474033250, "host" : "TN2-ODL", "pid" : "15797", "ppid" : "2825", "counter": 1, "type": "notification", "notification": "shutdown"}
+Fri, 16 Sep 2016 15:40:50 | INFO     | 15797  | processes     | Terminating process announce-routes

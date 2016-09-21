@@ -1,0 +1,5 @@
+#useful quagga/bgpd commands
+
+show bgp vpn summary
+
+show bgp ipv4 vpn

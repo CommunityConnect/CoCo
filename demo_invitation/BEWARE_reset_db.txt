@@ -1,0 +1,19 @@
+mysql -u root -p
+
+DROP DATABESE CoCoINV;
+FLUSH PRIVILEGES;
+create database CoCoINV;
+CREATE USER 'coco'@'localhost' IDENTIFIED BY 'cocorules!';
+GRANT ALL PRIVILEGES ON CoCoINV.* TO 'coco'@'localhost';
+
+exit
+
+mysql -u root -p CoCoINV < /home/coco/demo_invitation/cocoinv_clean.sql
+
+===
+Remember to have
+
+bind-address		= 0.0.0.0
+in
+/etc/mysql/my.cnf
+134.221.121.201

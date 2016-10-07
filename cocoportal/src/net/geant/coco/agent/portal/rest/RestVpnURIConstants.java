@@ -11,6 +11,8 @@ public class RestVpnURIConstants {
     public static final String DELETE_VPN = "/rest/vpn/del/{id}";
     public static final String GET_ALL_SITES = "/rest/sites/{id}";
     
+    public static final String GET_USER_SUBNETS = "/rest/subnets";
+    
     public static final String GET_TOPOLOGY = "/topology";
     public static final String GET_TOPOLOGY_VIS = "/topology/vis";
     public static final String GET_TOPOLOGY_IS_CHANGED = "/topology/isChanged";

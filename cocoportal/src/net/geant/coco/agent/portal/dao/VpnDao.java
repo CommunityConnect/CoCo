@@ -3,8 +3,10 @@ package net.geant.coco.agent.portal.dao;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
+import org.apache.commons.dbcp.BasicDataSource;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,6 +24,7 @@ public class VpnDao {
 
     @Autowired
     public void setDataSource(DataSource jdbc) {
+    	//log.info("Init datesource " + ((BasicDataSource) jdbc).getUrl());
         this.jdbc = new NamedParameterJdbcTemplate(jdbc);
         try {
             log.info("Using database: " + jdbc.getConnection().getCatalog());
@@ -119,13 +122,20 @@ public class VpnDao {
         params.addValue("pathProtection", vpn.getPathProtection());
         params.addValue("failoverType", vpn.getFailoverType());
         params.addValue("isPublic", 0);
+        params.addValue("owner", vpn.getOwner_id());
+        params.addValue("domain", vpn.getDomain_id());
         
-        String query = "INSERT INTO vpns (`name`, `pathProtection`, `failoverType`, `isPublic`) "
-                + "VALUES (:name, :pathProtection, :failoverType, :isPublic);";
+        String query = "INSERT INTO vpns (`name`, `pathProtection`, `failoverType`, `isPublic`, `owner`, `domain`) "
+                + "VALUES (:name, :pathProtection, :failoverType, :isPublic, :owner, :domain);";
         log.info("createVpn " + query);
-        log.info("createVpn name=" + vpn.getName());
-        log.info("createVpn name=" + vpn.getPathProtection());
-        log.info("createVpn name=" + vpn.getFailoverType());
+        
+        for (Map.Entry<String, Object> entry : params.getValues().entrySet()) {
+        	log.info("createVpn Key = " + entry.getKey() + ", Value = " + entry.getValue());
+        }
+        //log.info("createVpn " + params.getValues());
+        //log.info("createVpn name=" + vpn.getName());
+        //log.info("createVpn name=" + vpn.getPathProtection());
+        //log.info("createVpn name=" + vpn.getFailoverType());
         
         return (jdbc.update(query, params) == 1);
     }
@@ -146,31 +156,65 @@ public class VpnDao {
          return (jdbc.update(query, params) == 1);
 	}
 
-    public boolean addSiteToVpn(String vpnName, String siteName) {
-        MapSqlParameterSource params = new MapSqlParameterSource();
+    public boolean addSubnetToVpn(String vpnName, String subnet) {
+    	MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("vpnName", vpnName);
-        params.addValue("siteName", siteName);
+        params.addValue("subnet", subnet);
 
-        String query = "INSERT INTO site2vpn (`vpnid`, `siteid`)"
+        String query = "INSERT INTO vpnsubnet (`vpn`, `subnet`) "
                 + "VALUES ("
-                + "(SELECT id FROM vpns WHERE `name` = :vpnName),"
-                + "(SELECT id FROM sites WHERE `name` = :siteName)"
+                + "(SELECT id FROM vpns WHERE `name` = :vpnName), "
+                + "(SELECT id FROM subnets WHERE `subnet` = :subnet) "
                 + ");";
         log.trace("vpnDao addSite: " + query);
         return jdbc.update(query, params) == 1;
     }
+    
+    @Deprecated
+    public boolean addSiteToVpn(String vpnName, String siteName) {
+    	return this.addSubnetToVpn(vpnName, siteName);
+    	
+//        MapSqlParameterSource params = new MapSqlParameterSource();
+//        params.addValue("vpnName", vpnName);
+//        params.addValue("siteName", siteName);
+//
+//        String query = "INSERT INTO site2vpn (`vpnid`, `siteid`)"
+//                + "VALUES ("
+//                + "(SELECT id FROM vpns WHERE `name` = :vpnName),"
+//                + "(SELECT id FROM sites WHERE `name` = :siteName)"
+//                + ");";
+//        log.trace("vpnDao addSite: " + query);
+//        return jdbc.update(query, params) == 1;
+    }
 
-    public boolean deleteSiteFromVpn(String vpnName, String siteName) {
+    public boolean deleteSubnetFromVpn(String vpnName, String subnet) {
     	MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("vpnName", vpnName);
-        params.addValue("siteName", siteName);
-        
-        String query = "DELETE s2v FROM site2vpn s2v "
-                + "INNER JOIN vpns v ON s2v.vpnid = v.id "
-                + "INNER JOIN sites s ON s2v.siteid = s.id "
-                + "WHERE s.name = :siteName AND v.name = :vpnName ;";
-        
-        log.trace("vpnDao deleteSite: " + query);
-        return jdbc.update(query, params) == 1;
+    	params.addValue("vpnName", vpnName);
+    	params.addValue("subnet", subnet);
+    	
+    	String query = "DELETE FROM vpnsubnet WHERE id=( "
+    			+ "SELECT id FROM vpnsubnet "
+    			+ "INNER JOIN vpns on vpnsubnet.vpn=vpns.id WHERE vpns.name = :vpnName "
+    			+ "INNER JOIN subnets on vpnsubnet.subnet=subnets.id WHERE subnets.subnet = :subnet "
+    			+ " );";
+
+    	log.trace("vpnDao deleteSite: " + query);
+    	return jdbc.update(query, params) == 1;
+    }
+    
+    @Deprecated
+    public boolean deleteSiteFromVpn(String vpnName, String siteName) {
+    	return this.deleteSubnetFromVpn(vpnName, siteName);
+//    	MapSqlParameterSource params = new MapSqlParameterSource();
+//        params.addValue("vpnName", vpnName);
+//        params.addValue("siteName", siteName);
+//        
+//        String query = "DELETE s2v FROM site2vpn s2v "
+//                + "INNER JOIN vpns v ON s2v.vpnid = v.id "
+//                + "INNER JOIN sites s ON s2v.siteid = s.id "
+//                + "WHERE s.name = :siteName AND v.name = :vpnName ;";
+//        
+//        log.trace("vpnDao deleteSite: " + query);
+//        return jdbc.update(query, params) == 1;
     }
 }

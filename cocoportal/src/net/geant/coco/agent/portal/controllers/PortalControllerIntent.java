@@ -18,7 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
 import net.geant.coco.agent.portal.dao.NetworkSite;
+import net.geant.coco.agent.portal.dao.Subnet;
+import net.geant.coco.agent.portal.dao.SubnetDao;
+import net.geant.coco.agent.portal.dao.User;
+import net.geant.coco.agent.portal.dao.UserDao;
 import net.geant.coco.agent.portal.dao.Vpn;
+import net.geant.coco.agent.portal.dao.VpnDao;
 import net.geant.coco.agent.portal.rest.RestVpnURIConstants;
 import net.geant.coco.agent.portal.service.TopologyService;
 import net.geant.coco.agent.portal.service.VpnsService;
@@ -35,9 +40,16 @@ public class PortalControllerIntent {
 
 	private VpnsService vpnsService;
 	private TopologyService topologyService;
+	private UserDao userDao;
+	private SubnetDao subnetDao;
 	
 	boolean networkChanged = false;
 
+	@Autowired
+    public void setUserDao(UserDao userDao) {
+        this.userDao = userDao;
+    }
+	
 	@Autowired
 	public void setVpnsService(VpnsService vpnsService) {
 		this.vpnsService = vpnsService;
@@ -47,8 +59,12 @@ public class PortalControllerIntent {
 	public void setTopologyService(TopologyService topologyService) {
 		this.topologyService = topologyService;
 	}
-
 	
+	@Autowired
+	public void setSubnetDao(SubnetDao subnetDao) {
+		this.subnetDao = subnetDao;
+	}
+
 	@RequestMapping(value="/emailtest", method = RequestMethod.GET)
 	public @ResponseBody String emailtest() {
 		String recipient = "SimonGunkel@googlemail.com";
@@ -58,6 +74,37 @@ public class PortalControllerIntent {
 		boolean result = CoCoMail.sendMail(recipient, mail_subject, mail_message);
 				
 		return "The mail was send " + result;
+	}
+	
+	@RequestMapping(value="/userdaotest", method = RequestMethod.GET)
+	public @ResponseBody String userdaotest() {
+		
+		List<User> users = userDao.getUsers();
+		
+		String users_string = "users <br>";
+
+		for (User user : users){
+			users_string += "USER: " + user.toString() + " <br>";
+		}
+				
+		return users_string;
+	}
+	
+	@RequestMapping(value = RestVpnURIConstants.GET_USER_SUBNETS, method = RequestMethod.GET)
+	public List<Subnet> getUserSubnets() {
+		//log.info("Start getall sites.");
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    
+		String userName = "Null";
+		
+		if (auth.isAuthenticated()){
+			userName = auth.getName(); //get logged in username
+		}
+		
+		User user = userDao.getUser(userName);
+
+		return subnetDao.getUserSubnets(user);
 	}
 	
 		
@@ -113,7 +160,8 @@ public class PortalControllerIntent {
 		vpnNew = vpnsService.getVpn(vpnId);
 		return vpnNew;
 	}
-		
+	
+	//TODO: Fix so that you only get VPN that you have access to, beside admin!?
 	@RequestMapping(value = RestVpnURIConstants.GET_ALL_VPN, method = RequestMethod.GET)
 	public List<Vpn> getAllVpns() {
 		log.info("Start getAllVpns.");
@@ -132,9 +180,23 @@ public class PortalControllerIntent {
 	public boolean createVpn(@RequestBody Vpn vpn) {
 		log.info("Start createVpn.");
 
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    
+		String userName = "Null";
+		
+		if (auth.isAuthenticated()){
+			userName = auth.getName(); //get logged in username
+		}
+		
+		User user = userDao.getUser(userName);
+		
+		vpn.setDomain_id(user.getDomain_id());
+		vpn.setOwner_id(user.getId());
+		
 		return vpnsService.createVpn(vpn);
 	}
 
+	// TODO: Check if you are the right user of the VPN or Admin
 	@RequestMapping(value = RestVpnURIConstants.DELETE_VPN, method = RequestMethod.POST)
 	public boolean deleteVpn(@PathVariable("id") int vpnId) {
 		log.info("Start deleteVpn.");

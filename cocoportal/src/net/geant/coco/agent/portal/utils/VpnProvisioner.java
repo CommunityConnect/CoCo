@@ -302,6 +302,7 @@ public class VpnProvisioner {
      */
     public int addSite(String vpnName, String siteName, String ipPrefix,
             String switchPortId, String macAddress) {
+    	//TODO change the ipPrefix into the subnet prefix to deal with subnets!
         Gson gson = new Gson();
         AddVpnEndpoint endpoint = new AddVpnEndpoint(vpnName, siteName,
                 ipPrefix, switchPortId, macAddress);

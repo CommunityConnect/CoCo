@@ -31,8 +31,9 @@ public class NetworkSiteDao {
         String query = "SELECT sites.*, " + "switches.name AS switch_name, "
                 + "vpns.name AS vpn_name " + "FROM sites "
                 + "INNER JOIN switches ON sites.switch = switches.id "
-                + "INNER JOIN site2vpn ON sites.id = site2vpn.siteid "
-                + "INNER JOIN vpns ON vpns.id = site2vpn.vpnid;";
+                + "INNER JOIN subnets ON sites.id=subnets.site "
+                + "INNER JOIN vpnsubnet ON subnets.id = vpnsubnet.subnet "
+                + "INNER JOIN vpns ON vpns.id = vpnsubnet.vpn;";
         // System.out.println(query);
         return jdbc.query(query, new RowMapper<NetworkSite>() {
 
@@ -42,12 +43,12 @@ public class NetworkSiteDao {
                 NetworkSite networkSite = new NetworkSite();
 
                 networkSite.setId(rs.getInt("id"));
-                networkSite.setName(rs.getString("name"));
+                networkSite.setName(rs.getString("name") + rs.getString("subnet"));
                 networkSite.setProviderSwitch(rs.getString("switch_name"));
                 networkSite.setProviderPort(rs.getInt("remote_port"));
                 networkSite.setCustomerPort(rs.getInt("local_port"));
                 networkSite.setVlanId(rs.getInt("vlanid"));
-                networkSite.setIpv4Prefix(rs.getString("ipv4prefix"));
+                networkSite.setIpv4Prefix(rs.getString("subnet"));
                 networkSite.setMacAddress(rs.getString("mac_address"));
                 networkSite.setVpnName(rs.getString("vpn_name"));
 
@@ -56,13 +57,17 @@ public class NetworkSiteDao {
 
         });
     }
+    
+    
 
+    //TODO: Simon: I have no idea why this is a list or why we combine the switch and network table here 
     public List<NetworkSite> getNetworkSites(int id) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("id", id);
 
-        String query = "SELECT sites.*, " + "switches.name AS switch_name "
-                + "FROM sites " + "JOIN switches WHERE switch = switches.id "
+        String query = "SELECT sites.*, " + "switches.name AS switch_name, "
+        		+ "subnets.subnet AS subnet " + "FROM sites " 
+        		+ "JOIN switches WHERE switch = switches.id "
                 + "AND sites.id = :id;";
         return jdbc.query(query, params, new RowMapper<NetworkSite>() {
 
@@ -95,10 +100,11 @@ public class NetworkSiteDao {
         params.addValue("vpn", vpnName);
 
         String query = "SELECT sites.*, " + "switches.name AS switch_name, "
-                + "vpns.name AS vpn_name " + "FROM sites "
+                + "vpns.name AS vpn_name, " + "subnets.subnet AS subnet " + "FROM sites "
                 + "INNER JOIN switches ON sites.switch = switches.id "
-                + "INNER JOIN site2vpn ON sites.id = site2vpn.siteid "
-                + "INNER JOIN vpns ON vpns.id = site2vpn.vpnid "
+    			+ "INNER JOIN subnets ON sites.id = subnets.site "
+                + "INNER JOIN vpnsubnet ON subnets.id = vpnsubnet.subnet "
+                + "INNER JOIN vpns ON vpns.id = vpnsubnet.vpn "
                 + "AND vpns.name = :vpn ;";
         return jdbc.query(query, params, new RowMapper<NetworkSite>() {
 
@@ -108,12 +114,12 @@ public class NetworkSiteDao {
                 NetworkSite networkSite = new NetworkSite();
 
                 networkSite.setId(rs.getInt("id"));
-                networkSite.setName(rs.getString("name"));
+                networkSite.setName(rs.getString("name") + rs.getString("subnet"));
                 networkSite.setProviderSwitch(rs.getString("switch_name"));
                 networkSite.setProviderPort(rs.getInt("remote_port"));
                 networkSite.setCustomerPort(rs.getInt("local_port"));
                 networkSite.setVlanId(rs.getInt("vlanid"));
-                networkSite.setIpv4Prefix(rs.getString("ipv4prefix"));
+                networkSite.setIpv4Prefix(rs.getString("subnet"));
                 networkSite.setMacAddress(rs.getString("mac_address"));
                 networkSite.setVpnName(rs.getString("vpn_name"));
 
@@ -131,10 +137,11 @@ public class NetworkSiteDao {
         params.addValue("vpn", vpnName);
 
         String query = "SELECT sites.*, " + "switches.name AS switch_name, "
-                + "vpns.name AS vpn_name " + "FROM sites "
+                + "vpns.name AS vpn_name, " + "subnets.subnet AS subnet " + "FROM sites "
                 + "INNER JOIN switches ON switch = switches.id "
-                + "INNER JOIN site2vpn ON sites.id = site2vpn.siteid "
-                + "INNER JOIN vpns ON vpns.id = site2vpn.vpnid "
+                + "INNER JOIN subnets ON sites.id = subnets.site "
+                + "INNER JOIN vpnsubnet ON subnets.id = vpnsubnet.subnet "
+                + "INNER JOIN vpns ON vpns.id = vpnsubnet.vpn "
                 + "AND vpns.name = :vpn " + "AND switches.name = :sitename ;";
         return jdbc.query(query, params, new RowMapper<NetworkSite>() {
 
@@ -144,12 +151,12 @@ public class NetworkSiteDao {
                 NetworkSite networkSite = new NetworkSite();
 
                 networkSite.setId(rs.getInt("id"));
-                networkSite.setName(rs.getString("name"));
+                networkSite.setName(rs.getString("name") + rs.getString("subnet"));
                 networkSite.setProviderSwitch(rs.getString("switch_name"));
                 networkSite.setProviderPort(rs.getInt("remote_port"));
                 networkSite.setCustomerPort(rs.getInt("local_port"));
                 networkSite.setVlanId(rs.getInt("vlanid"));
-                networkSite.setIpv4Prefix(rs.getString("ipv4prefix"));
+                networkSite.setIpv4Prefix(rs.getString("subnet"));
                 networkSite.setMacAddress(rs.getString("mac_address"));
                 networkSite.setVpnName(rs.getString("vpn_name"));
 
@@ -158,15 +165,15 @@ public class NetworkSiteDao {
 
         });
     }
-
-    public NetworkSite getNetworkSite(String siteName) {
+    
+    public NetworkSite getNetworkSite(int id) {
         MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("name", siteName);
+        params.addValue("id", id);
 
         String query = "SELECT sites.*, switches.name as switch_name FROM sites "
                 + "JOIN switches WHERE sites.switch = switches.id "
-                + "AND sites.name = :name;";
-        log.trace("getNetworkSite " + siteName + "  " + query);
+                + "AND sites.id = :id;";
+        log.trace("getNetworkSite " + id + "  " + query);
         return jdbc.query(query, params, new ResultSetExtractor<NetworkSite>() {
 
             @Override
@@ -190,7 +197,44 @@ public class NetworkSiteDao {
 
         });
     }
+
+    public NetworkSite getNetworkSite(String subnet) {
+    	// (Simon) we actually want the Subnet here not the site
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("subnet", subnet);
+
+        String query = "SELECT sites.*, subnets.subnet AS subnet, switches.name as switch_name FROM sites "
+                + "JOIN switches JOIN subnets "
+                + "WHERE sites.switch = switches.id "
+                + "AND sites.id = subnets.site "
+                + "AND subnet = :subnet;";
+        log.trace("getNetworkSite " + subnet + "  " + query);
+        return jdbc.query(query, params, new ResultSetExtractor<NetworkSite>() {
+
+            @Override
+            public NetworkSite extractData(ResultSet rs) throws SQLException {
+                NetworkSite networkSite = new NetworkSite();
+                
+                //TODO fix here, if there are no results
+                rs.next();
+                
+                networkSite.setId(rs.getInt("id"));
+                networkSite.setName(rs.getString("name") + rs.getString("subnet"));
+                networkSite.setProviderSwitch(rs.getString("switch_name"));
+                networkSite.setProviderPort(rs.getInt("remote_port"));
+                networkSite.setCustomerPort(rs.getInt("local_port"));
+                networkSite.setVlanId(rs.getInt("vlanid"));
+                networkSite.setIpv4Prefix(rs.getString("subnet"));
+                networkSite.setMacAddress(rs.getString("mac_address"));
+
+                return networkSite;
+            }
+
+        });
+    }
     
+    // TODO: (Simon) this still needs to be fixed but i did not found essential code that uses that function
+    @Deprecated
     public int insertNetworkSite(String name, int switchNumber, int remotePort, int localPort, int vlanId, String ipPrefix, String macAddress) {
     	MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("name", name);

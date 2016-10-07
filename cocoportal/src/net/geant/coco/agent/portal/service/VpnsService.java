@@ -11,6 +11,7 @@ import net.geant.coco.agent.portal.bgp.BgpRouterFactory;
 import net.geant.coco.agent.portal.bgp.BgpRouterInterface;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.NetworkSiteDao;
+import net.geant.coco.agent.portal.dao.User;
 import net.geant.coco.agent.portal.dao.Vpn;
 import net.geant.coco.agent.portal.dao.VpnDao;
 import net.geant.coco.agent.portal.utils.VpnProvisioner;
@@ -91,6 +92,7 @@ public class VpnsService {
 
     public boolean createVpn(Vpn vpn) {
     	log.info("createVpn " + vpn.toString());
+    	// TODO: fix VPN provisioner
     	vpnProvisioner.createVpn(vpn.getName(), vpn.getPathProtectionBoolean(), vpn.getFailoverType());
     	
         return vpnDao.createVpn(vpn);

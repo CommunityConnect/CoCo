@@ -8,7 +8,10 @@ import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import net.geant.coco.agent.portal.dao.NetworkElement.NODE_TYPE;
@@ -28,8 +31,8 @@ public class TopologyDao {
         String query = "select switches.id, switches.name, "
         		+ "ases.id AS as_id, ases.as_name AS as_name, ases.bgp_ip "
         		+ "from switches "
-        		+ "INNER JOIN ext_links ON switches.id=ext_links.switch "
-        		+ "INNER JOIN ases ON ext_links.as=ases.id;";
+        		+ "INNER JOIN extlinks ON switches.id=extlinks.switch "
+        		+ "INNER JOIN ases ON extlinks.as=ases.id;";
 
         //System.out.println("links query: " + query);
 
@@ -87,21 +90,36 @@ public class TopologyDao {
     }
     
     public List<NetworkInterface> getNetworkInterfaces_UNI() {
-        String query = "select switches.id, switches.name, "
-        		+ "sites.id AS site_id, sites.name AS site_name from switches "
+    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    
+		String userName = "Null";
+		
+		if (auth.isAuthenticated()){
+			userName = auth.getName(); //get logged in username
+		}
+    	
+		MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("name", userName);
+		
+    	// TODO: Simon, Check if this is correct, we change from a side to a subnet here...
+        String query = "select switches.id, switches.name, sites.id AS site_id, sites.name AS site_name, subnets.id AS sub_id, subnets.subnet AS sub_name, users.email from switches "
         		+ "INNER JOIN sitelinks ON switches.id=sitelinks.switch "
-        		+ "INNER JOIN sites ON sitelinks.site=sites.id;";
+        		+ "INNER JOIN sites ON sitelinks.site=sites.id "
+        		+ "INNER JOIN subnets ON subnets.site=sites.id "
+        		+ "INNER JOIN subnetusers ON subnets.id=subnetusers.subnet "
+        		+ "INNER JOIN users ON users.id=subnetusers.user "
+        		+ "WHERE users.email = :name OR users.name = :name;";
 
         //System.out.println("links query: " + query);
 
-        List<NetworkInterface> networkInterfaces = jdbc.query(query, new RowMapper<NetworkInterface>() {
+        List<NetworkInterface> networkInterfaces = jdbc.query(query, params, new RowMapper<NetworkInterface>() {
 
             @Override
             public NetworkInterface mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
             	
             	NetworkElement networkElementFrom = new NetworkElement(rs.getInt("id"), rs.getString("name"), NODE_TYPE.SWITCH);
-            	NetworkElement networkElementTo = new NetworkElement(rs.getInt("site_id"), rs.getString("site_name"), NODE_TYPE.CUSTOMER);
+            	NetworkElement networkElementTo = new NetworkElement(rs.getInt("sub_id"), rs.getString("sub_name"), NODE_TYPE.CUSTOMER);
             	
             	NetworkInterface networkLink = new NetworkInterface(networkElementFrom, networkElementTo, IF_TYPE.UNI);
 

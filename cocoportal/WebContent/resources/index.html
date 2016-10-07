@@ -57,8 +57,15 @@
             <li><a href="#contact">Contact</a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
-            <li class=""><a href="#user"><div id="username"></div></a></li>
-            <li class="active"><a href="../logout">Logout<span class="sr-only">(current)</span></a></li>
+            <li class=""><a href="#user">
+            	<span class="glyphicon glyphicon-user" aria-hidden="true"></span>
+            	<span id="username"></span>
+            </a></li>
+            <li class=""><a href="../logout">
+            	<span class="glyphicon glyphicon-off" aria-hidden="true"></span>
+            	Logout
+            	<span class="sr-only">(current)</span>
+            </a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -230,30 +237,46 @@
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<div class="row">
-					<div class="col-md-6">
-						<div class="panel-default">
-							Sites in current VPN:
-							<ul id="site-list" class="list-group">
-								<!-- <li href="#" class="list-group-item">Site A</li>
-								<li href="#" class="list-group-item">Site B</li>
-								<li href="#" class="list-group-item">Site C</li> -->
-							</ul>
+					<div class="row-md">
+						<div class="col-md-12">
+							<div class="panel-default">
+								Sites in current VPN:
+								<ul id="site-list" class="list-group">
+									<!-- <li href="#" class="list-group-item">Site A</li>
+									<li href="#" class="list-group-item">Site B</li>
+									<li href="#" class="list-group-item">Site C</li> -->
+								</ul>
 							
-							<button id="add-nodelist" type="button" class="btn btn-default">Add to list</button>													
-							<button id="del-nodelist" type="button" class="btn btn-default">Delete from list</button>
+								<button id="add-nodelist" type="button" class="btn btn-primary btn-default">
+									<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 
+									Add to list
+									<!-- span  class="glyphicon glyphicon-list-alt" aria-hidden="true"></span -->
+								</button>													
+								<button id="del-nodelist" type="button" class="btn btn-warning btn-default">
+									<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+									Delete from list
+									<!-- span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span --> 
+								</button>
 						
+							</div>
 						</div>
 					</div>
-					<div class="col-md-3">
-						<br/>
-						<p>
-						<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#connectModal">Update Vpn</button>
-						</p>
-						<!-- <p>
-						<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#disconnectModal">Disconnect</button>
-						</p> -->
+					<div class="row-md">
+					  	<div class="col-md-12 text-right">
+							<br>
+							<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#connectModal">
+								<span class="glyphicon glyphicon-ok" aria-hidden="true"></span> 
+								Update Vpn
+							</button>
+							<button type="button" class="btn btn-danger btn-lg" data-toggle="modal" data-target="">
+								<span class="glyphicon glyphicon-remove" aria-hidden="true"></span> 
+								Delete Vpn
+							</button>
+							<!-- <p>
+							<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#disconnectModal">Disconnect</button>
+							</p> -->
+						</div>
 					</div>
-					
 				</div>
 			</div>
 		</div>

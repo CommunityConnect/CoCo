@@ -83,8 +83,8 @@ public class SubnetDao {
         params.addValue("user_id", user_id);
         
         String query = "SELECT * FROM subnets "
-                + "INNER JOIN subnetusers ON subnets.id = subnetusers.subnet "
-                + "AND subnetusers.user = :user_id ;";
+                + "INNER JOIN subnetUsers ON subnets.id = subnetUsers.subnet "
+                + "AND subnetUsers.user = :user_id ;";
         log.trace(query);
         
         List<Subnet> subnets = getSubnetList(query, params);
@@ -104,8 +104,8 @@ public class SubnetDao {
         params.addValue("vpn_id", vpn_id);
         
         String query = "SELECT * FROM subnets "
-                + "INNER JOIN vpnsubnet ON subnets.id = vpnsubnet.subnet "
-                + "AND vpnsubnet.vpn_id = :vpn_id ;";
+                + "INNER JOIN vpnSubnet ON subnets.id = vpnSubnet.subnet "
+                + "AND vpnSubnet.vpn_id = :vpn_id ;";
         log.trace(query);
         
         List<Subnet> subnets = getSubnetList(query, params);

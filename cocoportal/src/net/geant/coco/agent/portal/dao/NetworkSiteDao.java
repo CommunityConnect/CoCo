@@ -32,8 +32,8 @@ public class NetworkSiteDao {
                 + "vpns.name AS vpn_name " + "FROM sites "
                 + "INNER JOIN switches ON sites.switch = switches.id "
                 + "INNER JOIN subnets ON sites.id=subnets.site "
-                + "INNER JOIN vpnsubnet ON subnets.id = vpnsubnet.subnet "
-                + "INNER JOIN vpns ON vpns.id = vpnsubnet.vpn;";
+                + "INNER JOIN vpnSubnet ON subnets.id = vpnSubnet.subnet "
+                + "INNER JOIN vpns ON vpns.id = vpnSubnet.vpn;";
         // System.out.println(query);
         return jdbc.query(query, new RowMapper<NetworkSite>() {
 
@@ -103,8 +103,8 @@ public class NetworkSiteDao {
                 + "vpns.name AS vpn_name, " + "subnets.subnet AS subnet " + "FROM sites "
                 + "INNER JOIN switches ON sites.switch = switches.id "
     			+ "INNER JOIN subnets ON sites.id = subnets.site "
-                + "INNER JOIN vpnsubnet ON subnets.id = vpnsubnet.subnet "
-                + "INNER JOIN vpns ON vpns.id = vpnsubnet.vpn "
+                + "INNER JOIN vpnSubnet ON subnets.id = vpnSubnet.subnet "
+                + "INNER JOIN vpns ON vpns.id = vpnSubnet.vpn "
                 + "AND vpns.name = :vpn ;";
         return jdbc.query(query, params, new RowMapper<NetworkSite>() {
 
@@ -140,8 +140,8 @@ public class NetworkSiteDao {
                 + "vpns.name AS vpn_name, " + "subnets.subnet AS subnet " + "FROM sites "
                 + "INNER JOIN switches ON switch = switches.id "
                 + "INNER JOIN subnets ON sites.id = subnets.site "
-                + "INNER JOIN vpnsubnet ON subnets.id = vpnsubnet.subnet "
-                + "INNER JOIN vpns ON vpns.id = vpnsubnet.vpn "
+                + "INNER JOIN vpnSubnet ON subnets.id = vpnSubnet.subnet "
+                + "INNER JOIN vpns ON vpns.id = vpnSubnet.vpn "
                 + "AND vpns.name = :vpn " + "AND switches.name = :sitename ;";
         return jdbc.query(query, params, new RowMapper<NetworkSite>() {
 

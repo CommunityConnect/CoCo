@@ -35,8 +35,8 @@ public class DomainDao {
 
     public List<Domain> getDomains() {    	
     	//String query = "SELECT * FROM domains";
-        String query = "SELECT * FROM domains"
-                + "INNER JOIN ases ON domains.as = ases.id ";
+        String query = "SELECT * FROM domains";
+                //+ "INNER JOIN ases ON domains.as = ases.id ";
         log.trace(query);
         
         List<Domain> domains = getDomainList(query, null);
@@ -44,13 +44,15 @@ public class DomainDao {
         return domains;
     }
     
+    @Deprecated
     public Domain getDomain(String domainName) {
+    	// domain name is not supported anymore
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("name", domainName);
         
         //String query = "SELECT * FROM domains WHERE name = :name ;";
         String query = "SELECT * FROM domains"
-                + "INNER JOIN ases ON domains.as = ases.id "
+                //+ "INNER JOIN ases ON domains.as = ases.id "
                 + "AND name = :name ;";
         log.trace(query);
         
@@ -69,7 +71,7 @@ public class DomainDao {
         
         //String query = "SELECT * FROM domains WHERE id = :name ;";
         String query = "SELECT * FROM domains"
-                + "INNER JOIN ases ON domains.as = ases.id "
+                //+ "INNER JOIN ases ON domains.as = ases.id "
                 + "AND id = :name ;";
         log.trace(query);
         
@@ -91,7 +93,7 @@ public class DomainDao {
 
                     domain.setId(rs.getInt("id"));
                     domain.setBgp_ip(rs.getString("bgp_ip"));
-                    domain.setBgp_peer(rs.getString("bgp_peer"));
+                    //domain.setBgp_peer(rs.getString("bgp_peer"));
                     domain.setPortal_address(rs.getString("portal_address"));
                     domain.setAs_name(rs.getString("as_name"));
                     domain.setAs_num(rs.getInt("as_num"));
@@ -108,7 +110,7 @@ public class DomainDao {
 
                     domain.setId(rs.getInt("id"));
                     domain.setBgp_ip(rs.getString("bgp_ip"));
-                    domain.setBgp_peer(rs.getString("bgp_peer"));
+                    //domain.setBgp_peer(rs.getString("bgp_peer"));
                     domain.setPortal_address(rs.getString("portal_address"));
                     domain.setAs_name(rs.getString("as_name"));
                     domain.setAs_num(rs.getInt("as_num"));

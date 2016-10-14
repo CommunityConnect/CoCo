@@ -161,7 +161,7 @@ public class VpnDao {
         params.addValue("vpnName", vpnName);
         params.addValue("subnet", subnet);
 
-        String query = "INSERT INTO vpnsubnet (`vpn`, `subnet`) "
+        String query = "INSERT INTO vpnSubnet (`vpn`, `subnet`) "
                 + "VALUES ("
                 + "(SELECT id FROM vpns WHERE `name` = :vpnName), "
                 + "(SELECT id FROM subnets WHERE `subnet` = :subnet) "
@@ -192,10 +192,10 @@ public class VpnDao {
     	params.addValue("vpnName", vpnName);
     	params.addValue("subnet", subnet);
     	
-    	String query = "DELETE FROM vpnsubnet WHERE id=( "
-    			+ "SELECT id FROM vpnsubnet "
-    			+ "INNER JOIN vpns on vpnsubnet.vpn=vpns.id WHERE vpns.name = :vpnName "
-    			+ "INNER JOIN subnets on vpnsubnet.subnet=subnets.id WHERE subnets.subnet = :subnet "
+    	String query = "DELETE FROM vpnSubnet WHERE id=( "
+    			+ "SELECT id FROM vpnSubnet "
+    			+ "INNER JOIN vpns on vpnSubnet.vpn=vpns.id WHERE vpns.name = :vpnName "
+    			+ "INNER JOIN subnets on vpnSubnet.subnet=subnets.id WHERE subnets.subnet = :subnet "
     			+ " );";
 
     	log.trace("vpnDao deleteSite: " + query);

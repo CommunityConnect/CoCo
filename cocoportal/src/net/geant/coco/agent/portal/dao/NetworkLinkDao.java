@@ -21,7 +21,24 @@ public class NetworkLinkDao {
         this.jdbc = new NamedParameterJdbcTemplate(jdbc);
     }
 
+    // TODO: (Simon) this still needs to be fixed (remove sitelinks) but i did not found essential code that uses that function
+    @Deprecated
     public List<NetworkLink> getNetworkLinks() {
+        /* old code with sitelinks
+         * String query = "SELECT links.id AS id, "
+                + "switch1.x AS fromX, switch1.y AS fromY, "
+                + "switch2.x AS toX, switch2.y AS toY " + "FROM links "
+                + "INNER JOIN switches AS switch1 "
+                + "ON (links.from = switch1.id) "
+                + "INNER JOIN switches AS switch2 "
+                + "ON (links.to = switch2.id) " + "UNION "
+                + "SELECT sitelinks.id AS id, "
+                + "sites.x AS fromX, sites.y AS fromY, "
+                + "switches.x AS toX, switches.y AS toY " + "FROM sitelinks "
+                + "INNER JOIN sites " + "ON (sitelinks.site = sites.id) "
+                + "INNER JOIN switches " + "ON (sitelinks.switch = switches.id);";
+        */
+        
         String query = "SELECT links.id AS id, "
                 + "switch1.x AS fromX, switch1.y AS fromY, "
                 + "switch2.x AS toX, switch2.y AS toY " + "FROM links "

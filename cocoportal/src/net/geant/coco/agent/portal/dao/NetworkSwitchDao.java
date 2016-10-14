@@ -77,7 +77,7 @@ public class NetworkSwitchDao {
 
         MapSqlParameterSource params = new MapSqlParameterSource();
 
-        return jdbc.query("select switches.id, switches.name, switches.x, switches.y, switches.mpls_label, ases.bgp_ip from switches INNER JOIN extlinks ON switches.id=extlinks.switch INNER JOIN ases ON ext_links.as=ases.id",
+        return jdbc.query("select switches.id, switches.name, switches.x, switches.y, switches.mpls_label, ases.bgp_ip from switches INNER JOIN extLinks ON switches.id=extLinks.switch INNER JOIN domains ON extLinks.domain=domains.id",
                 new RowMapper<NetworkSwitch>() {
 
                     @Override

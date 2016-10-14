@@ -28,11 +28,18 @@ public class TopologyDao {
     }
 
     public List<NetworkInterface> getNetworkInterfaces_ENNI() {
+    	// old code with ases
+//        String query = "select switches.id, switches.name, "
+//        		+ "ases.id AS as_id, ases.as_name AS as_name, ases.bgp_ip "
+//        		+ "from switches "
+//        		+ "INNER JOIN extlinks ON switches.id=extlinks.switch "
+//        		+ "INNER JOIN ases ON extlinks.as=ases.id;";
+        
         String query = "select switches.id, switches.name, "
-        		+ "ases.id AS as_id, ases.as_name AS as_name, ases.bgp_ip "
+        		+ "domains.as_num AS as_id, domains.as_name AS as_name, domains.bgp_ip "
         		+ "from switches "
-        		+ "INNER JOIN extlinks ON switches.id=extlinks.switch "
-        		+ "INNER JOIN ases ON extlinks.as=ases.id;";
+        		+ "INNER JOIN extLinks ON switches.id=extLinks.switch "
+        		+ "INNER JOIN domains ON extLinks.domain=domains.id;";
 
         //System.out.println("links query: " + query);
 
@@ -103,11 +110,12 @@ public class TopologyDao {
 		
     	// TODO: Simon, Check if this is correct, we change from a side to a subnet here...
         String query = "select switches.id, switches.name, sites.id AS site_id, sites.name AS site_name, subnets.id AS sub_id, subnets.subnet AS sub_name, users.email from switches "
-        		+ "INNER JOIN sitelinks ON switches.id=sitelinks.switch "
-        		+ "INNER JOIN sites ON sitelinks.site=sites.id "
+        		//+ "INNER JOIN sitelinks ON switches.id=sitelinks.switch "
+        		//+ "INNER JOIN sites ON sitelinks.site=sites.id "
+        		+ "INNER JOIN sites ON sites.switch=switches.id "
         		+ "INNER JOIN subnets ON subnets.site=sites.id "
-        		+ "INNER JOIN subnetusers ON subnets.id=subnetusers.subnet "
-        		+ "INNER JOIN users ON users.id=subnetusers.user "
+        		+ "INNER JOIN subnetUsers ON subnets.id=subnetUsers.subnet "
+        		+ "INNER JOIN users ON users.id=subnetUsers.user "
         		+ "WHERE users.email = :name OR users.name = :name;";
 
         //System.out.println("links query: " + query);

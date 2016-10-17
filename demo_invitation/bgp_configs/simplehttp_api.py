@@ -3,7 +3,7 @@
 import cgi
 import SimpleHTTPServer
 import SocketServer
-from sys import stdout
+from sys import stdout, stderr
 
 PORT = 5001
 
@@ -26,7 +26,7 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         command = form.getvalue('command')
         stdout.write('%s\n' % command)
         stdout.flush()
-        self.createResponse('Success: %s' % command)
+        self.createResponse('Success: %s\n' % command)
 
 handler = ServerHandler
 httpd = SocketServer.TCPServer(('', PORT), handler)

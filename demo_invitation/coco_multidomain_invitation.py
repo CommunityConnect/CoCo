@@ -165,6 +165,8 @@ class EXABGPRouteReflector(Host):
                 self.setARP(attrs['nexthop'], attrs['remoteMAC'])
 
     def terminate(self):
+	self.cmd("mv %s/exabgp%s.log %s/exabgp%s_`cat %s/exabgp%s.pid`.log" %(
+            EXABGP_LOG_DIR, self.name, EXABGP_LOG_DIR, self.name, EXABGP_RUN_DIR, self.name))
         self.cmd("kill `cat %s/exabgp%s.pid`" % (EXABGP_RUN_DIR, self.name))
 
 
@@ -206,6 +208,8 @@ class MDCoCoTopoNorth(Topo):
         self.addLink(tn_pe2, pinghost)
 
         zebraConf = '%s/zebra.conf' % CONFIG_DIR
+	exabgpIni = '%s/exabgp_config.ini' % CONFIG_DIR
+        exabgpConf = '%s/exabgp_tn2_to_ts2_simplehttp_post-to-portal.conf' % CONFIG_DIR
 
         # Switches we want to attach our routers to, in the correct order
         attachmentSwitches = [tn_pe1, tn_pe2]
@@ -246,9 +250,9 @@ class MDCoCoTopoNorth(Topo):
 #                           intfDict=bgpIntfs,
 #                           ARPDict=ARPBGPpeers)
         bgp = self.addHost("tn_bgp1", cls=EXABGPRouteReflector,
-                           exabgpIniFile='%s/exabgp_config.ini' % CONFIG_DIR,
-                           exabgpConfFile='%s/exabgp_tn2_simplehttp.conf' % CONFIG_DIR,
-                           intfDict=bgpIntfs,
+                           exabgpIniFile=exabgpIni,
+                           exabgpConfFile=exabgpConf,
+			   intfDict=bgpIntfs,
                            ARPDict=ARPBGPpeers)
 
         for i in range(1, nRouters + 1):
@@ -334,6 +338,8 @@ class MDCoCoTopoSouth(Topo):
         self.addLink(ts_pe1, pinghost)
 
         zebraConf = '%s/zebra.conf' % CONFIG_DIR
+	exabgpIni = '%s/exabgp_config.ini' % CONFIG_DIR
+        exabgpConf = '%s/exabgp_ts2_to_tn2_simplehttp_post-to-portal.conf' % CONFIG_DIR
 
         # Switches we want to attach our routers to, in the correct order
         attachmentSwitches = [ts_pe1]
@@ -368,9 +374,9 @@ class MDCoCoTopoSouth(Topo):
 #                           ARPDict=ARPBGPpeers)
 
         bgp = self.addHost("ts_bgp1", cls=EXABGPRouteReflector,
-                           exabgpIniFile='%s/exabgp_config.ini' % CONFIG_DIR,
-                           exabgpConfFile='%s/exabgp_ts2_simplehttp.conf' % CONFIG_DIR,
-                           intfDict=bgpIntfs,
+                           exabgpIniFile=exabgpIni,
+                           exabgpConfFile=exabgpConf,
+			   intfDict=bgpIntfs,
                            ARPDict=ARPBGPpeers)
 
         for i in range(1, nRouters + 1):

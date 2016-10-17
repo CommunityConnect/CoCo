@@ -1,0 +1,34 @@
+neighbor 134.221.121.201 {
+    router-id 134.221.121.202;
+    local-address 134.221.121.202;
+    local-as 202;
+    peer-as 201;
+    graceful-restart;
+
+    process announce-routes {
+	encoder json;
+	receive {
+		parsed;
+		update;
+		neighbor-changes;
+	}
+	send-packets;
+        run ../bgp_configs/simplehttp_api.py;
+    }
+
+process post-to-portal {
+	encoder json;
+	receive {
+		parsed;
+		update;
+		neighbor-changes;
+	}
+        run ../bgp_configs/post-to-portal.py;
+}
+
+}
+
+
+
+
+

@@ -1,9 +1,12 @@
-# demo_invitation
+# CoCo
+testing
+HOW TO RUN COCO:
 
-This is a demonstration of multidomain CoCo with email-based VPN invitation system.
-Under the hood, vpnintent framework is used.
+https://www.dropbox.com/s/tbusvk9wr9khjec/howToRunCoco.pdf?dl=0
 
+TODO:
 
+<<<<<<< HEAD
 Demo
 1. Start ODL controller
  /home/coco/vpnservice-karaf-intent/distribution-karaf-0.4.2-Berylium-SR2-clean/bin/karaf
@@ -28,6 +31,17 @@ Demo
 
  sudo apt-get install libmysqlclient-dev
 
+ exabgp will need this for communication with portal 
+
+ sudo pip install httplib2
+
+[DEBUG] to run test server
+ sudo pip install tornado
+ then run
+ /home/coco/demo_invitation/exabgp_tmpdev/tornado-web.py
+ this server listens on 5003 and accepts POST and dumps them to the console
+ it pretends to be a portal module which will really 
+ accept and process updates from BGP
 
 4. Start mininet with predefined topologies
 
@@ -50,7 +64,15 @@ Demo
 
 
 
+5. Starting minites starts also exabgp route reflector (within a domain). It accepts REST calls on http://10.10.10.1:5001
+which will originate from portal
 
+[DEBUG]
+To test, issue on tn
+
+curl --form "command=neighbor 10.3.0.254 announce route 2.2.0.0/24 next-hop 10.2.0.254 extended-community 0x0002FDE800000001 extended-community 0x8ABCBEEFDEADBEEF" http://10.10.10.1:5001/
+
+on ts tornado server we should see json string with the BGP update
 
 
 
@@ -125,3 +147,8 @@ http://localhost:9090/CoCo-agent/static/index.html
 7) connect hosts (e.g., h1 and h2) in CoCo portal and check connectivity from mininet
 mininet> xterm h1
 ping 10.0.2.1
+=======
+- should one site be allowed in multiple VPNs?
+  - it works on a flow level, database doesnt allow that
+- what about vpn 'all'?
+>>>>>>> 2c6a122593e32a964dc737cfd636410ca23e7ca5

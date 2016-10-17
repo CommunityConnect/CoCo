@@ -19,7 +19,7 @@ import sys
 QUAGGA_DIR = '/usr/sbin'
 # Must exist and be owned by quagga user (quagga:quagga by default on Ubuntu)
 QUAGGA_RUN_DIR = '/var/run/quagga'
-CONFIG_DIR = '/home/coco/demo_invitation/bgp_configs'
+CONFIG_DIR = '/home/coco/cocoTNO/CoCo/demo_invitation/bgp_configs'
 
 EXABGP_DIR = '/usr/local/bin/exabgp'
 EXABGP_RUN_DIR = '/var/run/exabgp'
@@ -174,6 +174,7 @@ class EXABGPRouteReflector(Host):
 
 
 class MDCoCoTopoNorth(Topo):
+    
     # TODO : call MDCoCoTopo with domain name parameter
     # we were not successful with
     # def __init__(self, domainname):
@@ -182,46 +183,52 @@ class MDCoCoTopoNorth(Topo):
 
     "Multidomain CoCo topology - TNO North"
 
-    def build(self):
+    def build(self, mode):
         domID = 2
 
-        tn_pe1 = self.addSwitch('tn_pe1', dpid='0000000000000021', datapath='user')
-        tn_pc1 = self.addSwitch('tn_pc1', dpid='0000000000000022', datapath='user')
-        tn_pe2 = self.addSwitch('tn_pe2', dpid='0000000000000023', datapath='user')
-        tn_gw_ts = self.addSwitch('tn_gw_ts', dpid='0000000000000024')
+	if mode == 'full':
+        	tn_pe1 = self.addSwitch('tn_pe1', dpid='0000000000000021', datapath='user')
+        	tn_pc1 = self.addSwitch('tn_pc1', dpid='0000000000000022', datapath='user')
+        	tn_pe2 = self.addSwitch('tn_pe2', dpid='0000000000000023', datapath='user')
+        	tn_gw_ts = self.addSwitch('tn_gw_ts', dpid='0000000000000024')
 
-        # tn_pe1 = self.addSwitch('tn_pe1', dpid='0000000000000021')
-        # tn_pc1 = self.addSwitch('tn_pc1', dpid='0000000000000022')
-        # tn_pe2 = self.addSwitch('tn_pe2', dpid='0000000000000023')
+        	# tn_pe1 = self.addSwitch('tn_pe1', dpid='0000000000000021')
+        	# tn_pc1 = self.addSwitch('tn_pc1', dpid='0000000000000022')
+        	# tn_pe2 = self.addSwitch('tn_pe2', dpid='0000000000000023')
 
-        # [PZ] perhaps we will add s4 later; now we want to avoid loop problems
-        #        s4 = self.addSwitch('s4', dpid='0000000000000004')
+        	# [PZ] perhaps we will add s4 later; now we want to avoid loop problems
+        	#        s4 = self.addSwitch('s4', dpid='0000000000000004')
 
-        # add pingable hosts at the edges
-        # TODO : for any kind of multihoming pingable hosts should have a dictionary of arp entries, not just one?
-        pinghost = self.addHost('tn_ph_sn', cls=PingableHost, ip='10.0.0.2/24', mac='00:10:00:00:00:02',
-                                remoteIP='10.0.0.1', remoteMAC='00:10:00:00:00:01')
-        self.addLink(tn_pe1, pinghost)
+        	# add pingable hosts at the edges
+        	# TODO : for any kind of multihoming pingable hosts should have a dictionary of arp entries, not just one?
+        	pinghost = self.addHost('tn_ph_sn', cls=PingableHost, ip='10.0.0.2/24', mac='00:10:00:00:00:02',
+        	                        remoteIP='10.0.0.1', remoteMAC='00:10:00:00:00:01')
+        	self.addLink(tn_pe1, pinghost)
 
-        pinghost = self.addHost('tn_ph_ts', cls=PingableHost, ip='10.0.0.3/24', mac='00:10:00:00:00:03',
+        	pinghost = self.addHost('tn_ph_ts', cls=PingableHost, ip='10.0.0.3/24', mac='00:10:00:00:00:03',
                                 remoteIP='10.0.0.4', remoteMAC='00:10:00:00:00:04')
-        self.addLink(tn_pe2, pinghost)
+        	self.addLink(tn_pe2, pinghost)
+		# Switches we want to attach our routers to, in the correct order
+	        attachmentSwitches = [tn_pe1, tn_pe2]
+
 
         zebraConf = '%s/zebra.conf' % CONFIG_DIR
 	exabgpIni = '%s/exabgp_config.ini' % CONFIG_DIR
         exabgpConf = '%s/exabgp_tn2_to_ts2_simplehttp_post-to-portal.conf' % CONFIG_DIR
 
-        # Switches we want to attach our routers to, in the correct order
-        attachmentSwitches = [tn_pe1, tn_pe2]
         nRouters = 2
         nHosts = 2
 
         # Set up the internal BGP speaker
         bgpEth0 = {'mac': '00:10:0%s:00:02:54' % domID,
                    'ipAddrs': '10.%s.0.254/24' % domID}
-        bgpEth1 = {'ipAddrs': '10.10.10.1/24'}
-        bgpIntfs = {'tn_bgp1-eth0': bgpEth0,
-                    'tn_bgp1-eth1': bgpEth1}
+        
+	if mode == 'full':
+		bgpEth1 = {'ipAddrs': '10.10.10.1/24'}
+        	bgpIntfs = {'tn_bgp1-eth0': bgpEth0,
+                    	'tn_bgp1-eth1': bgpEth1}
+	else :
+		bgpIntfs = {'tn_bgp1-eth0': bgpEth0}
 
         ts_bgp1 = {'remoteMAC': '00:10:03:00:02:54',
                    'remoteIP': '10.3.0.254',
@@ -243,19 +250,29 @@ class MDCoCoTopoNorth(Topo):
         ARPBGPpeers = {'ts_bgp1': ts_bgp1,
                        'tn_ce1_arp': tn_ce1_arp,
                        'tn_ce2_arp': tn_ce2_arp}
+	
+	if mode == 'bgp' or mode == 'full':
+		#        bgp = self.addHost("tn_bgp1", cls=QBGPRouter,
+		#                           quaggaConfFile='%s/tn_bgp1.conf' % CONFIG_DIR,
+		#                           zebraConfFile=zebraConf,
+		#                           intfDict=bgpIntfs,
+		#                           ARPDict=ARPBGPpeers)
+        	bgp = self.addHost("tn_bgp1", cls=EXABGPRouteReflector,
+                	           exabgpIniFile=exabgpIni,
+                	           exabgpConfFile=exabgpConf,
+				   intfDict=bgpIntfs,
+                	           ARPDict=ARPBGPpeers)
 
-#        bgp = self.addHost("tn_bgp1", cls=QBGPRouter,
-#                           quaggaConfFile='%s/tn_bgp1.conf' % CONFIG_DIR,
-#                           zebraConfFile=zebraConf,
-#                           intfDict=bgpIntfs,
-#                           ARPDict=ARPBGPpeers)
-        bgp = self.addHost("tn_bgp1", cls=EXABGPRouteReflector,
-                           exabgpIniFile=exabgpIni,
-                           exabgpConfFile=exabgpConf,
-			   intfDict=bgpIntfs,
-                           ARPDict=ARPBGPpeers)
+	begin = 1
+        end = nRouters +1
+	if mode == 'bgp':
+		end = 1
+        elif mode == 'ce1':
+        	end -= 1
+	elif mode == 'ce2':
+        	begin += 1
 
-        for i in range(1, nRouters + 1):
+        for i in range(begin, end):
             name = 'tn_ce%s' % i
             # drop vlans
             #            eth0 = { 'mac' : '00:10:0%s:00:00:0%s' % (domID, i),
@@ -277,10 +294,14 @@ class MDCoCoTopoNorth(Topo):
             ARPfakegw = {'bgpgw': bgpgw}
 
             quaggaConf = '%s/tn_ce%s.conf' % (CONFIG_DIR, i)
-
-            router = self.addHost(name, cls=QBGPRouter, quaggaConfFile=quaggaConf,
+            
+	    router = self.addHost(name, cls=QBGPRouter, quaggaConfFile=quaggaConf,
                                   zebraConfFile=zebraConf, intfDict=intfs, ARPDict=ARPfakegw)
-            self.addLink(router, attachmentSwitches[i - 1])
+            if mode == 'full':
+	        self.addLink(router, attachmentSwitches[i - 1]) 
+	    else:
+		root = self.addHost('root', inNamespace=False)
+                self.addLink(root, router)
 
             # learning switch sitting in each customer AS
             # you may need 'sudo apt-get install bridge-utils' for this:
@@ -293,18 +314,17 @@ class MDCoCoTopoNorth(Topo):
 
             self.addLink(router, sw)
 
-        self.addLink(bgp, tn_pc1)
+	if mode == 'full' or mode == 'bgp':
+        	# Connect BGP speaker to the root namespace
+        	root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+        	self.addLink(root, bgp)
 
-        # Connect BGP speaker to the root namespace
-        root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
-        self.addLink(root, bgp)
-
-
-
-        # Wire up the switches in the topology
-        self.addLink(tn_pe1, tn_pc1)
-        self.addLink(tn_pc1, tn_pe2)
-        self.addLink(tn_pe2, tn_gw_ts)
+	if mode == 'full':
+	        # Wire up the switches in the topology
+	        self.addLink(tn_pe1, tn_pc1)
+	        self.addLink(tn_pc1, tn_pe2)
+	        self.addLink(tn_pe2, tn_gw_ts)
+		self.addLink(bgp, tn_pc1)
 
 
 # [PZ] perhaps we will add s4 later; now we want to avoid loop problems
@@ -806,30 +826,31 @@ def databaseDump(net, domain):
 	DEFAULT CHARSET=latin1;"""
     cursor.execute(sql)
 
-    if domain == 'MDCoCoTopoNorth':
-        gwSwitchID = operSwNames.index('tn_pe2') + 1
-        sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-south';""" % DB_NAME
+    if mode == 'full':
+	if domain == 'MDCoCoTopoNorth':
+	        gwSwitchID = operSwNames.index('tn_pe2') + 1
+        	sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-south';""" % DB_NAME
 
-    if domain == 'MDCoCoTopoSouth':
-        gwSwitchID = operSwNames.index('ts_pe1') + 1
-        sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-north';""" % DB_NAME
+    	if domain == 'MDCoCoTopoSouth':
+        	gwSwitchID = operSwNames.index('ts_pe1') + 1
+        	sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-north';""" % DB_NAME
 
-    cursor.execute(sql)
-    for remoteASID in cursor:
-        #TODO find better way to access cursor content; now we assume there is only one entry
-        #print(remoteASID)
+    	cursor.execute(sql)
+    	for remoteASID in cursor:
+        	#TODO find better way to access cursor content; now we assume there is only one entry
+        	#print(remoteASID)
 
-        sql = """INSERT INTO `extLinks` (`switch`, `domain`)
-	         VALUES ('%d', '%d')""" % (gwSwitchID, int(remoteASID[0]))
+        	sql = """INSERT INTO `extLinks` (`switch`, `domain`)
+	        	 VALUES ('%d', '%d')""" % (gwSwitchID, int(remoteASID[0]))
 
-        try:
-            # Execute the SQL command
-            cursor.execute(sql)
-            # Commit your changes in the database
-            db.commit()
-        except:
-            # Rollback in case there is any error
-            db.rollback()
+        	try:
+            		# Execute the SQL command
+            		cursor.execute(sql)
+            		# Commit your changes in the database
+            		db.commit()
+        	except:
+            		# Rollback in case there is any error
+            		db.rollback()
 
 
 
@@ -1065,15 +1086,30 @@ if __name__ == '__main__':
     #setLogLevel('debug')
     #topo = MDCoCoTopoNorth()
     #topo = MDCoCoTopoSouth()
-    if sys.argv[1]=='tn':
-        topo = MDCoCoTopoNorth()
-    if sys.argv[1]=='ts':
-        topo = MDCoCoTopoSouth()
+    argv_len = len(sys.argv)
+    chosen_topo = 'tn'
+    mode = 'full'
+    if argv_len < 2:
+        print('Missing arguments: using default topo tn and full mode')
+    elif argv_len < 3:
+	print('Missing arguments: using default full mode')
+        chosen_topo = sys.argv[1]
     else:
-        print('using default topo tn')
-        topo = MDCoCoTopoNorth()
+	chosen_topo = sys.argv[1]
+	mode = sys.argv[2]
+    
+    if chosen_topo not in ['tn', 'ts']:
+	 print('Wrong topology name: using default topo tn')
+         chosen_topo = 'tn'
+    if mode not in ['ce1', 'ce2', 'bgp', 'full']:
+	 print('Wrong mode name: using default full mode')
+	 mode = 'full'
 
-
+    if chosen_topo =='tn':
+        topo = MDCoCoTopoNorth(mode)
+    else:
+        topo = MDCoCoTopoSouth(mode)
+    
     net = Mininet(topo=topo, controller=RemoteController)
     # hp = net.hosts[-1]
     # info(hp)

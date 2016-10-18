@@ -297,11 +297,16 @@ class MDCoCoTopoNorth(Topo):
             
 	    router = self.addHost(name, cls=QBGPRouter, quaggaConfFile=quaggaConf,
                                   zebraConfFile=zebraConf, intfDict=intfs, ARPDict=ARPfakegw)
-            if mode == 'full':
+            
+	    #switch to modify MAC address in Ethernet frame
+            sw_mac = self.addSwitch('tn_mac_ce%s' % i)
+
+	    if mode == 'full':
 	        self.addLink(router, attachmentSwitches[i - 1]) 
 	    else:
 		root = self.addHost('root', inNamespace=False)
-                self.addLink(root, router)
+		self.addLink(sw_mac, router)
+                self.addLink(root, sw_mac)
 
             # learning switch sitting in each customer AS
             # you may need 'sudo apt-get install bridge-utils' for this:

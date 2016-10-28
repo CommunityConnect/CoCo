@@ -34,6 +34,10 @@
     <link href="./vis/vis.css" rel="stylesheet" type="text/css"/>
 	<link href="./bootstrap-switch-master/dist/css/bootstrap3/bootstrap-switch.min.css" rel="stylesheet" type="text/css"/>
 	
+	
+	<!-- bootstrap-select CSS -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.11.2/css/bootstrap-select.min.css">
+	
   </head>
 
   <body>
@@ -52,7 +56,7 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-            <li class="active"><a href="#">Home</a></li>
+            <li class="active"><a href=".">Home</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Contact</a></li>
           </ul>
@@ -74,6 +78,27 @@
 	
 	
     <div class="container">
+		<!-- Modal -->
+		<div class="modal fade" id="joinModal" role="dialog">
+			<div class="modal-dialog">
+			
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class="modal-title">Join VPN</h4>
+					</div>
+					<div class="modal-body">
+						<p>Are you sure you like to join the VPN with the added Subnets?</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal" onclick="connect_sites();">Yes</button>
+					</div>
+				</div>
+			  
+			</div>
+		</div>
+		
 		<!-- Modal -->
 		<div class="modal fade" id="connectModal" role="dialog">
 			<div class="modal-dialog">
@@ -118,6 +143,36 @@
 		</div>
 		
 		<!-- Modal -->
+		<div class="modal fade" id="addSiteModal" role="dialog">
+			<div class="modal-dialog">
+			
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class="modal-title">Add Site To VPN</h4>
+					</div>
+					
+					<div class="modal-body">
+						<p>Add Site to the selected VPN</p>
+					
+						<div class="form-group">
+					    	<label>Site to add</label>
+					    	<select class="selectpicker" id="addSiteSelect" data-live-search="true">
+							</select>
+						</div>
+					
+					</div>
+					
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal" id="btnAddSite">Add Site</button>
+					</div>
+				</div>
+			  
+			</div>
+		</div>
+		
+		<!-- Modal -->
 		<div class="modal fade" id="inviteVPNModal" role="dialog">
 			<div class="modal-dialog">
 			
@@ -128,10 +183,28 @@
 						<h4 class="modal-title">Invite User to VPN</h4>
 					</div>
 					
+					<div class="modal-body">
+						<p>Create a new VPN</p>
 					
+						<div class="form-group">
+					    	<label>Receiver</label>
+					    	<select class="selectpicker" id="inviteUserSelect" data-live-search="true">
+					    		<!--  the options will be auto filled by the database -->
+  								<!-- option data-tokens="simon@dwadwda.com">simon, simon@dwadwda.com</option>
+  								<option data-tokens="mustard">Burger, Shake and a Smile</option>
+  								<option data-tokens="frosting">Sugar, Spice and all things nice</option-->
+							</select>
+						</div>
+					
+						<div class="form-group">
+					    	<label for="inviteTextInput">Personal Message</label>
+					    	<textarea class="form-control" id="inviteTextInput" placeholder=""></textarea>
+						</div>
+					
+					</div>
 					
 					<div class="modal-footer">
-						<button type="button" class="btn btn-default" data-dismiss="modal" id="btnInvite">Yes</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal" id="btnInvite">Invite</button>
 					</div>
 				</div>
 			  
@@ -239,7 +312,9 @@
   			<div class="col-md-9" id="mainCol">
 				<!-- Main component for a primary marketing message or call to action -->
 				<div class="jumbotron">
-        <h2>Topology overview</h2>
+		
+		<h2 class="topology">Topology overview</h2>
+        <h2 class="join" style="display: none">Join VPN</h2>
 		
 		
 		
@@ -249,7 +324,16 @@
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<div id="mynetwork"></div>
+				
 				<button id="cluster-network" type="button" class="btn btn-default">Cluster network</button>
+				<button id="del-node" type="button" class="btn btn-warning btn-default pull-right topology" style="margin-left: 5px; margin-right: 5px;">
+					<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+					Remove
+				</button>
+				<button id="add-node" type="button" class="btn btn-primary btn-default pull-right" style="margin-left: 5px; margin-right: 5px;">
+					<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 
+					Add
+				</button>													
 			</div>
 		</div>
 		</p>
@@ -267,17 +351,17 @@
 									<li href="#" class="list-group-item">Site C</li> -->
 								</ul>
 							
-								<button id="add-nodelist" type="button" class="btn btn-primary btn-default">
+								<button id="add-nodelist" type="button" class="btn btn-primary btn-default" data-toggle="modal" data-target="#addSiteModal">
 									<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 
 									Add to list
 									<!-- span  class="glyphicon glyphicon-list-alt" aria-hidden="true"></span -->
 								</button>													
-								<button id="del-nodelist" type="button" class="btn btn-warning btn-default">
+								<button id="del-nodelist" type="button" class="btn btn-warning btn-default topology">
 									<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
 									Delete from list
 									<!-- span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span --> 
 								</button>
-								<button id="invite-nodelist" type="button" class="btn btn-info btn-default" data-toggle="modal" data-target="#inviteVPNModal">
+								<button id="invite-nodelist" type="button" class="btn btn-info btn-default topology" data-toggle="modal" data-target="#inviteVPNModal">
 									<span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
 									Invite
 									<!-- span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span --> 
@@ -289,11 +373,19 @@
 					<div class="row-md">
 					  	<div class="col-md-12 text-right">
 							<br>
-							<button type="button" class="btn btn-success btn-lg" data-toggle="modal" data-target="#connectModal">
+							<button type="button" class="btn btn-success btn-lg join" style="display: none" data-toggle="modal" data-target="#joinModal">
+								<span class="glyphicon glyphicon-ok" aria-hidden="true"></span> 
+								Join Vpn
+							</button>
+							<!-- button type="button" class="btn btn-danger btn-lg join" style="display: none">
+								<span class="glyphicon glyphicon-remove" aria-hidden="true"></span> 
+								Reject
+							</button -->
+							<button type="button" class="btn btn-success btn-lg topology" data-toggle="modal" data-target="#connectModal">
 								<span class="glyphicon glyphicon-ok" aria-hidden="true"></span> 
 								Update Vpn
 							</button>
-							<button type="button" class="btn btn-danger btn-lg" data-toggle="modal" data-target="">
+							<button type="button" class="btn btn-danger btn-lg topology" data-toggle="modal" data-target="">
 								<span class="glyphicon glyphicon-remove" aria-hidden="true"></span> 
 								Delete Vpn
 							</button>
@@ -310,7 +402,7 @@
 			</div> 
 			<!-- <div  data-spy="affix" class="col-md-2" id="rightCol"> -->
 			<div class="col-md-3 col-sm-3 col-xs-3">
-			<div class="well bs-sidebar affix" 	id="sidebar">
+			<div class="well bs-sidebar affix topology" 	id="sidebar">
 				<ul id="vpn-list" class="list-group">
 					<!-- vpns are added here --> 
 				</ul>
@@ -341,7 +433,58 @@
 			drawContinuosly();
 		}, 5000);
 	</script>
-			<script>
+	
+	<!--  bootstrap-select JavaScript -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.11.2/js/bootstrap-select.min.js"></script>
+	<!-- (Optional) Latest compiled and minified JavaScript translation files -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.11.2/js/i18n/defaults-*.min.js"></script>
+	
+	<script>
+
+function getUrlVars() {
+	var vars = {};
+	var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+		vars[key] = value;
+	});
+	return vars;
+}
+
+function webside_onload() {
+	//load variables from url and check if the user is joining an VPN
+	VARS = getUrlVars();
+	if ("join" in VARS){
+		// the user is joining a VPN - let go into join mode
+		$('.topology').css('display', 'none');
+		$('.join').css('display', 'inline');
+	
+		//hash string belonging to the join request
+		var join_hash = VARS['join'];
+		
+		if ("vpn" in VARS){
+			// we will join a VPN in the same domain
+			// request the vpn topology - GET_ALL_SITES : "/rest/sites/{id}"
+	
+			// id of the vpn to join
+			var vpn_id = VARS['vpn'];
+
+			vpn_list_on_click(vpn_id);
+		}
+		else{
+			// we will join a VPN of another domain
+			// TODO: do some action here
+			$('.topology').css('display', 'none');
+			$('.join').css('display', 'inline');
+		}
+	}
+	else{
+		// we are in normal operation mode: What to do?
+		// this should be in onload
+		populate_vpnlist();
+	}
+}
+
+webside_onload();
+
 $.fn.bootstrapSwitch.defaults.size = 'mini';			
 $("[name='VPN-1-checkbox']").bootstrapSwitch();
 
@@ -351,11 +494,54 @@ $.getJSON("./getUser", function(data) {
 	$("#username").text(userdata.username);
 });
 
+//load all subnets
+$.getJSON("../rest/subnets", function(data) {
+	var subnets = data;
+
+	console.log(JSON.stringify(data));
+
+	var sel = document.getElementById('addSiteSelect');
+
+	for ( i =0; i < subnets.length; i++)
+	{
+		var subnet = subnets[i];
+		var opt = document.createElement('option');
+		opt.innerHTML = subnet.subnet;
+	    opt.setAttribute("data-tokens", subnet.subnet);
+	    opt.setAttribute("value", subnet.subnet);
+	    sel.appendChild(opt);
+	}
+	
+	$('#addSiteSelect').selectpicker('refresh');
+});
+
+//load all users
+$.getJSON("./getAllUsers", function(data) {
+	var sel = document.getElementById('inviteUserSelect');
+
+	$.each(data, function(key, value) {
+		var opt = document.createElement('option');
+	    opt.innerHTML = value + ", " + key;
+	    opt.setAttribute("data-tokens", key);
+	    opt.setAttribute("value", key);
+	    //opt.data-tokens = key;
+	    sel.appendChild(opt);
+	});
+	
+// 	for(var i = 0; i < data.length; i++) {
+// 	    var opt = document.createElement('option');
+// 	    opt.innerHTML = data[i].name + ", " + data[i].email;
+// 	    opt.data-tokens = data[i].email;
+// 	    sel.appendChild(opt);
+// 	}
+
+	$('#inviteUserSelect').selectpicker('refresh');
+});
+
 // Very bad grobal variable
 var currentVPN = -1;
 
-// this should be in onload
-populate_vpnlist();
+
 function clean_vpnlist() {
 	$("#vpn-list").empty();
 }
@@ -389,18 +575,12 @@ function populate_vpnlist(){
 				setVpnPrivacy( str.replace("vpn-checkbox-","") ,state);
 			
 			});
-			
-			
-
-
 		}
 		
 		// Select the first VPN 
 		$( '#vpn-' + vpns[0].id ).addClass("active");
 		currentVPN = vpns[0].id;
 		populate_sitelist(currentVPN);
-				
-	
 	});
 
 	
@@ -421,6 +601,7 @@ function vpn_list_on_click(id){
 	network.unselectAll();
 	
 	color_all_nodes(1);
+	color_all_nodes(3, "CUSTOMER_NO");
 	color_nodes(currentVPN, 2);
 	
 }
@@ -434,62 +615,68 @@ function add_list_on_click(){
 		}
 	);
 }
-/*			
-$("ul li").click(function() {
-    $(this).parent().children().removeClass("active");
-    $(this).addClass("active");
-});*/
 
-$('#add-nodelist').on('click', function(event) {
-  event.preventDefault(); // To prevent following the link (optional)
-  var _nodes = network.getSelectedNodes();
-  if (_nodes.length < 1)
-  {
-	alert('No node selected');
-	return;
-  }
+// we are currently not supporting the graph UI to add nodes
+// $('#add-nodelist').on('click', function(event) {
+//   event.preventDefault(); // To prevent following the link (optional)
+//   var _nodes = network.getSelectedNodes();
+//   if (_nodes.length < 1)
+//   {
+// 	alert('No node selected');
+// 	return;
+//   }
   
-   var currnode = -1;
-   /*for (i = 0; i < nodes.length; i++) { 
-		if (nodes[i].id == _nodes[0])
-		{
-			currnode = nodes[i];
-		}
-   }*/
+//    var currnode = -1;
+//    /*for (i = 0; i < nodes.length; i++) { 
+// 		if (nodes[i].id == _nodes[0])
+// 		{
+// 			currnode = nodes[i];
+// 		}
+//    }*/
    
-   currnode = nodes.get(_nodes[0]);
+//    currnode = nodes.get(_nodes[0]);
    
    
-   if (currnode == -1) {
-		alert("madness");
-		return;
-   }   
-  node = currnode;
+//    if (currnode == -1) {
+// 		alert("madness");
+// 		return;
+//    }   
+//   node = currnode;
 
-  if ( currnode.group == "SWITCH" )
-  {
-	alert("switches are not valid endpoints");
-	return;
-  }
+//   if ( currnode.group == "SWITCH" )
+//   {
+// 	alert("switches are not valid endpoints");
+// 	return;
+//   }
     
-  if ( $( "#node-" + parseInt(currnode.id) ).length )
-  {
-	alert("Endpoint already in list");
-	return;
-  }
+//   if ( $( "#node-" + parseInt(currnode.id) ).length )
+//   {
+// 	alert("Endpoint already in list");
+// 	return;
+//   }
 
-  if ( currnode.group == "enni" )
-  {	
-	populate_remote_vpn_list(parseInt(currnode.id));
-	$('#enniModal').modal('show');
+//   if ( currnode.group == "enni" )
+//   {	
+// 	populate_remote_vpn_list(parseInt(currnode.id));
+// 	$('#enniModal').modal('show');
  
-  }
-  else
-  {
+//   }
+//   else
+//   {
   
-	$("#site-list").append("<li id=\"node-" + parseInt(currnode.id) + "\" href=\"#\" class=\"list-group-item\">" + currnode.label + "</li>");
-  }
-  add_list_on_click();
+// 	$("#site-list").append("<li id=\"node-" + parseInt(currnode.id) + "\" href=\"#\" class=\"list-group-item\">" + currnode.label + "</li>");
+//   }
+//   add_list_on_click();
+// });
+
+$('#btnAddSite').on('click', function(event) {
+
+	var select = $("#addSiteSelect")[0];
+	var subnet = select.options[select.selectedIndex].value;
+	
+ 	$("#site-list").append("<li id=\"" + subnet + "\" href=\"#\" class=\"list-group-item\"><span class=\"badge\">new</span>" + subnet + "</li>");
+
+ 	add_list_on_click();
 });
 
 
@@ -516,21 +703,19 @@ function populate_remote_vpn_list(valueName)
 
 //populate_sitelist(1);
 
-function color_all_nodes(typeOfColoring)
+function color_all_nodes(typeOfColoring, notetype = "CUSTOMER")
 {
 	// retrieve a filtered subset of the data
 	var endpoints = nodes.get({
 	  filter: function (item) {
-	    return item.group == "CUSTOMER";
+	    return item.group == notetype;
 	  }
 	});
 	for ( i =0; i < endpoints.length; i++)
 	{
 		var node = endpoints[i];
 		colorNodeWithId(node.id, typeOfColoring);
-	}	
-	
-	
+	}
 }
 
 function color_nodes(vpnID, typeOfColoring)
@@ -551,6 +736,7 @@ function populate_sitelist(vpnID)
 {
 	network.unselectAll();
 	color_all_nodes(1);
+	color_all_nodes(3, "CUSTOMER_NO");
 	color_nodes(vpnID, 2);
 	
 	// empty the list
@@ -568,16 +754,14 @@ function populate_sitelist(vpnID)
 		for ( i =0; i < sites.length; i++)
 		{
 			var site = sites[i];
-			$('#site-list').append("<li id=\"node-" + site.id + "\" href=\"#\" class=\"list-group-item\">" + site.name + "</li>");
+			$('#site-list').append("<li id=\"" + site.name + "\" href=\"#\" class=\"list-group-item\"><span class=\"badge\">"+ site.user.email +"</span>" + site.name + "</li>");
+			//<span class="tag tag-default tag-pill pull-xs-right">Simon</span>
 		}
 		add_list_on_click();
 
 	});
 
 }
-
-
-
 
 $('#save_enni').click(function(){
 
@@ -602,6 +786,26 @@ $('#del-nodelist').on('click', function(event) {
 	event.preventDefault(); // To prevent following the link (optional)  
 	
 });*/
+
+function inviteVPN(){
+	var invite = {};
+	var select = $("#inviteUserSelect")[0];
+	invite["vpn"] = parseInt(currentVPN); //currently selected VPN...
+	invite["receiver"] = select.options[select.selectedIndex].value;
+	invite["invite_text"] = $("#inviteTextInput")[0].value;
+	
+	
+	console.log(JSON.stringify(invite));
+		
+	$.postJSON('../rest/vpn/invite', invite, function(response) {
+		// Do something with the request
+		console.log(response);
+		//TODO: clean invite form
+		//invite["receiver"] = select.options[select.selectedIndex].value;
+		$("#inviteTextInput")[0].value = "";
+	}, 'json');	
+	
+}
 
 
 function addVPN()
@@ -661,10 +865,12 @@ function connect_sites()
 		
 		/* done to remove node-x id, where x is number, we need only number for rest */
 		var tmp = "" + $(this).attr('id');
-		tmp = tmp.replace("node-", "");
-		site["id"] = parseInt(tmp);
+		//tmp = tmp.replace("node-", "");
+
+		//Simon, we dont use the id here, the unique subnet...
+		site["id"] = -1;// parseInt(tmp);
 		//site["id"] = $(this).attr('id');
-		site["name"] = $(this).text();
+		site["name"] = tmp;//$(this).text();
 		console.log(site);
 		sitelist.push(site);
 		
@@ -749,6 +955,7 @@ function disconnect_sites()
 		populate_sitelist(vpn["id"]);
 		
 		color_all_nodes(1);
+		color_all_nodes(3, "CUSTOMER_NO");
 		color_nodes(vpn["id"], 2);
 		
 	}, 'json');
@@ -792,6 +999,10 @@ function setVpnPrivacy(vpn_id,vpn_public)
 	
 }
 
+$('#btnInvite').on('click', function(event) {
+	 event.preventDefault(); // To prevent following the link (optional)
+	 inviteVPN();
+});
 
 $('#btnAddVpn').on('click', function(event) {
 	 event.preventDefault(); // To prevent following the link (optional)

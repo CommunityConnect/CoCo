@@ -1,6 +1,7 @@
 package net.geant.coco.agent.portal.dao;
 
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -21,14 +22,86 @@ import org.springframework.stereotype.Component;
 @Component
 public class NetworkSiteDao {
     private NamedParameterJdbcTemplate jdbc;
+    private UserDao userDao;
+
+    @Autowired
+    public void setUserDao(UserDao userDao) {
+        this.userDao = userDao;
+    }
 
     @Autowired
     public void setDataSource(DataSource jdbc) {
         this.jdbc = new NamedParameterJdbcTemplate(jdbc);
     }
+     
+    private NetworkSite extractData (ResultSet rs) throws SQLException {
+    	NetworkSite networkSite = new NetworkSite();
+    	
+    	ResultSetMetaData rsMeta = rs.getMetaData();
+    	int numberOfColumns = rsMeta.getColumnCount();
+    	
+    	log.info("NetworkSite.extractData with " + numberOfColumns + " columns");
+    	
+    	// get the column names; column indexes start from 1
+    	for (int i = 1; i < numberOfColumns + 1; i++) {
+    	    String columnName = rsMeta.getColumnLabel(i);
+    	    
+    	    //log.info("NetworkSite.extractData label- " + rsMeta.getColumnLabel(i));
+    	    
+    	    switch (columnName) {
+			case "id":
+				networkSite.setId(rs.getInt("id"));
+				break;
+			/*case "name":
+				networkSite.setName(rs.getString("name") + rs.getString("subnet"));
+				break;*/
+			case "switch_name":
+				networkSite.setProviderSwitch(rs.getString("switch_name"));
+				break;
+			case "remote_port":
+				networkSite.setProviderPort(rs.getInt("remote_port"));
+				break;
+			case "local_port":
+				networkSite.setCustomerPort(rs.getInt("local_port"));
+				break;
+			case "vlanid":
+				networkSite.setVlanId(rs.getInt("vlanid"));
+				break;
+			case "subnet":
+				networkSite.setName(rs.getString("subnet"));
+				networkSite.setIpv4Prefix(rs.getString("subnet"));
+				break;
+			/* this is depricated and should be replaced by the subnet*/
+			case "ipv4prefix":
+				//@Depricated
+				if (networkSite.getIpv4Prefix() == null){
+					networkSite.setIpv4Prefix(rs.getString("ipv4prefix"));
+				}
+				break;
+			case "mac_address":
+				networkSite.setMacAddress(rs.getString("mac_address"));
+				break;
+			case "vpn_name":
+				networkSite.setVpnName(rs.getString("vpn_name"));
+				break;
+			case "userID":
+				log.info("NetworkSite.extractData - userID");
+				int userID = rs.getInt("userID");
+				User user = this.userDao.getUser(userID);
+				networkSite.setUser(user);
+				log.info("NetworkSite.extractData - userID - " + user);
+				break;
+			default:
+				break;
+			}
+    	}
+
+        return networkSite;
+    }
 
     public List<NetworkSite> getNetworkSites() {
         String query = "SELECT sites.*, " + "switches.name AS switch_name, "
+        		+ "vpnSubnet.user AS userID, "
                 + "vpns.name AS vpn_name " + "FROM sites "
                 + "INNER JOIN switches ON sites.switch = switches.id "
                 + "INNER JOIN subnets ON sites.id=subnets.site "
@@ -40,17 +113,7 @@ public class NetworkSiteDao {
             @Override
             public NetworkSite mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
-                NetworkSite networkSite = new NetworkSite();
-
-                networkSite.setId(rs.getInt("id"));
-                networkSite.setName(rs.getString("name") + rs.getString("subnet"));
-                networkSite.setProviderSwitch(rs.getString("switch_name"));
-                networkSite.setProviderPort(rs.getInt("remote_port"));
-                networkSite.setCustomerPort(rs.getInt("local_port"));
-                networkSite.setVlanId(rs.getInt("vlanid"));
-                networkSite.setIpv4Prefix(rs.getString("subnet"));
-                networkSite.setMacAddress(rs.getString("mac_address"));
-                networkSite.setVpnName(rs.getString("vpn_name"));
+                NetworkSite networkSite = extractData(rs);
 
                 return networkSite;
             }
@@ -69,22 +132,13 @@ public class NetworkSiteDao {
         		+ "subnets.subnet AS subnet " + "FROM sites " 
         		+ "JOIN switches WHERE switch = switches.id "
                 + "AND sites.id = :id;";
+        
         return jdbc.query(query, params, new RowMapper<NetworkSite>() {
-
+        	
             @Override
             public NetworkSite mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
-                NetworkSite networkSite = new NetworkSite();
-
-                networkSite.setId(rs.getInt("id"));
-                networkSite.setName(rs.getString("name"));
-                networkSite.setProviderSwitch(rs.getString("switch_name"));
-                networkSite.setProviderPort(rs.getInt("remote_port"));
-                networkSite.setCustomerPort(rs.getInt("local_port"));
-                networkSite.setVlanId(rs.getInt("vlanid"));
-                networkSite.setIpv4Prefix(rs.getString("ipv4prefix"));
-                networkSite.setMacAddress(rs.getString("mac_address"));
-                networkSite.setVpnName(rs.getString("vpn_name"));
+                NetworkSite networkSite = extractData(rs);
 
                 return networkSite;
             }
@@ -100,28 +154,20 @@ public class NetworkSiteDao {
         params.addValue("vpn", vpnName);
 
         String query = "SELECT sites.*, " + "switches.name AS switch_name, "
+        		+ "vpnSubnet.user AS userID, "
                 + "vpns.name AS vpn_name, " + "subnets.subnet AS subnet " + "FROM sites "
                 + "INNER JOIN switches ON sites.switch = switches.id "
     			+ "INNER JOIN subnets ON sites.id = subnets.site "
                 + "INNER JOIN vpnSubnet ON subnets.id = vpnSubnet.subnet "
                 + "INNER JOIN vpns ON vpns.id = vpnSubnet.vpn "
                 + "AND vpns.name = :vpn ;";
+        log.info(query.replace(":vpn", vpnName));
         return jdbc.query(query, params, new RowMapper<NetworkSite>() {
 
             @Override
             public NetworkSite mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
-                NetworkSite networkSite = new NetworkSite();
-
-                networkSite.setId(rs.getInt("id"));
-                networkSite.setName(rs.getString("name") + rs.getString("subnet"));
-                networkSite.setProviderSwitch(rs.getString("switch_name"));
-                networkSite.setProviderPort(rs.getInt("remote_port"));
-                networkSite.setCustomerPort(rs.getInt("local_port"));
-                networkSite.setVlanId(rs.getInt("vlanid"));
-                networkSite.setIpv4Prefix(rs.getString("subnet"));
-                networkSite.setMacAddress(rs.getString("mac_address"));
-                networkSite.setVpnName(rs.getString("vpn_name"));
+            	NetworkSite networkSite = extractData(rs);
 
                 return networkSite;
             }
@@ -137,6 +183,7 @@ public class NetworkSiteDao {
         params.addValue("vpn", vpnName);
 
         String query = "SELECT sites.*, " + "switches.name AS switch_name, "
+        		+ "vpnSubnet.user AS userID, "
                 + "vpns.name AS vpn_name, " + "subnets.subnet AS subnet " + "FROM sites "
                 + "INNER JOIN switches ON switch = switches.id "
                 + "INNER JOIN subnets ON sites.id = subnets.site "
@@ -148,17 +195,7 @@ public class NetworkSiteDao {
             @Override
             public NetworkSite mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
-                NetworkSite networkSite = new NetworkSite();
-
-                networkSite.setId(rs.getInt("id"));
-                networkSite.setName(rs.getString("name") + rs.getString("subnet"));
-                networkSite.setProviderSwitch(rs.getString("switch_name"));
-                networkSite.setProviderPort(rs.getInt("remote_port"));
-                networkSite.setCustomerPort(rs.getInt("local_port"));
-                networkSite.setVlanId(rs.getInt("vlanid"));
-                networkSite.setIpv4Prefix(rs.getString("subnet"));
-                networkSite.setMacAddress(rs.getString("mac_address"));
-                networkSite.setVpnName(rs.getString("vpn_name"));
+                NetworkSite networkSite = extractData(rs);
 
                 return networkSite;
             }
@@ -177,20 +214,11 @@ public class NetworkSiteDao {
         return jdbc.query(query, params, new ResultSetExtractor<NetworkSite>() {
 
             @Override
-            public NetworkSite extractData(ResultSet rs) throws SQLException {
-                NetworkSite networkSite = new NetworkSite();
-                
+            public NetworkSite extractData(ResultSet rs) throws SQLException {               
                 //TODO fix here, if there are no results
                 rs.next();
-                
-                networkSite.setId(rs.getInt("id"));
-                networkSite.setName(rs.getString("name"));
-                networkSite.setProviderSwitch(rs.getString("switch_name"));
-                networkSite.setProviderPort(rs.getInt("remote_port"));
-                networkSite.setCustomerPort(rs.getInt("local_port"));
-                networkSite.setVlanId(rs.getInt("vlanid"));
-                networkSite.setIpv4Prefix(rs.getString("ipv4prefix"));
-                networkSite.setMacAddress(rs.getString("mac_address"));
+                userDao.getUsers();
+                NetworkSite networkSite = extractData(rs);
 
                 return networkSite;
             }
@@ -207,27 +235,16 @@ public class NetworkSiteDao {
                 + "JOIN switches JOIN subnets "
                 + "WHERE sites.switch = switches.id "
                 + "AND sites.id = subnets.site "
-                + "AND subnet = :subnet;";
-        log.trace("getNetworkSite " + subnet + "  " + query);
+                + "AND subnets.subnet = :subnet;";
+        log.trace("getNetworkSite " + query.replace(":subnet", subnet));
         return jdbc.query(query, params, new ResultSetExtractor<NetworkSite>() {
 
             @Override
-            public NetworkSite extractData(ResultSet rs) throws SQLException {
-                NetworkSite networkSite = new NetworkSite();
-                
+            public NetworkSite extractData(ResultSet rs) throws SQLException {             
                 //TODO fix here, if there are no results
                 rs.next();
                 
-                networkSite.setId(rs.getInt("id"));
-                networkSite.setName(rs.getString("name") + rs.getString("subnet"));
-                networkSite.setProviderSwitch(rs.getString("switch_name"));
-                networkSite.setProviderPort(rs.getInt("remote_port"));
-                networkSite.setCustomerPort(rs.getInt("local_port"));
-                networkSite.setVlanId(rs.getInt("vlanid"));
-                networkSite.setIpv4Prefix(rs.getString("subnet"));
-                networkSite.setMacAddress(rs.getString("mac_address"));
-
-                return networkSite;
+                return this.extractData(rs);
             }
 
         });

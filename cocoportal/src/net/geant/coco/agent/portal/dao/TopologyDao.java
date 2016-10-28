@@ -138,4 +138,54 @@ public class TopologyDao {
        
         return networkInterfaces;
     }
+    
+    public List<NetworkInterface> getNetworkInterfaces_UNI_NO() {
+    	// get the network sites of whom you are not a owner - NO=no ownership
+    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    
+		String userName = "Null";
+		
+		if (auth.isAuthenticated()){
+			userName = auth.getName(); //get logged in username
+		}
+    	
+		MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("userName", userName);
+		
+    	String query = "select DISTINCT switches.id, switches.name, sites.id AS site_id, sites.name AS site_name, subnets.id AS sub_id, subnets.subnet AS sub_name, users.email from switches "
+        		+ "INNER JOIN sites ON sites.switch=switches.id "
+        		+ "INNER JOIN subnets ON subnets.site=sites.id "
+        		+ "INNER JOIN subnetUsers ON subnets.id=subnetUsers.subnet "
+        		+ "INNER JOIN users ON users.id=subnetUsers.user "
+        		+ "INNER JOIN vpnSubnet ON vpnSubnet.subnet=subnets.id "
+        		+ "INNER JOIN vpns ON vpnSubnet.vpn=vpns.id "
+        		+ "WHERE users.email != :userName AND users.name != :userName AND "
+        		+ "vpns.id IN (SELECT DISTINCT vpns.id FROM vpns "
+        		+ " INNER JOIN vpnSubnet ON vpnSubnet.vpn=vpns.id "
+        		+ " INNER JOIN subnetUsers ON vpnSubnet.subnet=subnetUsers.subnet "
+        		+ " INNER JOIN users ON users.id=subnetUsers.user "
+        		+ " WHERE users.email = :userName OR users.name = :userName) "
+        		+ "AND subnets.id NOT IN (SELECT DISTINCT subnets.id from subnets "
+        		+ " INNER JOIN subnetUsers ON subnets.id=subnetUsers.subnet "
+        		+ " INNER JOIN users ON users.id=subnetUsers.user "
+        		+ " WHERE users.email = :userName OR users.name = :userName);";
+        		
+        List<NetworkInterface> networkInterfaces = jdbc.query(query, params, new RowMapper<NetworkInterface>() {
+
+            @Override
+            public NetworkInterface mapRow(ResultSet rs, int rowNum)
+                    throws SQLException {
+            	
+            	NetworkElement networkElementFrom = new NetworkElement(rs.getInt("id"), rs.getString("name"), NODE_TYPE.SWITCH);
+            	NetworkElement networkElementTo = new NetworkElement(rs.getInt("sub_id"), rs.getString("sub_name"), NODE_TYPE.CUSTOMER_NO);
+            	
+            	NetworkInterface networkLink = new NetworkInterface(networkElementFrom, networkElementTo, IF_TYPE.UNI);
+
+                return networkLink;
+            }
+
+        });
+       
+        return networkInterfaces;
+    }
 }

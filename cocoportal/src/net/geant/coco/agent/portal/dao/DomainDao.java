@@ -51,9 +51,9 @@ public class DomainDao {
         params.addValue("name", domainName);
         
         //String query = "SELECT * FROM domains WHERE name = :name ;";
-        String query = "SELECT * FROM domains"
+        String query = "SELECT * FROM domains "
                 //+ "INNER JOIN ases ON domains.as = ases.id "
-                + "AND name = :name ;";
+                + "WHERE name = :name ;";
         log.trace(query);
         
         List<Domain> domains = getDomainList(query, params);
@@ -70,9 +70,9 @@ public class DomainDao {
         params.addValue("name", domainID);
         
         //String query = "SELECT * FROM domains WHERE id = :name ;";
-        String query = "SELECT * FROM domains"
+        String query = "SELECT * FROM domains "
                 //+ "INNER JOIN ases ON domains.as = ases.id "
-                + "AND id = :name ;";
+                + "WHERE id = :name ;";
         log.trace(query);
         
         List<Domain> domains = getDomainList(query, params);

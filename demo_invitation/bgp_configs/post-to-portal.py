@@ -3,13 +3,15 @@
 import os
 import sys
 import time
-import requests
+from httplib2 import Http
 import json
 
 
 # portalURL = 'http://localhost:9090/CoCo-agent/rest/bgp'
-portalURL = 'http://localhost:5002'
-#fire up ~/demo_invitation/exabgp_tmpdev\> python server.py 0.0.0.0 5002 for tests
+#portalURL = 'http://localhost:5003'
+portalURL = 'http://10.10.10.2:5003'
+
+#fire up ~/demo_invitation/exabgp_tmpdev/tornado-web.py  for tests
 
 
 
@@ -32,7 +34,14 @@ while True:
             continue
 
         counter = 0
-        req = requests.post(portalURL, json.loads(line))
+        http_obj = Http()
+        resp, content = http_obj.request(
+            uri=portalURL,
+            method='POST',
+            headers={'Content-Type': 'application/json; charset=UTF-8'},
+            body=line
+        )
+
         print >> sys.stderr, _prefixed(sys.argv[1] if len(sys.argv) >= 2 else 'EXABGP PROCESS', line)
 
 

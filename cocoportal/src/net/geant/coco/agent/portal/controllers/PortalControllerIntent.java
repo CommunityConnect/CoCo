@@ -77,6 +77,8 @@ public class PortalControllerIntent {
 		
 		if (auth.isAuthenticated()){
 			userName = auth.getName(); //get logged in username
+		} else {
+			return null;
 		}
 		
 		return userDao.getUser(userName);
@@ -208,6 +210,11 @@ public class PortalControllerIntent {
 		log.info("Start getAllVpns.");
 		
 		User current_user = this.getCurrentUser();
+		
+		if (current_user == null || current_user.isAdmin()){
+			//TODO: this is a dev fallback if no user is looged in
+			return vpnsService.getVpns();
+		}
 		
 		return vpnsService.getVpns(current_user);
 	}

@@ -22,6 +22,7 @@
 			<user name="coco" password="test" authorities="ROLE_USER" />
 			<user name="simon" password="simon" authorities="ROLE_USER" />
 			<user name="thomas" password="thomas" authorities="ROLE_USER" />
+			<user name="admin" password="admin" authorities="ROLE_USER" />
 	    </user-service>
 	  </authentication-provider>
 	</authentication-manager>

@@ -39,9 +39,9 @@ public class VpnDao {
         params.addValue("userId", "" + userId);
         
     	String query = "SELECT DISTINCT vpns.* FROM vpns "
-    			+ "INNER JOIN vpnSubnet ON vpnSubnet.vpn=vpns.id "
-    			+ "INNER JOIN subnetUsers ON vpnSubnet.subnet=subnetUsers.subnet "
-    			+ "WHERE subnetUsers.user = :userId ;";
+    			+ "LEFT JOIN vpnSubnet ON vpnSubnet.vpn=vpns.id "
+    			+ "LEFT JOIN subnetUsers ON vpnSubnet.subnet=subnetUsers.subnet "
+    			+ "WHERE subnetUsers.user = :userId or vpns.owner = :userId ;";
     	
     	log.trace(query.replace(":userId", "" + userId));
         

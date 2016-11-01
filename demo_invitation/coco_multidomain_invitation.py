@@ -26,7 +26,10 @@ EXABGP_RUN_DIR = '/var/run/exabgp'
 EXABGP_LOG_DIR = '/var/log/exabgp'
 #/home/coco/demo_invitation/exabgp
 #mysql parameters
-DB_HOST="134.221.121.203"
+#TODO addres conditional on the domain/host
+#DB_HOST="134.221.121.203"
+DB_HOST="127.0.0.1"
+
 DB_USER="coco"
 DB_PWD="cocorules!"
 DB_NAME="CoCoINV"

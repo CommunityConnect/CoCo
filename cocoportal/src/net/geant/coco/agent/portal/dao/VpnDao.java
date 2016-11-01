@@ -33,6 +33,22 @@ public class VpnDao {
             e.printStackTrace();
         }
     }
+    
+    public List<Vpn> getVpns(int userId) {
+    	MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("userId", "" + userId);
+        
+    	String query = "SELECT DISTINCT vpns.* FROM vpns "
+    			+ "INNER JOIN vpnSubnet ON vpnSubnet.vpn=vpns.id "
+    			+ "INNER JOIN subnetUsers ON vpnSubnet.subnet=subnetUsers.subnet "
+    			+ "WHERE subnetUsers.user = :userId ;";
+    	
+    	log.trace(query.replace(":userId", "" + userId));
+        
+        List<Vpn> vpns = getVpnList(query, params);
+        
+        return vpns;
+    }
 
     public List<Vpn> getVpns() {    	
     	String query = "SELECT * FROM vpns";
@@ -155,16 +171,28 @@ public class VpnDao {
          
          return (jdbc.update(query, params) == 1);
 	}
-
+    
+    @Deprecated // we want a user ID assosiated with a subnet in a VPN (for user management, i.e. delete)
     public boolean addSubnetToVpn(String vpnName, String subnet) {
+    
+    	return this.addSubnetToVpn(vpnName, subnet, -1);
+    }
+
+    public boolean addSubnetToVpn(String vpnName, String subnet, int userID) {
     	MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("vpnName", vpnName);
         params.addValue("subnet", subnet);
+        if (userID <= -1){
+        	params.addValue("user", "NULL");
+        } else {
+        	params.addValue("user", userID);
+        }
 
-        String query = "INSERT INTO vpnSubnet (`vpn`, `subnet`) "
+        String query = "INSERT INTO vpnSubnet (`vpn`, `subnet`, `user`) "
                 + "VALUES ("
                 + "(SELECT id FROM vpns WHERE `name` = :vpnName), "
-                + "(SELECT id FROM subnets WHERE `subnet` = :subnet) "
+                + "(SELECT id FROM subnets WHERE `subnet` = :subnet), "
+                + ":user "
                 + ");";
         log.trace("vpnDao addSite: " + query);
         return jdbc.update(query, params) == 1;

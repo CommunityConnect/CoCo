@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.geant.coco.agent.portal.bgp.BgpRouter;
 import net.geant.coco.agent.portal.bgp.BgpRouterFactory;
 import net.geant.coco.agent.portal.bgp.BgpRouterInterface;
+import net.geant.coco.agent.portal.dao.Domain;
+import net.geant.coco.agent.portal.dao.DomainDao;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.NetworkSiteDao;
 import net.geant.coco.agent.portal.dao.User;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Service;
 public class VpnsService {
     private VpnDao vpnDao;
     private NetworkSiteDao networkSiteDao;
+    private DomainDao domainDao;
     
     VpnProvisioner vpnProvisioner;
     
@@ -51,6 +54,11 @@ public class VpnsService {
 	    bgpRouter = BgpRouterFactory.create(bgpIp, 7644);
 	}
 	
+	@Autowired
+    public void setDomainDao(DomainDao domainDao) {
+        this.domainDao = domainDao;
+    }
+	
     @Autowired
     public void setVpnDao(VpnDao vpnDao) {
         this.vpnDao = vpnDao;
@@ -60,14 +68,35 @@ public class VpnsService {
     public void setNetworkSiteDao(NetworkSiteDao networkSiteDao) {
         this.networkSiteDao = networkSiteDao;
     }
+    
+    private void manage_vpn_fk(List<Vpn> vpns){
+    	for (Vpn vpn : vpns) {
+    		this.manage_vpn_fk(vpn);
+    	}
+    }
+    
+    private void manage_vpn_fk(Vpn vpn){
+    	List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
+		vpn.setSites(networkSitesFromVpn);
+		
+		Domain domain = domainDao.getDomain(vpn.getDomain_id());
+		if (domain != null && domain instanceof Domain){
+			vpn.setDomain(domain);
+		}
+    }
+    
+    public List<Vpn> getVpns(User user) {
+    	List<Vpn> vpns = vpnDao.getVpns(user.getId());
+    	
+    	this.manage_vpn_fk(vpns);
+    	
+        return vpns;
+    }
 
     public List<Vpn> getVpns() {
     	List<Vpn> vpns = vpnDao.getVpns();
     	
-    	for (Vpn vpn : vpns) {
-			List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
-			vpn.setSites(networkSitesFromVpn);
-		}
+    	this.manage_vpn_fk(vpns);
     	
         return vpns;
     }
@@ -75,8 +104,7 @@ public class VpnsService {
     public Vpn getVpn(String vpnName) {
     	Vpn vpn = vpnDao.getVpn(vpnName);
     	
-    	List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
-		vpn.setSites(networkSitesFromVpn);
+    	this.manage_vpn_fk(vpn);
 		
 		return vpn;
     }
@@ -84,8 +112,7 @@ public class VpnsService {
     public Vpn getVpn(int vpnId) {
     	Vpn vpn = vpnDao.getVpn(vpnId);
     	
-    	List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
-		vpn.setSites(networkSitesFromVpn);
+    	this.manage_vpn_fk(vpn);
 		
 		return vpn;
     }
@@ -97,8 +124,13 @@ public class VpnsService {
     	
         return vpnDao.createVpn(vpn);
     }
-
+    
+    @Deprecated // we want a user ID here 
     public boolean addSiteToVpn(String vpnName, String siteName) {
+    	return this.addSiteToVpn(vpnName, siteName, -1);
+    }
+
+    public boolean addSiteToVpn(String vpnName, String siteName, int userID) {
     	log.info("addSiteToVpn - vpn: " + vpnName + " site: " + siteName);
     	
     	NetworkSite site = networkSiteDao.getNetworkSite(siteName);
@@ -111,19 +143,19 @@ public class VpnsService {
     	//TODO fix the neighbour IP address, how to handle multiple neighbours?
     	bgpRouter.addSiteToVpn(site.getIpv4Prefix(), "0.0.0.0", currentVpn.getId());
     	
-    	return vpnDao.addSiteToVpn(vpnName, siteName);
+    	return vpnDao.addSubnetToVpn(vpnName, siteName, userID);
     }
 
     public boolean deleteSiteFromVpn(String vpnName, String siteName) {
     	log.info("deleteSiteFromVpn - vpn: " + vpnName + " site: " + siteName);
     	
-    	NetworkSite site = networkSiteDao.getNetworkSite(siteName);
+    	//NetworkSite site = networkSiteDao.getNetworkSite(siteName);
     	Vpn currentVpn = vpnDao.getVpn(vpnName);
     	
     	vpnProvisioner.deleteSite(vpnName, siteName);
     	
     	//TODO fix the neighbour IP address, how to handle multiple neighbours?
-    	bgpRouter.delSiteFromVpn(site.getIpv4Prefix(), "0.0.0.0", currentVpn.getId());
+    	bgpRouter.delSiteFromVpn(siteName, "0.0.0.0", currentVpn.getId());
 
         return vpnDao.deleteSiteFromVpn(vpnName, siteName);
     }

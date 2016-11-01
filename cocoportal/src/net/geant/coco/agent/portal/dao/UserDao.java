@@ -46,8 +46,8 @@ public class UserDao {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("name", userName);
         
-        String query = "SELECT * FROM users WHERE name = :name ;";
-        log.trace(query);
+        String query = "SELECT * FROM users WHERE name = :name or email = :name;";
+        log.trace(query.replace(":name", userName));
         
         List<User> users = getUserList(query, params);
         
@@ -63,7 +63,7 @@ public class UserDao {
         params.addValue("name", userID);
         
         String query = "SELECT * FROM users WHERE id = :name ;";
-        log.trace(query);
+        log.trace(query.replace(":name", "'" + userID + "'"));
         
         List<User> users = getUserList(query, params);
         

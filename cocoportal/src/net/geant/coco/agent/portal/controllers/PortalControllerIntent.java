@@ -1,7 +1,11 @@
 package net.geant.coco.agent.portal.controllers;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -24,6 +28,7 @@ import net.geant.coco.agent.portal.dao.User;
 import net.geant.coco.agent.portal.dao.UserDao;
 import net.geant.coco.agent.portal.dao.Vpn;
 import net.geant.coco.agent.portal.dao.VpnDao;
+import net.geant.coco.agent.portal.dao.VpnInvite;
 import net.geant.coco.agent.portal.rest.RestVpnURIConstants;
 import net.geant.coco.agent.portal.service.TopologyService;
 import net.geant.coco.agent.portal.service.VpnsService;
@@ -65,6 +70,18 @@ public class PortalControllerIntent {
 		this.subnetDao = subnetDao;
 	}
 
+	private User getCurrentUser(){
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    
+		String userName = "Null";
+		
+		if (auth.isAuthenticated()){
+			userName = auth.getName(); //get logged in username
+		}
+		
+		return userDao.getUser(userName);
+	}
+	
 	@RequestMapping(value="/emailtest", method = RequestMethod.GET)
 	public @ResponseBody String emailtest() {
 		String recipient = "SimonGunkel@googlemail.com";
@@ -90,19 +107,30 @@ public class PortalControllerIntent {
 		return users_string;
 	}
 	
+	@RequestMapping(value="/static/getAllUsers", method = RequestMethod.GET)
+	public @ResponseBody String getAllUsers() {
+		List<User> users = this.userDao.getUsers();
+		
+		//ArrayList<Map<String, String>> user_list = new ArrayList<Map<String, String>>();
+		Map<String, String> user_strings = new HashMap<String, String>();
+		
+		for (User user : users){
+			user_strings.put( user.getEmail(), user.getName() );
+		}
+		
+	    JSONObject json = new JSONObject();
+	    
+	    json.putAll( user_strings );
+	    //System.out.printf( "JSON: %s", json.toString() );
+			
+		return json.toString();
+	}
+	
 	@RequestMapping(value = RestVpnURIConstants.GET_USER_SUBNETS, method = RequestMethod.GET)
 	public List<Subnet> getUserSubnets() {
 		//log.info("Start getall sites.");
 		
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-	    
-		String userName = "Null";
-		
-		if (auth.isAuthenticated()){
-			userName = auth.getName(); //get logged in username
-		}
-		
-		User user = userDao.getUser(userName);
+		User user = this.getCurrentUser();
 
 		return subnetDao.getUserSubnets(user);
 	}
@@ -142,23 +170,36 @@ public class PortalControllerIntent {
 		Vpn vpnNew = vpn;
 		Vpn vpnCurrent = vpnsService.getVpn(vpnId);
 
-		List<NetworkSite> sitesToAdd = vpnNew.getSites();
+		// Note: it is very important to create a new List here to make this work!
+		List<NetworkSite> sitesToAdd = new ArrayList<NetworkSite>(vpnNew.getSites());
 		sitesToAdd.removeAll(vpnCurrent.getSites());
 
-		List<NetworkSite> sitesToRemove = vpnCurrent.getSites();
+		//TODO: something is going very wrong here :/
+		
+		List<NetworkSite> sitesToRemove = new ArrayList<NetworkSite>(vpnCurrent.getSites());
 		sitesToRemove.removeAll(vpnNew.getSites());
 
-
+		User user = this.getCurrentUser();
+		
 		for (NetworkSite site : sitesToAdd) {
-			vpnsService.addSiteToVpn(vpnCurrent.getName(), site.getName());
+			log.info("Add site = " + site);
+			continue;
+//			if (user != null) {
+//				vpnsService.addSiteToVpn(vpnCurrent.getName(), site.getName(), user.getId());
+//			} else {
+//				vpnsService.addSiteToVpn(vpnCurrent.getName(), site.getName());
+//			}
 		}
 		
 		for (NetworkSite site : sitesToRemove) {
-			vpnsService.deleteSiteFromVpn(vpnCurrent.getName(), site.getName());
+			log.info("Remove site = " + site);
+			
+			//vpnsService.deleteSiteFromVpn(vpnCurrent.getName(), site.getName());
 		}
+		return null;
 
-		vpnNew = vpnsService.getVpn(vpnId);
-		return vpnNew;
+		//vpnNew = vpnsService.getVpn(vpnId);
+		//return vpnNew;
 	}
 	
 	//TODO: Fix so that you only get VPN that you have access to, beside admin!?
@@ -166,7 +207,9 @@ public class PortalControllerIntent {
 	public List<Vpn> getAllVpns() {
 		log.info("Start getAllVpns.");
 		
-		return vpnsService.getVpns();
+		User current_user = this.getCurrentUser();
+		
+		return vpnsService.getVpns(current_user);
 	}
 
 	@RequestMapping(value = RestVpnURIConstants.GET_ALL_SITES, method = RequestMethod.GET)
@@ -176,19 +219,34 @@ public class PortalControllerIntent {
 		return vpnsService.getSitesInVpn(vpnID);
 	}
 
+	@RequestMapping(value = RestVpnURIConstants.INVITE_VPN, method = RequestMethod.POST)
+	public boolean inviteVpn(@RequestBody VpnInvite invite) {
+		log.info("Invite user to VPN" + invite);
+		
+		User sender = this.getCurrentUser();
+		//log.info("User " + sender);
+		User receiver = userDao.getUser(invite.getReceiver());
+		
+		String hash = sender.getName() + receiver.getName();
+		hash.hashCode();
+		
+		Vpn vpn = vpnsService.getVpn(invite.getVpn());
+		
+		String url = "[url]?vpn=[vpn_id]&join=[hash]";
+		url = url.replace("[url]", vpn.getDomain().getPortal_address());
+		url = url.replace("[vpn_id]", ""+vpn.getId());
+		url = url.replace("[hash]", hash);
+		
+		log.info("New Invite {"+ invite +"} from {" + sender + "} to {" + receiver + "} url {"+ url +";");
+		
+		return true;
+	}
+	
 	@RequestMapping(value = RestVpnURIConstants.CREATE_VPN, method = RequestMethod.POST)
 	public boolean createVpn(@RequestBody Vpn vpn) {
 		log.info("Start createVpn.");
-
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-	    
-		String userName = "Null";
 		
-		if (auth.isAuthenticated()){
-			userName = auth.getName(); //get logged in username
-		}
-		
-		User user = userDao.getUser(userName);
+		User user = this.getCurrentUser();
 		
 		vpn.setDomain_id(user.getDomain_id());
 		vpn.setOwner_id(user.getId());

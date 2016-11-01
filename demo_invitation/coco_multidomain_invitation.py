@@ -353,7 +353,7 @@ class MDCoCoTopoSouth(Topo):
 
     "Multidomain CoCo topology - TNO South"
 
-    def build(self):
+    def build(self,mode):
         domID = 3
 
         ts_pe1 = self.addSwitch('ts_pe1', dpid='0000000000000001', datapath='user')

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ "$1" =  "tn" ]]
+if [[ "$1" ==  "tn" ]]
 then
 
 	#bridge between mininet and VM host interface
@@ -29,7 +29,7 @@ then
 	fi
 fi
 
-if [[ "$1" =  "ts" ]]
+if [[ "$1" ==  "ts" ]]
 then
 
         #bridge between mininet and VM host interface
@@ -37,11 +37,11 @@ then
         then
                 sudo ifconfig root-eth0 0.0.0.0
                 brctl addif TS-CE1 root-eth0
-                ip link set dev TN-CE1 up
+                ip link set dev TS-CE1 up
 
-                sudo ifconfig root-eth2 0.0.0.0
-                brctl addif TS-BGP1 root-eth2
-                ip link set dev TN-BGP1 up
+                sudo ifconfig root-eth1 0.0.0.0
+                brctl addif TS-BGP1 root-eth1
+                ip link set dev TS-BGP1 up
         else
                 sudo ifconfig root-eth0 0.0.0.0
                 brctl addif TS-$2 root-eth0

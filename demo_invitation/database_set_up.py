@@ -3,7 +3,7 @@
 import MySQLdb as mdb
 
 #mysql parameters
-DB_HOST="134.221.121.203"
+DB_HOST="localhost"
 DB_USER="coco"
 DB_PWD="cocorules!"
 DB_NAME="CoCoINV"

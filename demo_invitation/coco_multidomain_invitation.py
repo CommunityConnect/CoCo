@@ -27,8 +27,9 @@ EXABGP_LOG_DIR = '/var/log/exabgp'
 #/home/coco/demo_invitation/exabgp
 #mysql parameters
 #TODO addres conditional on the domain/host
-#DB_HOST="134.221.121.203"
-DB_HOST="127.0.0.1"
+DB_HOST_TN="134.221.121.203"
+DB_HOST_TS="134.221.121.218"
+DB_HOST="localhost"
 
 DB_USER="coco"
 DB_PWD="cocorules!"
@@ -1070,7 +1071,22 @@ def databaseDump(net, domain, mode):
             db.commit()
         except:
             # Rollback in case there is any error
-            db.rollback()
+            db.rollback();
+
+
+    sql="""INSERT INTO `subnetUsers` (`user`, `subnet`) 
+			VALUES ((SELECT `id` FROM `users` WHERE `name` = 'simon'), '1'),
+			       ((SELECT `id` FROM `users` WHERE `name` = 'simon'), '2'); """
+    try:
+    	# Execute the SQL command
+    	cursor.execute(sql)
+    	# Commit your changes in the database
+    	db.commit()
+    except mdb.Error, e:
+	print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+    	# Rollback in case there is any error
+    	db.rollback();
+
 
     if mode == "full":	
     	################ vpnUsers
@@ -1094,10 +1110,12 @@ def databaseDump(net, domain, mode):
 		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
 		`vpn` int(10) unsigned NOT NULL,
 		`subnet` int(10) unsigned NOT NULL,
+		`user` INT(10) UNSIGNED NOT NULL,
 		PRIMARY KEY (`id`),
 		INDEX `vpnId_idx` (`vpn` ASC),
 		INDEX `fk_vpnToSite_subnets1_idx` (`subnet` ASC),
 		CONSTRAINT `vpnId_subnet`    FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
+		CONSTRAINT `fk_user_vpnsubnets`    FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
 		CONSTRAINT `fk_vpnToSite_subnets1`  FOREIGN KEY (`subnet`)    REFERENCES `subnets` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
 		ENGINE = InnoDB
 		CHARSET=latin1;"""
@@ -1138,8 +1156,10 @@ if __name__ == '__main__':
 	 mode = 'full'
 
     if chosen_topo =='tn':
+	DB_HOST = DB_HOST_TN
         topo = MDCoCoTopoNorth(mode)
     else:
+	DB_HOST = DB_HOST_TS
         topo = MDCoCoTopoSouth(mode)
     
     net = Mininet(topo=topo, controller=RemoteController)

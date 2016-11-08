@@ -26,7 +26,11 @@ EXABGP_RUN_DIR = '/var/run/exabgp'
 EXABGP_LOG_DIR = '/var/log/exabgp'
 #/home/coco/demo_invitation/exabgp
 #mysql parameters
-DB_HOST="134.221.121.203"
+#TODO addres conditional on the domain/host
+DB_HOST_TN="134.221.121.203"
+DB_HOST_TS="134.221.121.218"
+DB_HOST="localhost"
+
 DB_USER="coco"
 DB_PWD="cocorules!"
 DB_NAME="CoCoINV"
@@ -251,7 +255,7 @@ class MDCoCoTopoNorth(Topo):
                        'tn_ce1_arp': tn_ce1_arp,
                        'tn_ce2_arp': tn_ce2_arp}
 	
-	if mode == 'bgp' or mode == 'full':
+	if mode == 'bgp' or mode == 'full' or mode == 'all':
 		#        bgp = self.addHost("tn_bgp1", cls=QBGPRouter,
 		#                           quaggaConfFile='%s/tn_bgp1.conf' % CONFIG_DIR,
 		#                           zebraConfFile=zebraConf,
@@ -302,7 +306,8 @@ class MDCoCoTopoNorth(Topo):
             sw_mac = self.addSwitch('tn_mac_ce%s' % i)
 
 	    if mode == 'full':
-	        self.addLink(router, attachmentSwitches[i - 1]) 
+		self.addLink(sw_mac, router)
+		self.addLink(sw_mac, attachmentSwitches[i - 1]) 
 	    else:
 		root = self.addHost('root', inNamespace=False)
 		self.addLink(sw_mac, router)
@@ -319,9 +324,9 @@ class MDCoCoTopoNorth(Topo):
 
             self.addLink(router, sw)
 
-	if mode == 'full' or mode == 'bgp':
+	if mode == 'full' or mode == 'bgp' or mode == "all":
         	# Connect BGP speaker to the root namespace
-        	root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+        	root = self.addHost('root', inNamespace=False)
         	self.addLink(root, bgp)
 
 	if mode == 'full':
@@ -350,33 +355,38 @@ class MDCoCoTopoSouth(Topo):
 
     "Multidomain CoCo topology - TNO South"
 
-    def build(self):
+    def build(self, mode):
         domID = 3
 
-        ts_pe1 = self.addSwitch('ts_pe1', dpid='0000000000000001', datapath='user')
-        #        ts_pc1 = self.addSwitch('ts_pc1', dpid='0000000000000002')
-        #        ts_pe2 = self.addSwitch('ts_pe2', dpid='0000000000000003')
-        ts_gw_tn = self.addSwitch('ts_gw_tn', dpid='0000000000000024')
+	if mode == 'full':
+                ts_pe1 = self.addSwitch('ts_pe1', dpid='0000000000000001', datapath='user')
+                #        ts_pc1 = self.addSwitch('ts_pc1', dpid='0000000000000002')
+                #        ts_pe2 = self.addSwitch('ts_pe2', dpid='0000000000000003')
+                ts_gw_tn = self.addSwitch('ts_gw_tn', dpid='0000000000000024')
 
-        pinghost = self.addHost('ts_ph_tn', cls=PingableHost, ip='10.0.0.4/24', mac='00:10:00:00:00:04',
+                pinghost = self.addHost('ts_ph_tn', cls=PingableHost, ip='10.0.0.4/24', mac='00:10:00:00:00:04',
                                 remoteIP='10.0.0.3', remoteMAC='00:10:00:00:00:03')
-        self.addLink(ts_pe1, pinghost)
+                self.addLink(ts_pe1, pinghost)
+
+                # Switches we want to attach our routers to, in the correct order
+                attachmentSwitches = [ts_pe1]
 
         zebraConf = '%s/zebra.conf' % CONFIG_DIR
 	exabgpIni = '%s/exabgp_config.ini' % CONFIG_DIR
         exabgpConf = '%s/exabgp_ts2_to_tn2_simplehttp_post-to-portal.conf' % CONFIG_DIR
 
-        # Switches we want to attach our routers to, in the correct order
-        attachmentSwitches = [ts_pe1]
         nRouters = 1
         nHosts = 2
 
         # Set up the internal BGP speaker
         bgpEth0 = {'mac': '00:10:0%s:00:02:54' % domID,
                    'ipAddrs': '10.%s.0.254/24' % domID}
-        bgpEth1 = {'ipAddrs': '10.10.10.1/24'}
-        bgpIntfs = {'ts_bgp1-eth0': bgpEth0,
-                    'ts_bgp1-eth1': bgpEth1}
+	if mode == 'full':
+                bgpEth1 = {'ipAddrs': '10.10.10.1/24'}
+                bgpIntfs = {'ts_bgp1-eth0': bgpEth0,
+                        'ts_bgp1-eth1': bgpEth1}
+        else:
+                bgpIntfs = {'ts_bgp1-eth0': bgpEth0}
 
         tn_bgp1 = {'remoteMAC': '00:10:02:00:02:54',
                    'remoteIP': '10.2.0.254',
@@ -392,19 +402,23 @@ class MDCoCoTopoSouth(Topo):
         ARPBGPpeers = {'tn_bgp1': tn_bgp1,
                        'ts_ce1': ts_ce1_arp}
 
-#        bgp = self.addHost("ts_bgp1", cls=QBGPRouter,
-#                           quaggaConfFile='%s/ts_bgp1.conf' % CONFIG_DIR,
-#                           zebraConfFile=zebraConf,
-#                           intfDict=bgpIntfs,
-#                           ARPDict=ARPBGPpeers)
+	if mode == 'bgp' or mode == 'full' or mode == 'all':
+                #        bgp = self.addHost("ts_bgp1", cls=QBGPRouter,
+                #                           quaggaConfFile='%s/ts_bgp1.conf' % CONFIG_DIR,
+                #                           zebraConfFile=zebraConf,
+                #                           intfDict=bgpIntfs,
+                #                           ARPDict=ARPBGPpeers)
+                bgp = self.addHost("ts_bgp1", cls=EXABGPRouteReflector,
+                                exabgpIniFile=exabgpIni,
+                                exabgpConfFile=exabgpConf,
+                                intfDict=bgpIntfs,
+                                ARPDict=ARPBGPpeers)
+	begin = 1
+        end = nRouters +1
+        if mode == 'bgp':
+            end = 1
 
-        bgp = self.addHost("ts_bgp1", cls=EXABGPRouteReflector,
-                           exabgpIniFile=exabgpIni,
-                           exabgpConfFile=exabgpConf,
-			   intfDict=bgpIntfs,
-                           ARPDict=ARPBGPpeers)
-
-        for i in range(1, nRouters + 1):
+        for i in range(begin, end):
             name = 'ts_ce%s' % i
 
             # drop vlans
@@ -431,7 +445,17 @@ class MDCoCoTopoSouth(Topo):
 
             router = self.addHost(name, cls=QBGPRouter, quaggaConfFile=quaggaConf,
                                   zebraConfFile=zebraConf, intfDict=intfs, ARPDict=ARPfakegw)
-            self.addLink(router, attachmentSwitches[i - 1])
+	    
+            #switch to modify MAC address in Ethernet frame
+            sw_mac = self.addSwitch('ts_mac_ce%s' % i)
+
+	    if mode == 'full':
+                self.addLink(sw_mac, router)
+                self.addLink(sw_mac, attachmentSwitches[i - 1])
+            else:
+                root = self.addHost('root', inNamespace=False)
+                self.addLink(sw_mac, router)
+                self.addLink(root, sw_mac)
 
             # learning switch sitting in each customer AS
             # you may need sudo apt-get install bridge-utils for this:
@@ -444,19 +468,17 @@ class MDCoCoTopoSouth(Topo):
 
             self.addLink(router, sw)
 
-        self.addLink(bgp, ts_pe1)
+	if mode == 'full' or mode == 'bgp' or mode == 'all':
+                # Connect BGP speaker to the root namespace
+                root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+                self.addLink(root, bgp)
 
-        # Connect BGP speaker to the root namespace
-        root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
-        self.addLink(root, bgp)
-
-
-
-        # Wire up the switches in the topology
-        ##for a moment only one switch is present in TNO south
-        self.addLink(ts_pe1, ts_gw_tn)
-
-        # self.addLink( ts_pc1, ts_pe2 )
+        if mode == 'full':
+                self.addLink(bgp, ts_pe1)
+                # Wire up the switches in the topology
+                ##for a moment only one switch is present in TNO south
+                self.addLink(ts_pe1, ts_gw_tn)
+                # self.addLink( ts_pc1, ts_pe2 )
 
 
 def returnSwitchConnections(mn_topo, switches, operSwNames):
@@ -1049,7 +1071,22 @@ def databaseDump(net, domain, mode):
             db.commit()
         except:
             # Rollback in case there is any error
-            db.rollback()
+            db.rollback();
+
+
+    sql="""INSERT INTO `subnetUsers` (`user`, `subnet`) 
+			VALUES ((SELECT `id` FROM `users` WHERE `name` = 'simon'), '1'),
+			       ((SELECT `id` FROM `users` WHERE `name` = 'simon'), '2'); """
+    try:
+    	# Execute the SQL command
+    	cursor.execute(sql)
+    	# Commit your changes in the database
+    	db.commit()
+    except mdb.Error, e:
+	print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+    	# Rollback in case there is any error
+    	db.rollback();
+
 
     if mode == "full":	
     	################ vpnUsers
@@ -1073,10 +1110,12 @@ def databaseDump(net, domain, mode):
 		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
 		`vpn` int(10) unsigned NOT NULL,
 		`subnet` int(10) unsigned NOT NULL,
+		`user` INT(10) UNSIGNED NOT NULL,
 		PRIMARY KEY (`id`),
 		INDEX `vpnId_idx` (`vpn` ASC),
 		INDEX `fk_vpnToSite_subnets1_idx` (`subnet` ASC),
 		CONSTRAINT `vpnId_subnet`    FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
+		CONSTRAINT `fk_user_vpnsubnets`    FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
 		CONSTRAINT `fk_vpnToSite_subnets1`  FOREIGN KEY (`subnet`)    REFERENCES `subnets` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
 		ENGINE = InnoDB
 		CHARSET=latin1;"""
@@ -1112,13 +1151,15 @@ if __name__ == '__main__':
     if chosen_topo not in ['tn', 'ts']:
 	 print('Wrong topology name: using default topo tn')
          chosen_topo = 'tn'
-    if mode not in ['ce1', 'ce2', 'bgp', 'full']:
+    if mode not in ['ce1', 'ce2', 'bgp', 'full', 'all']:
 	 print('Wrong mode name: using default full mode')
 	 mode = 'full'
 
     if chosen_topo =='tn':
+	DB_HOST = DB_HOST_TN
         topo = MDCoCoTopoNorth(mode)
     else:
+	DB_HOST = DB_HOST_TS
         topo = MDCoCoTopoSouth(mode)
     
     net = Mininet(topo=topo, controller=RemoteController)

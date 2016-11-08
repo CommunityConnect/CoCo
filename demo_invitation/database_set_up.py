@@ -1,12 +1,28 @@
 #!/usr/bin/python
 
 import MySQLdb as mdb
+import sys
+
+DOMAIN = 'tn'
+
+if len(sys.argv) < 2:
+        print "No domain provided; TN used by default"
+else:
+	DOMAIN = sys.argv[1]
 
 #mysql parameters
-DB_HOST="134.221.121.203"
+DB_HOST_TN="134.221.121.203"
+DB_HOST_TS="l34.221.121.218"
+
+DB_HOST="localhost"
 DB_USER="coco"
 DB_PWD="cocorules!"
 DB_NAME="CoCoINV"
+
+if DOMAIN == 'ts':
+	DB_HOST = DB_HOST_TS
+else:
+	DB_HOST = DB_HOST_TN
 
 db = mdb.connect(DB_HOST, DB_USER, DB_PWD, DB_NAME)
 cursor = db.cursor()
@@ -19,6 +35,12 @@ for table in tables:
 	sql=""" DROP TABLE IF EXISTS %s; """ % (table[0],)
         cursor.execute(sql);
 
+
+
+
+##########
+#DOMAINS
+##########
 ################ domainns - create very first - as it has no dependencies on other tables
 sql = """ CREATE TABLE `domains` (
         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -33,8 +55,10 @@ sql = """ CREATE TABLE `domains` (
 cursor.execute(sql)
 # `bgp_peer` VARCHAR(45) NOT NULL,
 
+
+# Insert data
 sql = """INSERT  INTO `domains` (portal_address, email_domain, bgp_ip, as_num, as_name)
-    VALUES ('http://134.221.121.202:9090/CoCo-agent','email111','10.2.0.254',65020,'tno-north'),('http://134.221.121.201:9090/CoCo-agent','email222','10.3.0.254',65030,'tno-south');"""
+    VALUES ('http://134.221.121.202:9090/CoCo-agent','emailtemp1','10.2.0.254',65020,'tno-north'),('http://134.221.121.201:9090/CoCo-agent','emailtemp2','10.3.0.254',65030,'tno-south');"""
 try:
 	# Execute the SQL command
         cursor.execute(sql)
@@ -43,6 +67,7 @@ try:
 except:
         # Rollback in case there is any error
         db.rollback()
+
 
 ############### get Ids for domains
 sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-north';""" % DB_NAME
@@ -53,10 +78,10 @@ sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-south';""" % DB_
 cursor.execute(sql)
 id_south = cursor.fetchone()[0]
 
-###############   switches - create first - otherwise sites cannot be created as they reference to
-# the key present here (errno 150)
 
-# Drop table if it already exist using execute() method.
+################
+#SWITCHES
+###############
 sql = """CREATE TABLE `switches` (
              `id` int(11) NOT NULL,
              `name` varchar(45) NOT NULL,
@@ -71,7 +96,29 @@ sql = """CREATE TABLE `switches` (
              DEFAULT CHARSET=latin1;"""
 cursor.execute(sql)
 
-###############   sites
+#Insert data
+if DOMAIN == 'tn':
+	sql = """INSERT INTO `switches` (id, name, mininetname, x, y, mpls_label)
+                         VALUES ('1', 'TN-PE1', 'tn-pe1' , '0', '0', '1' ),
+				('2', 'TN-PE2', 'tn-pe2' , '0', '0', '1' ),
+				('3', 'TN-PC1', 'tn-pc1' , '0', '0', '1' );"""
+else:
+        sql = """INSERT INTO `switches` (id, name, mininetname, x, y, mpls_label)
+                         VALUES ('1', 'TS-PE1', 'ts-pe1' , '0', '0', '2' );"""
+
+try:
+	# Execute the SQL command
+        cursor.execute(sql)
+        # Commit your changes in the database
+        db.commit()
+except:
+        # Rollback in case there is any error
+        db.rollback()
+
+
+###############   
+#SITES
+###############
 sql ="""CREATE TABLE `sites` (  \
             `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
             `name` varchar(45) NOT NULL,
@@ -96,7 +143,10 @@ sql ="""CREATE TABLE `sites` (  \
 cursor.execute(sql)
 
 
-############ links
+
+############ 
+#LINKS
+###########
 sql = """CREATE TABLE `links` (
         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
         `from` int(11) NOT NULL,
@@ -111,10 +161,14 @@ sql = """CREATE TABLE `links` (
         DEFAULT CHARSET=latin1;"""
 cursor.execute(sql)
 
+
+###########
+#EXT LINKS
+##########
 sql = """CREATE TABLE `extLinks` (
-        `id` int(11) NOT NULL AUTO_INCREMENT,
-        `switch` int(11) DEFAULT NULL,
-        `domain` int(10) unsigned DEFAULT NULL,
+        `id` int(11) NOT NULL  AUTO_INCREMENT,
+        `switch` int(11) ,
+        `domain` int(10) unsigned,
         PRIMARY KEY (`id`),
         KEY `switch_idx` (`switch`),
         KEY `domain_idx` (`domain`),
@@ -124,8 +178,22 @@ sql = """CREATE TABLE `extLinks` (
         DEFAULT CHARSET=latin1;"""
 cursor.execute(sql)
 
-
-################ users
+#Inser data
+sql = """INSERT INTO `extLinks` (`switch`, `domain`)
+                         VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE2'), '1'),
+				((SELECT `id` FROM `switches` WHERE  `name` = 'TS-PE1'), '2');""" 
+try:
+	# Execute the SQL command
+        cursor.execute(sql)
+        # Commit your changes in the database
+        db.commit()
+except mdb.Error, e: 
+	print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+        # Rollback in case there is any error
+        db.rollback()
+############ 
+#users
+############
 sql = """CREATE TABLE `users` (
         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
         `name` VARCHAR(45) NULL,
@@ -143,6 +211,10 @@ sql = """CREATE TABLE `users` (
         CHARSET=latin1;"""
 cursor.execute(sql)
 
+
+#Insert data
+
+#Random data
 sql = """SELECT `id`, `name` FROM %s.sites ;""" % DB_NAME
 cursor.execute(sql)
 
@@ -166,7 +238,24 @@ for site in cursor:
             # Rollback in case there is any error
             db.rollback()
 
-################ vpns
+
+
+#data prepared for tests
+sql = """INSERT INTO `users` (name, email, domain, site, admin) VALUES ('simon', 'simongunkel@googlemail.com', '1', '1', '0');"""
+try:
+	# Execute the SQL command
+        cursor.execute(sql)
+        # Commit your changes in the database
+        db.commit()
+except:
+        # Rollback in case there is any error
+        db.rollback()
+
+
+
+################ 
+#VPNs
+################
 sql = """CREATE TABLE `vpns` (
         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
         `name` VARCHAR(45) NULL,
@@ -185,6 +274,10 @@ sql = """CREATE TABLE `vpns` (
         CHARSET=latin1;"""
 cursor.execute(sql)
 
+
+#############
+#SUBNETS
+############
 sql = """CREATE TABLE `subnets` (
         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
         `subnet` VARCHAR(45) NOT NULL,
@@ -198,7 +291,9 @@ sql = """CREATE TABLE `subnets` (
 cursor.execute(sql)
 
 
-################ subnetUsers
+################ 
+#subnetUsers
+################
 sql = """CREATE TABLE `subnetUsers` (
         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
         `user` int(10) unsigned NOT NULL,
@@ -211,6 +306,10 @@ sql = """CREATE TABLE `subnetUsers` (
         ENGINE = InnoDB
         CHARSET=latin1;"""
 cursor.execute(sql)
+
+
+#Insert data - but subnets table is empty
+
 
 sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME
 cursor.execute(sql)
@@ -232,7 +331,9 @@ for subnet in cursor:
             # Rollback in case there is any error
             db.rollback()
 
-################ vpnUsers
+################ 
+#VPN USERS
+###############
 sql = """CREATE TABLE `vpnUsers` (
         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
         `vpn` int(10) unsigned NOT NULL,
@@ -248,19 +349,24 @@ sql = """CREATE TABLE `vpnUsers` (
 cursor.execute(sql)
 
 
-################ vpnSubnet
+################ 
+#vpnSubnet
+###############
 sql = """CREATE TABLE `vpnSubnet` (
         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
         `vpn` int(10) unsigned NOT NULL,
         `subnet` int(10) unsigned NOT NULL,
+	`user` INT(10) UNSIGNED NOT NULL,
         PRIMARY KEY (`id`),
         INDEX `vpnId_idx` (`vpn` ASC),
         INDEX `fk_vpnToSite_subnets1_idx` (`subnet` ASC),
         CONSTRAINT `vpnId_subnet`    FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-        CONSTRAINT `fk_vpnToSite_subnets1`  FOREIGN KEY (`subnet`)    REFERENCES `subnets` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
+        CONSTRAINT `fk_vpnToSite_subnets1`  FOREIGN KEY (`subnet`)    REFERENCES `subnets` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
+	CONSTRAINT `fk_user_vpnsubnet`  FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
         ENGINE = InnoDB
         CHARSET=latin1;"""
 cursor.execute(sql)
+
 
 
 ##database processing ends

@@ -89,10 +89,10 @@
 						<h4 class="modal-title">Join VPN</h4>
 					</div>
 					<div class="modal-body">
-						<p>Are you sure you like to join the VPN with the added Subnets?</p>
+						<p>Are you sure you like to join the VPN with the added Subnet?</p>
 					</div>
 					<div class="modal-footer">
-						<button type="button" class="btn btn-default" data-dismiss="modal" onclick="connect_sites();">Yes</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal" onclick="accept_vpn_invite();">Yes</button>
 					</div>
 				</div>
 			  
@@ -193,6 +193,12 @@
   								<!-- option data-tokens="simon@dwadwda.com">simon, simon@dwadwda.com</option>
   								<option data-tokens="mustard">Burger, Shake and a Smile</option>
   								<option data-tokens="frosting">Sugar, Spice and all things nice</option-->
+							</select>
+						</div>
+						
+						<div class="form-group">
+					    	<label>Site to connect to invitee</label>
+					    	<select class="selectpicker" id="inviteSiteSelect" data-live-search="true">
 							</select>
 						</div>
 					
@@ -441,6 +447,9 @@
 	
 	<script>
 
+// Very bad grobal variable
+var currentVPN = -1;
+	
 function getUrlVars() {
 	var vars = {};
 	var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
@@ -450,6 +459,16 @@ function getUrlVars() {
 }
 
 function webside_onload() {
+	// TODO something is going wrong here, we have topoulate the list and fill the VPN selected...
+	// TODO populate_vpnlist is not the correct command here:
+
+	//lets check first if the topology is completly loaded!
+	if (network == null){
+		// lets restart the function in 100ms
+		window.setTimeout(webside_onload, 100);
+		return;
+	}
+	
 	//load variables from url and check if the user is joining an VPN
 	VARS = getUrlVars();
 	if ("join" in VARS){
@@ -465,9 +484,9 @@ function webside_onload() {
 			// request the vpn topology - GET_ALL_SITES : "/rest/sites/{id}"
 	
 			// id of the vpn to join
-			var vpn_id = VARS['vpn'];
+			currentVPN = VARS['vpn'];
 
-			vpn_list_on_click(vpn_id);
+			vpn_list_on_click(currentVPN);
 		}
 		else{
 			// we will join a VPN of another domain
@@ -483,6 +502,7 @@ function webside_onload() {
 	}
 }
 
+// lets initialize the website
 webside_onload();
 
 $.fn.bootstrapSwitch.defaults.size = 'mini';			
@@ -500,7 +520,9 @@ $.getJSON("../rest/subnets", function(data) {
 
 	console.log(JSON.stringify(data));
 
-	var sel = document.getElementById('addSiteSelect');
+	var addSelect = document.getElementById('addSiteSelect');
+	//var inviteSelect = document.getElementById('inviteSiteSelect');
+	
 
 	for ( i =0; i < subnets.length; i++)
 	{
@@ -509,10 +531,12 @@ $.getJSON("../rest/subnets", function(data) {
 		opt.innerHTML = subnet.subnet;
 	    opt.setAttribute("data-tokens", subnet.subnet);
 	    opt.setAttribute("value", subnet.subnet);
-	    sel.appendChild(opt);
+	    addSelect.appendChild(opt);
+	    //inviteSelect.appendChild(opt);
 	}
 	
 	$('#addSiteSelect').selectpicker('refresh');
+	//$('#inviteSiteSelect').selectpicker('refresh');
 });
 
 //load all users
@@ -537,10 +561,6 @@ $.getJSON("./getAllUsers", function(data) {
 
 	$('#inviteUserSelect').selectpicker('refresh');
 });
-
-// Very bad grobal variable
-var currentVPN = -1;
-
 
 function clean_vpnlist() {
 	$("#vpn-list").empty();
@@ -602,8 +622,7 @@ function vpn_list_on_click(id){
 	
 	color_all_nodes(1);
 	color_all_nodes(3, "CUSTOMER_NO");
-	color_nodes(currentVPN, 2);
-	
+	color_nodes(currentVPN, 2);	
 }
 
 			
@@ -734,6 +753,7 @@ function color_nodes(vpnID, typeOfColoring)
 
 function populate_sitelist(vpnID)
 {
+	// TODO: exception, network is undefined!?
 	network.unselectAll();
 	color_all_nodes(1);
 	color_all_nodes(3, "CUSTOMER_NO");
@@ -744,6 +764,13 @@ function populate_sitelist(vpnID)
 		.find('li')
 		.remove()
 		.end();
+
+	// empty the vpn invite subnet list
+	$('#inviteSiteSelect')
+		.find('option')
+		.remove()
+		.end();
+	var inviteSelect = document.getElementById('inviteSiteSelect');
 	
 	
 	// TODO: Add parameter !
@@ -755,12 +782,19 @@ function populate_sitelist(vpnID)
 		{
 			var site = sites[i];
 			$('#site-list').append("<li id=\"" + site.name + "\" href=\"#\" class=\"list-group-item\"><span class=\"badge\">"+ site.user.email +"</span>" + site.name + "</li>");
-			//<span class="tag tag-default tag-pill pull-xs-right">Simon</span>
+
+			// add subnets to the invite user menu
+			var opt = document.createElement('option');
+			opt.innerHTML = site.name;
+			opt.setAttribute("data-tokens", site.name);
+			opt.setAttribute("value", site.name);
+			inviteSelect.appendChild(opt);
 		}
 		add_list_on_click();
-
+		$('#inviteSiteSelect').selectpicker('refresh');
 	});
 
+	$('#inviteSiteSelect').selectpicker('refresh');
 }
 
 $('#save_enni').click(function(){
@@ -789,11 +823,16 @@ $('#del-nodelist').on('click', function(event) {
 
 function inviteVPN(){
 	var invite = {};
-	var select = $("#inviteUserSelect")[0];
-	invite["vpn"] = parseInt(currentVPN); //currently selected VPN...
-	invite["receiver"] = select.options[select.selectedIndex].value;
-	invite["invite_text"] = $("#inviteTextInput")[0].value;
+	var inv_select = $("#inviteUserSelect")[0];
+	var invitee = inv_select.options[inv_select.selectedIndex].value;
+
+	var sub_select = $("#addSiteSelect")[0];
+	var subnet = sub_select.options[sub_select.selectedIndex].value;
 	
+	invite["vpn"] = parseInt(currentVPN); //currently selected VPN...
+	invite["receiver"] = invitee;
+	invite["invite_text"] = $("#inviteTextInput")[0].value;
+	invite["subnet"] = subnet;
 	
 	console.log(JSON.stringify(invite));
 		
@@ -855,6 +894,32 @@ function delVPN()
 	}, 'json');	
 }
 
+function accept_vpn_invite()
+{
+	var sub_select = $("#addSiteSelect")[0];
+	var subnet = sub_select.options[sub_select.selectedIndex].value;
+	
+	var invite_accept = {};
+	invite_accept["vpn"] = parseInt(currentVPN);
+
+	invite_accept["subnet"] = subnet;
+
+	VARS = getUrlVars();
+	var join_hash = VARS['join'];
+	
+	invite_accept["hash"] = join_hash;
+	
+	$.postJSON('../rest/vpn/accept' , invite_accept, function(response) {
+		// Do something with the request
+		console.log(response);
+		
+		var vpn = response;
+		
+		populate_sitelist(vpn["id"]);
+		
+	}, 'json');
+
+}
 
 function connect_sites()
 {
@@ -864,10 +929,12 @@ function connect_sites()
 		var site = {};
 		
 		/* done to remove node-x id, where x is number, we need only number for rest */
+		// lets change it back to the real ID
+		// TODO: add id to the drop down box for adding subnets!!
 		var tmp = "" + $(this).attr('id');
 		//tmp = tmp.replace("node-", "");
 
-		//Simon, we dont use the id here, the unique subnet...
+		//Simon, we dont use the id here, but the unique subnet name...
 		site["id"] = -1;// parseInt(tmp);
 		//site["id"] = $(this).attr('id');
 		site["name"] = tmp;//$(this).text();
@@ -889,7 +956,6 @@ function connect_sites()
 	
 	console.log(JSON.stringify(vpn));
 	
-	/* MICHAL CHANGE THIS - changed ! */
 	$.postJSON('../rest/vpn/update/' + vpn["id"], vpn, function(response) {
 		// Do something with the request
 		console.log(response);

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.json.simple.JSONObject;
+import org.json.simple.parser.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
+import net.geant.coco.agent.portal.dao.Bgp;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.Subnet;
 import net.geant.coco.agent.portal.dao.SubnetDao;
@@ -29,8 +31,12 @@ import net.geant.coco.agent.portal.dao.UserDao;
 import net.geant.coco.agent.portal.dao.Vpn;
 import net.geant.coco.agent.portal.dao.VpnDao;
 import net.geant.coco.agent.portal.dao.VpnInvite;
+import net.geant.coco.agent.portal.dao.VpnInviteAccept;
 import net.geant.coco.agent.portal.rest.RestVpnURIConstants;
+import net.geant.coco.agent.portal.service.BpgService;
+import net.geant.coco.agent.portal.service.NetworkSitesService;
 import net.geant.coco.agent.portal.service.TopologyService;
+import net.geant.coco.agent.portal.service.UsersService;
 import net.geant.coco.agent.portal.service.VpnsService;
 import net.geant.coco.agent.portal.utils.CoCoMail;
 
@@ -45,15 +51,17 @@ public class PortalControllerIntent {
 
 	private VpnsService vpnsService;
 	private TopologyService topologyService;
-	private UserDao userDao;
+	private BpgService bgpService;
+	private UsersService userService;
 	private SubnetDao subnetDao;
+	private NetworkSitesService networkSiteService;
 	
 	boolean networkChanged = false;
 
 	@Autowired
-    public void setUserDao(UserDao userDao) {
-        this.userDao = userDao;
-    }
+	public void setUserService(UsersService userService) {
+		this.userService = userService;
+	}
 	
 	@Autowired
 	public void setVpnsService(VpnsService vpnsService) {
@@ -69,6 +77,16 @@ public class PortalControllerIntent {
 	public void setSubnetDao(SubnetDao subnetDao) {
 		this.subnetDao = subnetDao;
 	}
+	
+	@Autowired
+	public void setBgpService(BpgService bgpService) {
+		this.bgpService = bgpService;
+	}
+	
+	@Autowired
+	public void setNetworkSiteService(NetworkSitesService networkSiteService) {
+		this.networkSiteService = networkSiteService;
+	}
 
 	private User getCurrentUser(){
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -81,7 +99,7 @@ public class PortalControllerIntent {
 			return null;
 		}
 		
-		return userDao.getUser(userName);
+		return userService.getUser(userName);
 	}
 	
 	@RequestMapping(value="/emailtest", method = RequestMethod.GET)
@@ -98,7 +116,7 @@ public class PortalControllerIntent {
 	@RequestMapping(value="/userdaotest", method = RequestMethod.GET)
 	public @ResponseBody String userdaotest() {
 		
-		List<User> users = userDao.getUsers();
+		List<User> users = userService.getUsers();
 		
 		String users_string = "users <br>";
 
@@ -111,7 +129,7 @@ public class PortalControllerIntent {
 	
 	@RequestMapping(value="/static/getAllUsers", method = RequestMethod.GET)
 	public @ResponseBody String getAllUsers() {
-		List<User> users = this.userDao.getUsers();
+		List<User> users = this.userService.getUsers();
 		
 		//ArrayList<Map<String, String>> user_list = new ArrayList<Map<String, String>>();
 		Map<String, String> user_strings = new HashMap<String, String>();
@@ -185,23 +203,22 @@ public class PortalControllerIntent {
 		
 		for (NetworkSite site : sitesToAdd) {
 			log.info("Add site = " + site);
-			continue;
-//			if (user != null) {
-//				vpnsService.addSiteToVpn(vpnCurrent.getName(), site.getName(), user.getId());
-//			} else {
-//				vpnsService.addSiteToVpn(vpnCurrent.getName(), site.getName());
-//			}
+			if (user != null) {
+				vpnsService.addSiteToVpn(vpnCurrent.getName(), site.getName(), user.getId());
+			} else {
+				vpnsService.addSiteToVpn(vpnCurrent.getName(), site.getName());
+			}
 		}
 		
 		for (NetworkSite site : sitesToRemove) {
 			log.info("Remove site = " + site);
 			
-			//vpnsService.deleteSiteFromVpn(vpnCurrent.getName(), site.getName());
+			vpnsService.deleteSiteFromVpn(vpnCurrent.getName(), site.getName());
 		}
-		return null;
+		//return null;
 
-		//vpnNew = vpnsService.getVpn(vpnId);
-		//return vpnNew;
+		vpnNew = vpnsService.getVpn(vpnId);
+		return vpnNew;
 	}
 	
 	//TODO: Fix so that you only get VPN that you have access to, beside admin!?
@@ -232,19 +249,96 @@ public class PortalControllerIntent {
 		
 		User sender = this.getCurrentUser();
 		//log.info("User " + sender);
-		User receiver = userDao.getUser(invite.getReceiver());
-		
-		String hash = sender.getName() + receiver.getName();
-		hash.hashCode();
+		User receiver = userService.getUser(invite.getReceiver());
 		
 		Vpn vpn = vpnsService.getVpn(invite.getVpn());
 		
+		boolean is_subnet_in_vpn = false;
+		// check if the subnet is in the VPN
+		for (NetworkSite site : vpn.getSites()){
+			if (site.getIpv4Prefix().equals(invite.getSubnet())){
+				is_subnet_in_vpn = true;
+				break;
+			}
+		}
+		if (!is_subnet_in_vpn){
+			log.error(String.format("ERROR in inviteVpn - subnet (%s) not in vpn (%s) ", invite.getSubnet(), vpn.toString()));
+			return false;
+		}
+		
+		Subnet subnet = subnetDao.getSubnet(invite.getSubnet());
+		
 		String url = "[url]?vpn=[vpn_id]&join=[hash]";
-		url = url.replace("[url]", vpn.getDomain().getPortal_address());
-		url = url.replace("[vpn_id]", ""+vpn.getId());
-		url = url.replace("[hash]", hash);
+		
+		url = url.replace("[url]", receiver.getDomain().getPortal_address());
+		
+		// lets check if both users are in the same domain
+		if (sender.getDomain_id() == receiver.getDomain_id()){
+			// the users are in the same domain
+			url = url.replace("[vpn_id]", ""+vpn.getId());
+			String hash = bgpService.createLocalHash( "" + vpn.getOwner_id(), "" + receiver.getId(), "" + vpn.getId());
+			hash.hashCode();
+			url = url.replace("[hash]", hash);
+			
+		} else {		
+			// old code - we get the subnet from the user now - Subnet subnet = subnetDao.getSubnet(vpn.getSites().get(0).getIpv4Prefix());
+			if (subnet != null){
+				String hash = bgpService.annouceRoute(sender, receiver, subnet, vpn);
+				
+				if (hash == null){
+					return false;
+				}
+				
+				url = url.replace("[vpn_id]", "BGP");
+				url = url.replace("[hash]", hash);
+				
+			} else {
+				return false;
+			}
+		}
+		
 		
 		log.info("New Invite {"+ invite +"} from {" + sender + "} to {" + receiver + "} url {"+ url +";");
+		
+		return false;
+	}
+	
+	@RequestMapping(value = RestVpnURIConstants.ACCEPT_VPN, method = RequestMethod.POST)
+	public boolean inviteAcceptVpn(@RequestBody VpnInviteAccept accept) {
+		
+		User user = this.getCurrentUser();
+		Vpn vpn = vpnsService.getVpn(accept.getVpn());
+		String hash = accept.getHash();
+		NetworkSite site = networkSiteService.getNetworkSite(accept.getSubnet());
+		Subnet subnet = subnetDao.getSubnet(accept.getSubnet());
+		
+		Bgp bgp = bgpService.getBgp(hash);
+		
+		if (bgp == null){
+			// we are in the same netowork / check if we have the correct hash
+			String comp_hash = bgpService.createLocalHash("" + vpn.getOwner_id(), "" + user.getId(), "" + accept.getVpn());
+			if (comp_hash.equals(hash)){
+				vpn.getSites().add(site);
+				updateVpn(vpn.getId(), vpn);
+			} else {
+				// THIS IS AN ERROR - HASH DOES NOT MATCH
+				log.error(String.format("ERROR inviteAcceptVpn - HASH DOES NOT MATCH req:%s !- comp:%s",hash, comp_hash));
+			}
+		} else {
+			// we have to setup a bgp connection
+			// hash is matching the bgp -> lets proceed
+			// TODO: Check if the vpn does not match
+			
+			//if (vpn.getId() != bgp.getVpn_id()){
+			//	log.error(String.format("ERROR inviteAcceptVpn - VPN does not match accept.vpn = %d != bgp.vpn = %d", vpn.getId(), bgp.getVpn_id()));
+			//}
+			
+			if (bgpService.acceptRoute(user, subnet, vpn, hash, bgp)){
+				vpn = bgp.getVpn();
+				vpn.getSites().add(site);
+				updateVpn(vpn.getId(), vpn);
+			}
+		}
 		
 		return true;
 	}
@@ -267,6 +361,12 @@ public class PortalControllerIntent {
 		log.info("Start deleteVpn.");
 		
 		return vpnsService.deleteVpn(vpnId);
+	}
+	
+	@RequestMapping(value = RestVpnURIConstants.UPDATE_BGP, method = RequestMethod.POST)
+	public boolean updateBgp(@RequestBody String json_bgp) {
+		
+		return bgpService.bgpServerUpdate(json_bgp);
 	}
 	
 }

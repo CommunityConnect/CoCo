@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.geant.coco.agent.portal.dao.Domain;
 import net.geant.coco.agent.portal.dao.DomainDao;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.NetworkSiteDao;
@@ -33,7 +34,25 @@ public class UsersService {
 	public void setSiteDao(NetworkSiteDao siteDao) {
 		this.siteDao = siteDao;
 	}
+    
+    public User getDomainAdmin(Domain domain){
+    	return userDao.getDomainAdmin(domain);
+    }
+    
+    public User getUser(String userName) {
+    	User user = userDao.getUser(userName);
+    	user.setDomain(domainDao.getDomain(user.getDomain_id()));
+		user.setSite(siteDao.getNetworkSite(user.getSite_id()));
+		return user;
+    }
 
+    public User getUser(int userID) {
+    	User user = userDao.getUser(userID);
+    	user.setDomain(domainDao.getDomain(user.getDomain_id()));
+		user.setSite(siteDao.getNetworkSite(user.getSite_id()));
+		return user;
+    }
+    
 	public Map<String, User> getUsersMap() {
     	List<User> usersList = this.getUsers();
         

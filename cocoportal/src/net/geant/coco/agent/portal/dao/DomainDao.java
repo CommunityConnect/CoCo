@@ -64,6 +64,23 @@ public class DomainDao {
         
         return domains.get(0);
     }
+    
+    public Domain getDomainByBgp(String ip) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("bgp_ip", ip);
+
+        String query = "SELECT * FROM domains "
+                + "WHERE bgp_ip = :bgp_ip ;";
+        log.trace(query);
+        
+        List<Domain> domains = getDomainList(query, params);
+        
+        if (domains.isEmpty()) {
+            return null;
+        }
+        
+        return domains.get(0);
+    }
 
     public Domain getDomain(int domainID) {
         MapSqlParameterSource params = new MapSqlParameterSource();

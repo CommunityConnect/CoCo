@@ -12,6 +12,7 @@ public class VpnInvite implements Serializable {
 	private int vpn = -1;
 	private String receiver;
 	private String invite_text;
+	private String subnet;
 	
 	
 	public int getVpn() {
@@ -32,8 +33,14 @@ public class VpnInvite implements Serializable {
 	public void setInvite_text(String invite_text) {
 		this.invite_text = invite_text;
 	}
+	public String getSubnet() {
+		return subnet;
+	}
+	public void setSubnet(String subnet) {
+		this.subnet = subnet;
+	}
 	
 	public String toString() {
-		return "invite(" + String.valueOf(vpn) + "," + receiver + "," + invite_text + ")";
+		return "invite(" + String.valueOf(vpn) + "," + receiver + "," + subnet + "," + invite_text + ")";
 	}
 }

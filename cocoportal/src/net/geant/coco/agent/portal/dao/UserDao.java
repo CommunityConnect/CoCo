@@ -41,6 +41,22 @@ public class UserDao {
         
         return users;
     }
+
+    public User getDomainAdmin(Domain domain){
+    	MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("domainID", domain.getId());
+        String query = "SELECT * FROM users WHERE domain = :domainID and admin = 1;";
+        
+        log.trace(query.replace(":domainID", "" + domain.getId()));
+        
+        List<User> users = getUserList(query, params);
+        
+        if (users.isEmpty()) {
+            return null;
+        }
+        
+        return users.get(0);
+    }
     
     public User getUser(String userName) {
         MapSqlParameterSource params = new MapSqlParameterSource();

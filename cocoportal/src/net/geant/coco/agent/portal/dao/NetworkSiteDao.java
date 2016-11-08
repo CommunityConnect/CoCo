@@ -34,7 +34,7 @@ public class NetworkSiteDao {
         this.jdbc = new NamedParameterJdbcTemplate(jdbc);
     }
      
-    private NetworkSite extractData (ResultSet rs) throws SQLException {
+    private NetworkSite extractDataNS (ResultSet rs) throws SQLException {
     	NetworkSite networkSite = new NetworkSite();
     	
     	ResultSetMetaData rsMeta = rs.getMetaData();
@@ -113,7 +113,7 @@ public class NetworkSiteDao {
             @Override
             public NetworkSite mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
-                NetworkSite networkSite = extractData(rs);
+                NetworkSite networkSite = extractDataNS(rs);
 
                 return networkSite;
             }
@@ -138,7 +138,7 @@ public class NetworkSiteDao {
             @Override
             public NetworkSite mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
-                NetworkSite networkSite = extractData(rs);
+                NetworkSite networkSite = extractDataNS(rs);
 
                 return networkSite;
             }
@@ -167,7 +167,7 @@ public class NetworkSiteDao {
             @Override
             public NetworkSite mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
-            	NetworkSite networkSite = extractData(rs);
+            	NetworkSite networkSite = extractDataNS(rs);
 
                 return networkSite;
             }
@@ -195,7 +195,7 @@ public class NetworkSiteDao {
             @Override
             public NetworkSite mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
-                NetworkSite networkSite = extractData(rs);
+                NetworkSite networkSite = extractDataNS(rs);
 
                 return networkSite;
             }
@@ -218,7 +218,7 @@ public class NetworkSiteDao {
                 //TODO fix here, if there are no results
                 rs.next();
                 userDao.getUsers();
-                NetworkSite networkSite = extractData(rs);
+                NetworkSite networkSite = extractDataNS(rs);
 
                 return networkSite;
             }
@@ -230,13 +230,12 @@ public class NetworkSiteDao {
     	// (Simon) we actually want the Subnet here not the site
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("subnet", subnet);
-
+        
         String query = "SELECT sites.*, subnets.subnet AS subnet, switches.name as switch_name FROM sites "
-                + "JOIN switches JOIN subnets "
-                + "WHERE sites.switch = switches.id "
-                + "AND sites.id = subnets.site "
-                + "AND subnets.subnet = :subnet;";
-        log.trace("getNetworkSite " + query.replace(":subnet", subnet));
+                + "INNER JOIN switches ON sites.switch = switches.id "
+                + "INNER JOIN subnets ON sites.id = subnets.site "
+                + "WHERE subnets.subnet = :subnet;";
+        log.debug("getNetworkSite " + query.replace(":subnet", subnet));
         return jdbc.query(query, params, new ResultSetExtractor<NetworkSite>() {
 
             @Override
@@ -244,7 +243,7 @@ public class NetworkSiteDao {
                 //TODO fix here, if there are no results
                 rs.next();
                 
-                return this.extractData(rs);
+                return extractDataNS(rs);
             }
 
         });

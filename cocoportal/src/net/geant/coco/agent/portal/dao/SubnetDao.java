@@ -44,9 +44,9 @@ public class SubnetDao {
     
     public Subnet getSubnet(String subnetName) {
         MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("name", subnetName);
+        params.addValue("subnetName", subnetName);
         
-        String query = "SELECT * FROM subnets WHERE name = :name ;";
+        String query = "SELECT * FROM subnets WHERE subnet = :subnetName ;";
         log.trace(query);
         
         List<Subnet> subnets = getSubnetList(query, params);

@@ -14,6 +14,8 @@ from mininet.nodelib import LinuxBridge
 import MySQLdb as mdb  # global, used by returnSwitchConnections
 from netaddr import *
 import sys
+import database_set_up
+import subprocess
 
 # QUAGGA_DIR = '/usr/lib/quagga'
 QUAGGA_DIR = '/usr/sbin'
@@ -593,46 +595,9 @@ def databaseDump(net, domain, mode):
     cocoSiteNames = [h.name for i, h in enumerate(net.hosts)]
     cocoSiteNames = filter(cocosite, cocoSiteNames) #get rid of all hosts not being actual coco sites (hosts/ce-routers)
 
-
-
-
     db = mdb.connect(DB_HOST, DB_USER, DB_PWD, DB_NAME)
     cursor = db.cursor()
     cursor.execute('SET FOREIGN_KEY_CHECKS=0;')
-
-    if mode == "full":
-    	#### Drop existing tables
-    	cursor.execute('show tables;')
-    	tables = cursor.fetchall();
-    	for table in tables:
-        	sql=""" DROP TABLE IF EXISTS %s; """ % (table[0],)
-        	cursor.execute(sql);
-
-    if mode == "full":
-    	################ domains - create very first - as it has no dependencies on other tables
-    	sql = """ CREATE TABLE `domains` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`portal_address` VARCHAR(45) NOT NULL,
-		`email_domain` VARCHAR(45) NOT NULL,
-		`bgp_ip` varchar(45) DEFAULT NULL,
-		`as_num` int(11) DEFAULT NULL,
-		`as_name` varchar(45) DEFAULT NULL,
-		PRIMARY KEY (`id`))
-		ENGINE = InnoDB
-		DEFAULT CHARSET=latin1; """
-    	cursor.execute(sql)
-    	# `bgp_peer` VARCHAR(45) NOT NULL,
-
-    	sql = """INSERT  INTO `domains` (portal_address, email_domain, bgp_ip, as_num, as_name)
-    	VALUES ('http://134.221.121.202:9090/CoCo-agent','email111','10.2.0.254',65020,'tno-north'),('http://134.221.121.201:9090/CoCo-agent','email222','10.3.0.254',65030,'tno-south');"""
-    	try:
-        	# Execute the SQL command
-        	cursor.execute(sql)
-        	# Commit your changes in the database
-        	db.commit()
-    	except:
-        	# Rollback in case there is any error
-        	db.rollback()
 
     ############### get Ids for domains
 
@@ -646,26 +611,11 @@ def databaseDump(net, domain, mode):
 
 
     if mode == "full":
-    	###############   switches - create first - otherwise sites cannot be created as they reference to
-    	# the key present here (errno 150)
+    	###############   switches 
 
-    	sql = """CREATE TABLE `switches` (
-	     `id` int(11) NOT NULL,
-	     `name` varchar(45) NOT NULL,
-	     `mininetname` varchar(45) NOT NULL,
-	     `x` int(10) unsigned NOT NULL,
-	     `y` int(10) unsigned NOT NULL,
-	     `mpls_label` int(10) unsigned NOT NULL ,
-	     PRIMARY KEY (`id`,`name`),
-	     UNIQUE KEY `id_UNIQUE` (`id`),
-	     UNIQUE KEY `name_UNIQUE` (`name`)  )
-	     ENGINE=InnoDB
-             DEFAULT CHARSET=latin1;"""
-    	cursor.execute(sql)
+    	bigswitchtable = returnSwitchConnections(net, net.switches, operSwNames)
 
-    bigswitchtable = returnSwitchConnections(net, net.switches, operSwNames)
-
-    for trow in range(len(bigswitchtable)):
+    	for trow in range(len(bigswitchtable)):
         	# Prepare SQL query to INSERT a record into the database.
         	crow = bigswitchtable[trow]
         	sql = """INSERT INTO `switches` (id, name, mininetname, x, y, mpls_label)
@@ -680,31 +630,6 @@ def databaseDump(net, domain, mode):
         	except:
             		# Rollback in case there is any error
             		db.rollback()
-    if mode == "full":
-    	###############   sites
-    	sql ="""CREATE TABLE `sites` (  \
-	    `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-	    `name` varchar(45) NOT NULL,
-	    `x` int(11) NOT NULL,
-	    `y` int(11) NOT NULL,
-	    `switch` int(11) NOT NULL,
-	    `remote_port` int(10) unsigned NOT NULL,
-	    `local_port` int(10) unsigned NOT NULL,
-	    `vlanid` int(10) unsigned NOT NULL,
-	    `ipv4prefix` varchar(45) NOT NULL,
-	    `mac_address` varchar(45) NOT NULL,
-            `domain` int(10) unsigned NOT NULL,
-	    PRIMARY KEY (`id`),
-	    UNIQUE KEY `id_UNIQUE` (`id`),
-	    UNIQUE KEY `name_UNIQUE` (`name`),
-	    KEY `switch_idx` (`switch`),
-            KEY `domain_fk_idx` (`domain`),
-            CONSTRAINT `domain_fk` FOREIGN KEY (`domain`) REFERENCES `domains` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-	    CONSTRAINT `switch_id` FOREIGN KEY (`switch`) REFERENCES `switches` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
-	    ENGINE=InnoDB
-            DEFAULT CHARSET=latin1;"""
-
-    	cursor.execute(sql)
 
     bighosttable = returnNodeConnections(net.hosts, operSwNames, cocoSiteNames)
     for trow in range(len(bighosttable)):
@@ -734,23 +659,7 @@ def databaseDump(net, domain, mode):
 
     if mode == "full":
     	############ links
-    	sql = """CREATE TABLE `links` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`from` int(11) NOT NULL,
-		`to` int(11) NOT NULL,
-		PRIMARY KEY (`id`),
-		UNIQUE KEY `id_UNIQUE` (`id`),
-		KEY `from_idx` (`from`),
-		KEY `to_idx` (`to`),
-		CONSTRAINT `from` FOREIGN KEY (`from`) REFERENCES `switches` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-		CONSTRAINT `to` FOREIGN KEY (`to`) REFERENCES `switches` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
-		ENGINE=InnoDB
-		DEFAULT CHARSET=latin1;"""
-    	cursor.execute(sql)
-
-    	# TODO actually we should query DB for IDs!!
-
-    for currLink in net.links:
+    	for currLink in net.links:
         	currFrom = currLink.intf1.name.split('-eth')[0]  # get, say s1 from s1-eth1
         	currTo = currLink.intf2.name.split('-eth')[0]
 
@@ -819,43 +728,6 @@ def databaseDump(net, domain, mode):
     #         db.rollback()
 
 
-#ASes merged with domains
-    # ############ ASes
-    # sql = """CREATE TABLE `ases` (
-    # `id` int(10) unsigned NOT NULL,
-    # `bgp_ip` varchar(45) DEFAULT NULL,
-    # `as_num` int(11) DEFAULT NULL,
-    # `as_name` varchar(45) DEFAULT NULL,
-    # PRIMARY KEY (`id`))
-    # ENGINE=InnoDB
-    # DEFAULT CHARSET=latin1;"""
-    # cursor.execute(sql)
-    #
-    # #TODO read from topology (can we do it?)
-    # sql = """INSERT INTO `ases` VALUES (1,'10.2.0.254',65020,'tno-north'),(2,'10.3.0.254',65030,'tno-south');"""
-    # try:
-    #     # Execute the SQL command
-    #     cursor.execute(sql)
-    #     # Commit your changes in the database
-    #     db.commit()
-    # except:
-    #     # Rollback in case there is any error
-    #     db.rollback()
-    if mode == "full":
-    	#################`extLinks`
-    	sql = """CREATE TABLE `extLinks` (
-		`id` int(11) NOT NULL AUTO_INCREMENT,
-		`switch` int(11) DEFAULT NULL,
-		`domain` int(10) unsigned DEFAULT NULL,
-		PRIMARY KEY (`id`),
-		KEY `switch_idx` (`switch`),
-		KEY `domain_idx` (`domain`),
-		CONSTRAINT `domain_fk_ext` FOREIGN KEY (`domain`) REFERENCES `domains` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-		CONSTRAINT `switch_fk_ext` FOREIGN KEY (`switch`) REFERENCES `switches` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
-		ENGINE=InnoDB
-		DEFAULT CHARSET=latin1;"""
-    	cursor.execute(sql)
-
     if mode == 'full':
 	if domain == 'MDCoCoTopoNorth':
 	        gwSwitchID = operSwNames.index('tn_pe2') + 1
@@ -884,73 +756,6 @@ def databaseDump(net, domain, mode):
 
 
 
-    ################ domainSite - we dont use that table anymore for simplification each site can only be in one domain
-    # sql = """ CREATE TABLE `domainSite` (
-	# `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-	# `domain` int(10) unsigned NOT NULL,
-	# `site` int(10) unsigned NOT NULL,
-	# PRIMARY KEY (`id`),
-	# INDEX `domainID_idx` (`domain` ASC),
-	# INDEX `siteId_idx` (`site` ASC),
-	# CONSTRAINT `domainId_sites`    FOREIGN KEY (`domain`)
-	# REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-	# CONSTRAINT `siteId`    FOREIGN KEY (`site`)    REFERENCES `sites` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
-	# ENGINE = InnoDB
-	# DEFAULT CHARSET=latin1;"""
-    # cursor.execute(sql)
-    #
-    # sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-north';""" % DB_NAME
-    # cursor.execute(sql)
-    # id_north = cursor.fetchone()[0]
-    #
-    # sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-south';""" % DB_NAME
-    # cursor.execute(sql)
-    # id_south = cursor.fetchone()[0]
-    #
-    # sql = """SELECT `id`, `name` FROM %s.sites ;""" % DB_NAME
-    # cursor.execute(sql)
-    #
-    # for site in cursor:
-    #
-    #     #default TN domain
-    #     id_temp = id_north
-    #     if "tn" in site[1]:
-    #         id_temp = id_north
-    #     elif "ts" in site[1]:
-    #         id_temp = id_south
-    #
-    #     sql = """INSERT INTO `domainSite` (`site`, `domain`)
-	#          VALUES ('%d', '%d')""" % (int(site[0]), int(id_temp))
-    #     try:
-    #         # Execute the SQL command
-    #         cursor.execute(sql)
-    #         # Commit your changes in the database
-    #         db.commit()
-    #     except:
-    #         # Rollback in case there is any error
-    #         db.rollback()
-
-
-    if mode == "full":
-    	################ users
-    	sql = """CREATE TABLE `users` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`name` VARCHAR(45) NULL,
-		`email` VARCHAR(45) NOT NULL,
-		`domain` int(10) unsigned NOT NULL,
-		`site` int(10) unsigned NOT NULL,
-		`admin` TINYINT(1) NOT NULL,
-		PRIMARY KEY (`id`),
-		INDEX `pk_user_idx` (`id` ASC) ,
-		INDEX `domainId_idx` (`domain` ASC),
-		INDEX `fk_user_site1_idx` (`site` ASC),
-		CONSTRAINT `domainId_users`    FOREIGN KEY (`domain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-		CONSTRAINT `fk_user_site1`    FOREIGN KEY (`site`)    REFERENCES `sites` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
-		ENGINE = InnoDB
-		CHARSET=latin1;"""
-    	cursor.execute(sql)
-
-
     sql = """SELECT `id`, `name` FROM %s.sites ;""" % DB_NAME
     cursor.execute(sql)
 
@@ -974,50 +779,6 @@ def databaseDump(net, domain, mode):
             		# Rollback in case there is any error
             		db.rollback()
 
-    if mode == "full":
-    	################ vpns
-    	sql = """CREATE TABLE `vpns` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`name` VARCHAR(45) NULL,
-		`route_target` VARCHAR(45) NULL DEFAULT NULL,
-		`domain` int(10) unsigned NOT NULL,
-		`owner` int(10) unsigned NOT NULL,
-		`pathProtection` VARCHAR(45) NULL DEFAULT NULL,
-		`failoverType` VARCHAR(45) NULL DEFAULT NULL,
-		`isPublic` TINYINT(1) NOT NULL,
-		PRIMARY KEY (`id`),
-		INDEX `domainId_idx1` (`domain` ASC),
-		INDEX `fk_vpn_user1_idx1` (`owner` ASC),
-		CONSTRAINT `domainId_vpns`    FOREIGN KEY (`domain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-		CONSTRAINT `fk_vpn_user1`    FOREIGN KEY (`owner`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
-		ENGINE = InnoDB
-		CHARSET=latin1;"""
-    	cursor.execute(sql)
-
-    ##############OLD VERSION
-    #    ############### vpns
-    #    cursor.execute('DROP TABLE IF EXISTS vpns;')
-    #    sql = """CREATE TABLE `vpns` (  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,  `name` varchar(45) NOT NULL,  `pathProtection` varchar(45) DEFAULT NULL,  `failoverType` varchar(45) DEFAULT NULL,  `isPublic` tinyint(1) NOT NULL,  PRIMARY KEY (`id`),  UNIQUE KEY `id_UNIQUE` (`id`),  UNIQUE KEY `name_UNIQUE` (`name`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;"""
-    #    cursor.execute(sql)
-    #    ############## site2vpn
-    #    cursor.execute('DROP TABLE IF EXISTS `site2vpn`;')
-    #    sql = """CREATE TABLE `site2vpn` (	  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,	  `vpnid` int(10) unsigned DEFAULT NULL,	  `siteid` int(10) unsigned DEFAULT NULL,	  PRIMARY KEY (`id`),	  KEY `site_idx` (`siteid`),	  KEY `vpn_idx` (`vpnid`),	  CONSTRAINT `site` FOREIGN KEY (`siteid`) REFERENCES `sites` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,	  CONSTRAINT `vpn` FOREIGN KEY (`vpnid`) REFERENCES `vpns` (`id`) ON DELETE CASCADE ON UPDATE CASCADE	) ENGINE=InnoDB DEFAULT CHARSET=latin1;"""
-    #    cursor.execute(sql)
-
-    if mode == "full":
-    	################ subnets
-    	#cursor.execute('DROP TABLE IF EXISTS `subnets`;')
-    	sql = """CREATE TABLE `subnets` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`subnet` VARCHAR(45) NOT NULL,
-		`site` int(10) unsigned NOT NULL,
-		PRIMARY KEY (`id`),
-		INDEX `fk_subnets_site1_idx` (`site` ASC),
-		CONSTRAINT `fk_subnets_site1`
-		FOREIGN KEY (`site`)    REFERENCES `sites` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
-		ENGINE = InnoDB
-		DEFAULT CHARSET=latin1; """
-    	cursor.execute(sql)
 
     for trow in range(len(bighosttable)):
         # Prepare SQL query to INSERT a record into the database.
@@ -1038,23 +799,9 @@ def databaseDump(net, domain, mode):
             db.rollback()
 
 
-    if mode == "full":
-    	################ subnetUsers
-    	sql = """CREATE TABLE `subnetUsers` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`user` int(10) unsigned NOT NULL,
-		`subnet` int(10) unsigned NOT NULL,
-		PRIMARY KEY (`id`),
-		INDEX `adminId_idx` (`user` ASC),
-		INDEX `fk_userSubnet_subnets1_idx` (`subnet` ASC),
-		CONSTRAINT `userId1`    FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-		CONSTRAINT `fk_userSubnet_subnets1`    FOREIGN KEY (`subnet`)    REFERENCES `subnets` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
-		ENGINE = InnoDB
-		CHARSET=latin1;"""
-   	cursor.execute(sql)
 
-    	sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME
-    	cursor.execute(sql)
+    sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME
+    cursor.execute(sql)
 
     for subnet in cursor:
        	sql="""SELECT `name` FROM %s.sites WHERE id = %d ;""" % (DB_NAME, subnet[1])
@@ -1086,40 +833,6 @@ def databaseDump(net, domain, mode):
 	print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
     	# Rollback in case there is any error
     	db.rollback();
-
-
-    if mode == "full":	
-    	################ vpnUsers
-    	sql = """CREATE TABLE `vpnUsers` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`vpn` int(10) unsigned NOT NULL,
-		`user` int(10) unsigned NOT NULL,
-		PRIMARY KEY (`id`),
-		INDEX `vpnId_idx` (`vpn` ASC),
-		INDEX `userId_idx` (`user` ASC),
-		CONSTRAINT `vpnId_users`
-		FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION,
-		CONSTRAINT `userId`    FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION)
-		ENGINE = InnoDB
-		CHARSET=latin1;"""
-    	cursor.execute(sql)
-
-    if mode == "full":
-    	################ vpnSubnet
-    	sql = """CREATE TABLE `vpnSubnet` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`vpn` int(10) unsigned NOT NULL,
-		`subnet` int(10) unsigned NOT NULL,
-		`user` INT(10) UNSIGNED NOT NULL,
-		PRIMARY KEY (`id`),
-		INDEX `vpnId_idx` (`vpn` ASC),
-		INDEX `fk_vpnToSite_subnets1_idx` (`subnet` ASC),
-		CONSTRAINT `vpnId_subnet`    FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-		CONSTRAINT `fk_user_vpnsubnets`    FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-		CONSTRAINT `fk_vpnToSite_subnets1`  FOREIGN KEY (`subnet`)    REFERENCES `subnets` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
-		ENGINE = InnoDB
-		CHARSET=latin1;"""
-    	cursor.execute(sql)
 
 
     ##database processing ends
@@ -1170,11 +883,19 @@ if __name__ == '__main__':
     #    hp.setARP('10.0.0.3', '00:10:00:00:00:03')
     # if hp.name[0:2] == 'tn':
     #    hp.setARP('10.0.0.4', '00:10:00:00:00:04')
-
+    if mode == 'full' or mode == 'all': 
+	database_set_up.main()
     net.start()
     databaseDump(net,type(topo).__name__, mode) #nort or south?
     # hp.cmd('arp -s 10.0.0.4 00:10:00:00:00:04')
-
+    if mode == 'all':
+	subprocess.call("/home/coco/CoCo/demo_invitation/bridge_set_up.sh "+chosen_topo+" all", shell=True)
+    elif mode == 'ce1' or mode == 'ce2':
+	subprocess.call("/home/coco/CoCo/demo_invitation/bridge_set_up.sh "+chosen_topo+" "+mode.upper(), shell=True)
+    elif mode == 'bgp':
+        subprocess.call("/home/coco/CoCo/demo_invitation/bridge_set_up.sh "+chosen_topo+" BGP1", shell=True)
+    else:
+	subprocess.call("/home/coco/CoCo/demo_invitation/"+chosen_topo+"flows_mac.sh all", shell=True)
     CLI(net)
 
     net.stop()

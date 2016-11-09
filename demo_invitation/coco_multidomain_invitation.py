@@ -863,7 +863,10 @@ if __name__ == '__main__':
     # if hp.name[0:2] == 'tn':
     #    hp.setARP('10.0.0.4', '00:10:00:00:00:04')
     if mode == 'full' or mode == 'all': 
-	database_set_up.main()
+	if chosen_topo =='tn':
+		database_set_up.main('tn')
+	else:
+		database_set_up.main('ts')
     net.start()
     databaseDump(net,type(topo).__name__, mode) #nort or south?
     # hp.cmd('arp -s 10.0.0.4 00:10:00:00:00:04')

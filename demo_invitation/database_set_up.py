@@ -326,18 +326,18 @@ def database_insert_data(domain):
                 sql = """INSERT INTO `links` (`from`, `to`)
                                  VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PC1'),(SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE1')),
                                         ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PC1'),(SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE2'));"""
-        else:
-                sql = """INSERT INTO `links` (`from`, `to`)
-                                 VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TS-PC1'),(SELECT `id` FROM `switches` WHERE  `name` = 'TS-PE1'));"""
-        try:
-                # Execute the SQL command
-                cursor.execute(sql)
-                # Commit your changes in the database
-                db.commit()
-        except mdb.Error, e:
-                print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-                # Rollback in case there is any error
-                db.rollback()
+        #else:
+        #        sql = """INSERT INTO `links` (`from`, `to`)
+        #                         VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TS-PC1'),(SELECT `id` FROM `switches` WHERE  `name` = 'TS-PE1'));"""
+        	try:
+                	# Execute the SQL command
+                	cursor.execute(sql)
+                	# Commit your changes in the database
+                	db.commit()
+        	except mdb.Error, e:
+                	print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+                	# Rollback in case there is any error
+                	db.rollback()
 
 
 	###########

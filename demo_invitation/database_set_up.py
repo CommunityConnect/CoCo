@@ -192,18 +192,19 @@ def database_set_up():
         ################
         #VPN USERS
         ###############
-        sql = """CREATE TABLE `vpnUsers` (
-                `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-                `vpn` int(10) unsigned NOT NULL,
-                `user` int(10) unsigned NOT NULL,
-                PRIMARY KEY (`id`),
-                INDEX `vpnId_idx` (`vpn` ASC),
-                INDEX `userId_idx` (`user` ASC),
-                CONSTRAINT `vpnId_users` FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION,
-                CONSTRAINT `userId`    FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION)
-                ENGINE = InnoDB
-                CHARSET=latin1;"""
-        cursor.execute(sql)
+		# for now we are not using the vpnUsers table as each subnet is allocated to a VPN and a USER
+        # sql = """CREATE TABLE `vpnUsers` (
+        #         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+        #         `vpn` int(10) unsigned NOT NULL,
+        #         `user` int(10) unsigned NOT NULL,
+        #         PRIMARY KEY (`id`),
+        #         INDEX `vpnId_idx` (`vpn` ASC),
+        #         INDEX `userId_idx` (`user` ASC),
+        #         CONSTRAINT `vpnId_users` FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION,
+        #         CONSTRAINT `userId`    FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION)
+        #         ENGINE = InnoDB
+        #         CHARSET=latin1;"""
+        # cursor.execute(sql)
 
 
         ################

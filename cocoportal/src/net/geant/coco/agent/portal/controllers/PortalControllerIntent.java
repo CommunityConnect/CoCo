@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.WebRequest;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import lombok.extern.slf4j.Slf4j;
 import net.geant.coco.agent.portal.dao.Bgp;
@@ -364,9 +370,12 @@ public class PortalControllerIntent {
 	}
 	
 	@RequestMapping(value = RestVpnURIConstants.UPDATE_BGP, method = RequestMethod.POST)
-	public boolean updateBgp(@RequestBody String json_bgp) {
-		
-		return bgpService.bgpServerUpdate(json_bgp);
+	public boolean updateBgp(@RequestBody ObjectNode json_node) {
+		String json_string = json_node.toString();
+		log.debug("updateBgp - " + json_string);
+		return bgpService.bgpServerUpdate(json_string);
 	}
+	
+	
 	
 }

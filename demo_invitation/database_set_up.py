@@ -125,14 +125,11 @@ def database_set_up():
                 `name` VARCHAR(45) NULL,
                 `email` VARCHAR(45) NOT NULL,
                 `domain` int(10) unsigned NOT NULL,
-                `site` int(10) unsigned NOT NULL,
                 `admin` TINYINT(1) NOT NULL,
                 PRIMARY KEY (`id`),
                 INDEX `pk_user_idx` (`id` ASC) ,
                 INDEX `domainId_idx` (`domain` ASC),
-                INDEX `fk_user_site1_idx` (`site` ASC),
-                CONSTRAINT `domainId_users`    FOREIGN KEY (`domain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-                CONSTRAINT `fk_user_site1`    FOREIGN KEY (`site`)    REFERENCES `sites` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
+                CONSTRAINT `domainId_users`    FOREIGN KEY (`domain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
                 ENGINE = InnoDB
                 CHARSET=latin1;"""
         cursor.execute(sql)
@@ -362,28 +359,23 @@ def database_insert_data(domain):
 	############
 	
 	#Random data
-	sql = """SELECT `id`, `name` FROM %s.sites ;""" % DB_NAME
-	cursor.execute(sql)
-	
-	for site in cursor:
-	        #default TN domain
-	        id_temp = id_north
-	        if "tn" in site[1]:
-	            id_temp = id_north
-	        elif "ts" in site[1]:
-	            id_temp = id_south
-	        sql = """INSERT INTO `users` (name, email, domain, site, admin)
-	                    VALUES ('%s_admin','%s_admin@mail.com','%d','%d',1),
-	                            ('%s_user','%s_user@mail.com','%d','%d',0);""" \
-	                        % (site[1], site[1], id_temp, site[0], site[1], site[1], id_temp, site[0])
-	        try:
-	            # Execute the SQL command
-	            cursor.execute(sql)
-	            # Commit your changes in the database
-	            db.commit()
-	        except:
-	            # Rollback in case there is any error
-	            db.rollback()
+	sql = """INSERT INTO `users` (name, email, domain, admin)
+                            VALUES ('tn_admin','tn_admin@mail.com','%d',1),
+                                    ('bill_tn','bill_tn@mail.com','%d',0),
+				    ('mark_tn','mark_tn@mail.com','%d',0),
+				    ('tn_user','tn_user@mail.com','%d',0),
+				    ('tn_admin','tn_admin@mail.com','%d',1),
+				    ('ts_user','ts_user@mail.com','%d',0),
+				    ('mike_ts','mike_ts@mail.com','%d',0),
+				    ('harry_ts','harry_ts@mail.com','%d',0);""" %(id_north, id_north,id_north, id_north, id_south, id_south, id_south, id_south)
+	try:
+		# Execute the SQL command
+		cursor.execute(sql)
+		# Commit your changes in the database
+	        db.commit()
+	except:
+	        # Rollback in case there is any error
+	        db.rollback()
 	
 	
 	

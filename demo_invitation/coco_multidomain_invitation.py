@@ -756,30 +756,6 @@ def databaseDump(net, domain, mode):
 
 
 
-    sql = """SELECT `id`, `name` FROM %s.sites ;""" % DB_NAME
-    cursor.execute(sql)
-
-    for site in cursor:
-        	#default TN domain
-        	id_temp = id_north
-        	if "tn" in site[1]:
-            		id_temp = id_north
-        	elif "ts" in site[1]:
-            		id_temp = id_south
-        	sql = """INSERT INTO `users` (name, email, domain, site, admin)
-	            VALUES ('%s_admin','%s_admin@mail.com','%d','%d',1),
-	                    ('%s_user','%s_user@mail.com','%d','%d',0);""" \
-                        % (site[1], site[1], id_temp, site[0], site[1], site[1], id_temp, site[0])
-        	try:
-            		# Execute the SQL command
-            		cursor.execute(sql)
-            		# Commit your changes in the database
-            		db.commit()
-        	except:
-            		# Rollback in case there is any error
-            		db.rollback()
-
-
     for trow in range(len(bighosttable)):
         # Prepare SQL query to INSERT a record into the database.
         crow = bighosttable[trow]
@@ -798,41 +774,44 @@ def databaseDump(net, domain, mode):
             # Rollback in case there is any error
             db.rollback()
 
+    if domain == 'MDCoCoTopoNorth':
+	sql = """INSERT INTO `subnetUsers` (`user`, `subnet`)
+                                VALUES ('2','1'),
+                                       ('3','2');"""
 
-
-    sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME
-    cursor.execute(sql)
-
-    for subnet in cursor:
-       	sql="""SELECT `name` FROM %s.sites WHERE id = %d ;""" % (DB_NAME, subnet[1])
-       	cursor.execute(sql)
-       	site_name = cursor.fetchone()[0]
-       	sql="""SELECT `id` FROM %s.users WHERE  `name` LIKE '%s_user';""" % (DB_NAME, site_name)
-       	cursor.execute(sql)
-        user_id = cursor.fetchone()[0]
-        sql = """INSERT INTO `subnetUsers` VALUES (NULL, '%d','%d');""" % (user_id, subnet[0])
-        try:
-            # Execute the SQL command
-            cursor.execute(sql)
-            # Commit your changes in the database
-            db.commit()
-        except:
-            # Rollback in case there is any error
-            db.rollback();
-
-
-    sql="""INSERT INTO `subnetUsers` (`user`, `subnet`) 
-			VALUES ((SELECT `id` FROM `users` WHERE `name` = 'simon'), '1'),
-			       ((SELECT `id` FROM `users` WHERE `name` = 'simon'), '2'); """
+    if domain == 'MDCoCoTopoSouth':
+    	sql = """INSERT INTO `subnetUsers` (`user`, `subnet`)
+				VALUES ('7','1');"""
+	
     try:
     	# Execute the SQL command
-    	cursor.execute(sql)
-    	# Commit your changes in the database
-    	db.commit()
-    except mdb.Error, e:
-	print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-    	# Rollback in case there is any error
-    	db.rollback();
+        cursor.execute(sql)
+        # Commit your changes in the database
+        db.commit()
+    except:
+        # Rollback in case there is any error
+        db.rollback();
+
+    #Automantic way
+    #sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME
+    #cursor.execute(sql)
+    #for subnet in cursor:
+    #   	sql="""SELECT `name` FROM %s.sites WHERE id = %d ;""" % (DB_NAME, subnet[1])
+    #   	cursor.execute(sql)
+    #   	site_name = cursor.fetchone()[0]
+    #   	sql="""SELECT `id` FROM %s.users WHERE  `name` LIKE '%s_user';""" % (DB_NAME, site_name)
+    #   	cursor.execute(sql)
+    #    user_id = cursor.fetchone()[0]
+    #    sql = """INSERT INTO `subnetUsers` VALUES (NULL, '%d','%d');""" % (user_id, subnet[0])
+    #    try:
+    #        # Execute the SQL command
+    #        cursor.execute(sql)
+    #        # Commit your changes in the database
+    #        db.commit()
+    #    except:
+    #        # Rollback in case there is any error
+    #        db.rollback();
+
 
 
     ##database processing ends

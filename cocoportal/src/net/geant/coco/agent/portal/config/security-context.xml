@@ -9,10 +9,10 @@
 
 	<http auto-config="true">
 		<!--  intercept everything -->
-	    <intercept-url pattern="/*" access="ROLE_USER" />
-	    <intercept-url pattern="/**" access="ROLE_USER" />
-		<!-- intercept-url pattern="/static/*" access="ROLE_USER" />
-		<intercept-url pattern="/static/**" access="ROLE_USER" / -->
+	    <!-- intercept-url pattern="/*" access="ROLE_USER" />
+	    <intercept-url pattern="/**" access="ROLE_USER" / -->
+		<intercept-url pattern="/static/*" access="ROLE_USER" />
+		<intercept-url pattern="/static/**" access="ROLE_USER" />
 	</http>
 
 	<authentication-manager>

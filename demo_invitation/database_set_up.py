@@ -1,17 +1,17 @@
 #!/usr/bin/python
-	
+
 import MySQLdb as mdb
 import sys
-	
+
 #mysql parameters
 DB_HOST_TN="134.221.121.203"
 DB_HOST_TS="l34.221.121.218"
-	
+
 DB_HOST="localhost"
 DB_USER="coco"
 DB_PWD="cocorules!"
 DB_NAME="CoCoINV"
-	
+
 def database_set_up():
 	db = mdb.connect(DB_HOST, DB_USER, DB_PWD, DB_NAME)
         cursor = db.cursor()
@@ -189,19 +189,19 @@ def database_set_up():
         ################
         #VPN USERS
         ###############
-        sql = """CREATE TABLE `vpnUsers` (
-                `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-                `vpn` int(10) unsigned NOT NULL,
-                `user` int(10) unsigned NOT NULL,
-                PRIMARY KEY (`id`),
-                INDEX `vpnId_idx` (`vpn` ASC),
-                INDEX `userId_idx` (`user` ASC),
-                CONSTRAINT `vpnId_users`
-                FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION,
-                CONSTRAINT `userId`    FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION)
-                ENGINE = InnoDB
-                CHARSET=latin1;"""
-        cursor.execute(sql)
+		# for now we are not using the vpnUsers table as each subnet is allocated to a VPN and a USER
+        # sql = """CREATE TABLE `vpnUsers` (
+        #         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+        #         `vpn` int(10) unsigned NOT NULL,
+        #         `user` int(10) unsigned NOT NULL,
+        #         PRIMARY KEY (`id`),
+        #         INDEX `vpnId_idx` (`vpn` ASC),
+        #         INDEX `userId_idx` (`user` ASC),
+        #         CONSTRAINT `vpnId_users` FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION,
+        #         CONSTRAINT `userId`    FOREIGN KEY (`user`)    REFERENCES `users` (`id`)    ON DELETE NO ACTION     ON UPDATE NO ACTION)
+        #         ENGINE = InnoDB
+        #         CHARSET=latin1;"""
+        # cursor.execute(sql)
 
 
         ################
@@ -211,7 +211,7 @@ def database_set_up():
                 `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                 `vpn` int(10) unsigned NOT NULL,
                 `subnet` int(10) unsigned NOT NULL,
-                `user` INT(10) UNSIGNED NOT NULL,
+                `user` INT(10) UNSIGNED UNSIGNED NULL DEFAULT NULL,
                 PRIMARY KEY (`id`),
                 INDEX `vpnId_idx` (`vpn` ASC),
                 INDEX `fk_vpnToSite_subnets1_idx` (`subnet` ASC),
@@ -225,25 +225,29 @@ def database_set_up():
 	#################
 	#BGP
 	################
-	sql = """CREATE TABLE bgps (
-		id int(11) unsigned NOT NULL AUTO_INCREMENT,
-		hash varchar(45) DEFAULT NULL,
-		nonce varchar(45) DEFAULT NULL,
-		target varchar(45) DEFAULT NULL,
-		localDomain int(11) unsigned NOT NULL,
-		remoteDomain int(11) unsigned NOT NULL,
-		vpn int(11) unsigned DEFAULT NULL,
-		subnet int(11) unsigned DEFAULT NULL,
-		time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		announce varchar(45) DEFAULT NULL,
- 		PRIMARY KEY (id),
- 		KEY bgps_fk_local_idx (localDomain),
- 		KEY bgps_fk_remote_idx (remoteDomain),
- 		KEY bgps_fk_vpn_idx (vpn),
- 		KEY bgps_fk_subnet_idx (subnet)) 
-		ENGINE=InnoDB 
-		AUTO_INCREMENT=5 
-		DEFAULT CHARSET=latin1;"""
+	sql = """CREATE TABLE `bgps` (
+			`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+			`hash` varchar(45) DEFAULT NULL,
+			`nonce` varchar(45) DEFAULT NULL,
+			`target` varchar(45) DEFAULT NULL,
+			`localDomain` int(11) unsigned NOT NULL,
+			`remoteDomain` int(11) unsigned NOT NULL,
+			`vpn` int(11) unsigned DEFAULT NULL,
+			`subnet` int(11) unsigned DEFAULT NULL,
+			`time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			`announce` varchar(45) DEFAULT NULL,
+	 		PRIMARY KEY (id),
+			INDEX `bgps_fk_vpn_idx` (`vpn` ASC),
+			INDEX `bgps_fk_local_idx` (`localDomain` ASC),
+			INDEX `bgps_fk_remote_idx` (`remoteDomain` ASC),
+			INDEX `bgps_fk_subnet_idx` (`subnet` ASC),
+			CONSTRAINT `bgps_fk_vpn_idx`    FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
+			CONSTRAINT `bgps_fk_local_idx`    FOREIGN KEY (`localDomain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
+			CONSTRAINT `bgps_fk_remote_idx`    FOREIGN KEY (`remoteDomain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
+			CONSTRAINT `bgps_fk_subnet_idx`  FOREIGN KEY (`subnet`)    REFERENCES `subnets` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
+			ENGINE = InnoDB
+			AUTO_INCREMENT=5
+			DEFAULT CHARSET=latin1;"""
 	cursor.execute(sql)
 
         ##database processing ends
@@ -256,15 +260,15 @@ def database_insert_data(domain):
 	db = mdb.connect(DB_HOST, DB_USER, DB_PWD, DB_NAME)
 	cursor = db.cursor()
 	cursor.execute('SET FOREIGN_KEY_CHECKS=0;')
-	
-	
-	
+
+
+
 	##########
 	#DOMAINS
 	##########
 	################ domainns - create very first - as it has no dependencies on other tables
-	
-	
+
+
 	sql = """INSERT  INTO `domains` (portal_address, email_domain, bgp_ip, as_num, as_name)
 	    VALUES ('http://134.221.121.203:9090/CoCo-agent','emailtemp54','10.2.0.254',65020,'tno-north'),('http://134.221.121.218:9090/CoCo-agent','emailtemp2','10.3.0.254',65030,'tno-south');"""
 	try:
@@ -275,22 +279,22 @@ def database_insert_data(domain):
 	except:
 	        # Rollback in case there is any error
 	        db.rollback()
-	
-	
+
+
 	############### get Ids for domains
 	sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-north';""" % DB_NAME
 	cursor.execute(sql)
 	id_north = cursor.fetchone()[0]
-	
+
 	sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-south';""" % DB_NAME
 	cursor.execute(sql)
 	id_south = cursor.fetchone()[0]
-	
-	
+
+
 	################
 	#SWITCHES
 	###############
-	
+
 	if domain == 'tn':
 		sql = """INSERT INTO `switches` (id, name, mininetname, x, y, mpls_label)
 	                         VALUES ('1', 'TN-PE1', 'tn-pe1' , '0', '0', '1' ),
@@ -299,7 +303,7 @@ def database_insert_data(domain):
 	else:
 	        sql = """INSERT INTO `switches` (id, name, mininetname, x, y, mpls_label)
 	                         VALUES ('1', 'TS-PE1', 'ts-pe1' , '0', '0', '2' );"""
-	
+
 	try:
 		# Execute the SQL command
 	        cursor.execute(sql)
@@ -308,14 +312,14 @@ def database_insert_data(domain):
 	except:
 	        # Rollback in case there is any error
 	        db.rollback()
-	
-	
-	###############   
+
+
+	###############
 	#SITES
 	###############
-	
-	
-	############ 
+
+
+	############
 	#LINKS
 	###########
         if  domain == 'tn':
@@ -334,14 +338,14 @@ def database_insert_data(domain):
                 print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
                 # Rollback in case there is any error
                 db.rollback()
-	
-	
+
+
 	###########
 	#EXT LINKS
 	##########
 	if  domain == 'tn':
 		sql = """INSERT INTO `extLinks` (`switch`, `domain`)
-	                         VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE2'), '1');""" 
+	                         VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE2'), '1');"""
 	else:
 		sql = """INSERT INTO `extLinks` (`switch`, `domain`)
                                  VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TS-PE1'), '2');"""
@@ -350,14 +354,14 @@ def database_insert_data(domain):
 	        cursor.execute(sql)
 	        # Commit your changes in the database
 	        db.commit()
-	except mdb.Error, e: 
+	except mdb.Error, e:
 		print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
 	        # Rollback in case there is any error
 	        db.rollback()
-	############ 
+	############
 	#users
 	############
-	
+
 	#Random data
 	sql = """INSERT INTO `users` (name, email, domain, admin)
                             VALUES ('tn_admin','tn_admin@mail.com','%d',1),
@@ -389,25 +393,25 @@ def database_insert_data(domain):
 	except:
 	        # Rollback in case there is any error
 	        db.rollback()
-	
-	
-	
-	################ 
+
+
+
+	################
 	#VPNs
 	################
-	
+
 	#############
 	#SUBNETS
 	############
-	
-	################ 
+
+	################
 	#subnetUsers
 	################
-	
-	
+
+
 	sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME
 	cursor.execute(sql)
-	
+
 	for subnet in cursor:
 	        sql="""SELECT `name` FROM %s.sites WHERE id = %d ;""" % (DB_NAME, subnet[1])
 	        cursor.execute(sql)
@@ -424,18 +428,18 @@ def database_insert_data(domain):
 	        except:
 	            # Rollback in case there is any error
 	            db.rollback()
-	
-	################ 
+
+	################
 	#VPN USERS
 	###############
-	
-	
-	################ 
+
+
+	################
 	#vpnSubnet
 	###############
-	
-	
-	
+
+
+
 	##database processing ends
 	cursor.execute('SET FOREIGN_KEY_CHECKS=1;')
 	db.close()
@@ -452,7 +456,7 @@ def main(domain_arg=None):
 
         database_set_up()
 	database_insert_data(domain)
-	
+
 if __name__ == '__main__':
 	#by default tn domain
 	domain = 'tn'

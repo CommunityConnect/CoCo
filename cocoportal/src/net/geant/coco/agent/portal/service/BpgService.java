@@ -168,22 +168,43 @@ public class BpgService {
     }
     
     private boolean cURL(String url, String parameter){
-    	if (true){
-    		log.debug(url + " - " + parameter);
-    		return true;
-    	}
+    	log.debug(url + " - " + parameter);
+//    	if (true){
+//    		log.debug(url + " - " + parameter);
+//    		return true;
+//    	}
     	
-    	HttpURLConnection con;
-		try {
-			con = (HttpURLConnection) new URL(url).openConnection();
-			
-			con.setRequestMethod("POST");
-	    	con.getOutputStream().write(parameter.getBytes("UTF-8")); 
-	    	con.getInputStream();
+    	try {
+			Process p = Runtime.getRuntime().exec("curl --form \"" + parameter + "\" " + url);
 		} catch (IOException e) {
+			log.error(e.getMessage());
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return false;
 		}
+//        // code to evaluate if the command was ok
+//    	p.waitFor();
+//
+//        BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+//
+//        StringBuffer sb = new StringBuffer();
+//        String line = "";
+//        while ((line = reader.readLine())!= null) {
+//        	sb.append(line + "\n");
+//        }
+    	
+        // java code - currently not used
+//    	HttpURLConnection con;
+//		try {
+//			con = (HttpURLConnection) new URL(url).openConnection();
+//			
+//			con.setRequestMethod("POST");
+//	    	con.getOutputStream().write(parameter.getBytes("UTF-8")); 
+//	    	con.getInputStream();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
     	
     	return true;
     }
@@ -257,7 +278,19 @@ public class BpgService {
     		BigInteger bigint = new BigInteger(match);
     		byte [] bytes = bigint.toByteArray();
     		String hex = bytesToHex(bytes);
-    		System.out.println(String.format("Found new match %s turn into \"%s\" !", match, hex));
+    		log.debug(String.format("bgpServerUpdate - Found new match %s turn into \"%s\" !", match, hex));
+    		
+    		// reformat the hex to be correct and 16 char long!
+    		if (hex.length() < 16){
+    			String empty = "0000000000000000";
+    	    	String new_hex = empty.substring(hex.length()) + hex;
+    	    	log.debug(String.format("bgpServerUpdate - String is to short %d new hex = \"%s\" !", hex.length(), new_hex));
+    	    	hex = new_hex;
+    		} else if (hex.length() > 16){
+    	    	String new_hex = hex.substring(hex.length()-16);
+    	    	log.debug(String.format("bgpServerUpdate - String is to long %d new hex = \"%s\" !", hex.length(), new_hex));
+    	    	hex = new_hex;
+    		}
     		
     		update_json = update_json.replace(match, String.format("\"%s\"", hex));
     	}

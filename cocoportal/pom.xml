@@ -44,6 +44,28 @@
 				</configuration>
 			</plugin>
 
+			<plugin>
+	           <artifactId>maven-antrun-plugin</artifactId>
+	           <executions>
+	             <execution>
+	               <phase>test</phase>
+	               <goals>
+	                 <goal>run</goal>
+	               </goals>
+	               <configuration>
+	                 <tasks>
+	                   <delete file="${project.build.outputDirectory}/net/geant/coco/agent/portal/props/config.properties"/>
+	                   <copy file="src/net/geant/coco/agent/portal/props/config.${deployName}.properties"
+	                         tofile="${project.build.outputDirectory}/net/geant/coco/agent/portal/props/config.properties"/>
+	                   <delete file="${project.build.outputDirectory}/net/geant/coco/agent/portal/props/jdbc.properties"/>
+	                   <copy file="src/net/geant/coco/agent/portal/props/jdbc.${deployName}.properties"
+	                         tofile="${project.build.outputDirectory}/net/geant/coco/agent/portal/props/jdbc.properties"/>
+	                 </tasks>
+	               </configuration>
+	             </execution>
+	           </executions>
+	         </plugin>
+
 			<!-- Automatic deploy using tomcat7:redeploy goal (http://stackoverflow.com/questions/17254839/eclipse-on-click-deploy-to-remote-tomcat) -->
 			<plugin>
 				<groupId>org.apache.tomcat.maven</groupId>

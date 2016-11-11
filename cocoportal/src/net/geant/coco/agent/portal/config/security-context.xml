@@ -24,6 +24,14 @@
 			<user name="thomas" password="thomas" authorities="ROLE_USER" />
 			<user name="admin" password="admin" authorities="ROLE_USER" />
 			<user name="marta" password="marta" authorities="ROLE_USER" />
+			<user name="tn_admin" password="tn_admin" authorities="ROLE_USER" />
+			<user name="bill_tn" password="bill_tn" authorities="ROLE_USER" />
+			<user name="mark_tn" password="mark_tn" authorities="ROLE_USER" />
+			<user name="tn_user" password="tn_user" authorities="ROLE_USER" />
+			<user name="ts_admin" password="ts_admin" authorities="ROLE_USER" />
+			<user name="ts_user" password="ts_user" authorities="ROLE_USER" />
+			<user name="mike_ts" password="mike_ts" authorities="ROLE_USER" />
+			<user name="harry_ts" password="harry_ts" authorities="ROLE_USER" />
 			
 	    </user-service>
 	  </authentication-provider>

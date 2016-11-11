@@ -102,7 +102,8 @@ public class UserDao {
                     user.setAdmin(rs.getBoolean("admin"));
                     user.setDomain_id(rs.getInt("domain"));
                     user.setEmail(rs.getString("email"));
-                    user.setSite_id(rs.getInt("site"));
+                    // WARNING site is not supported any more!
+                    //user.setSite_id(rs.getInt("site"));
 
                     return user;
                 }
@@ -119,7 +120,8 @@ public class UserDao {
                     user.setAdmin(rs.getBoolean("admin"));
                     user.setDomain_id(rs.getInt("domain"));
                     user.setEmail(rs.getString("email"));
-                    user.setSite_id(rs.getInt("site"));
+                    // WARNING site is not supported any more!
+                    // user.setSite_id(rs.getInt("site"));
 
 
                     return user;

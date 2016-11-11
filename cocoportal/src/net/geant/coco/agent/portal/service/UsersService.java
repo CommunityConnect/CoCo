@@ -42,14 +42,16 @@ public class UsersService {
     public User getUser(String userName) {
     	User user = userDao.getUser(userName);
     	user.setDomain(domainDao.getDomain(user.getDomain_id()));
-		user.setSite(siteDao.getNetworkSite(user.getSite_id()));
+    	// WARNING site is not supported any more!
+    	// user.setSite(siteDao.getNetworkSite(user.getSite_id()));
 		return user;
     }
 
     public User getUser(int userID) {
     	User user = userDao.getUser(userID);
     	user.setDomain(domainDao.getDomain(user.getDomain_id()));
-		user.setSite(siteDao.getNetworkSite(user.getSite_id()));
+    	// WARNING site is not supported any more!
+		// user.setSite(siteDao.getNetworkSite(user.getSite_id()));
 		return user;
     }
     
@@ -68,7 +70,8 @@ public class UsersService {
     	List<User> usersList = userDao.getUsers();
     	for (User user : usersList) {
     		user.setDomain(domainDao.getDomain(user.getDomain_id()));
-    		user.setSite(siteDao.getNetworkSite(user.getSite_id()));
+    		// WARNING site is not supported any more!
+    		// user.setSite(siteDao.getNetworkSite(user.getSite_id()));
 		}
         return usersList;
     }

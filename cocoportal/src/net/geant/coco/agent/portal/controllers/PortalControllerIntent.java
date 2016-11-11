@@ -5,11 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -23,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.WebRequest;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -33,9 +28,7 @@ import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.Subnet;
 import net.geant.coco.agent.portal.dao.SubnetDao;
 import net.geant.coco.agent.portal.dao.User;
-import net.geant.coco.agent.portal.dao.UserDao;
 import net.geant.coco.agent.portal.dao.Vpn;
-import net.geant.coco.agent.portal.dao.VpnDao;
 import net.geant.coco.agent.portal.dao.VpnInvite;
 import net.geant.coco.agent.portal.dao.VpnInviteAccept;
 import net.geant.coco.agent.portal.rest.RestVpnURIConstants;
@@ -305,6 +298,8 @@ public class PortalControllerIntent {
 		
 		
 		log.info("New Invite {"+ invite +"} from {" + sender + "} to {" + receiver + "} url {"+ url +";");
+		// TODO: send invite to other user via email
+		// CoCoMail.sendCoCoMail(sender, receiver, invite.getInvite_text(), url);
 		
 		return false;
 	}

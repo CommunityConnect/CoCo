@@ -15,10 +15,13 @@ public class User implements Serializable {
     private String email;
     //TODO fix domain and site
     private int domain_id;
-    private int site_id;
+    // WARNING site is not supported any more!
+    //private int site_id;
+    
     // object mapping
     private Domain domain;
-    private NetworkSite site;
+    // WARNING site is not supported any more!
+    // private NetworkSite site;
     
     private boolean admin;
     
@@ -50,26 +53,11 @@ public class User implements Serializable {
 	public void setDomain_id(int domain_id) {
 		this.domain_id = domain_id;
 	}
-	public int getSite_id() {
-		if (site != null){
-			return site.getId();
-		}
-		return site_id;
-	}
-	public void setSite_id(int site_id) {
-		this.site_id = site_id;
-	}
 	public Domain getDomain() {
 		return domain;
 	}
 	public void setDomain(Domain domain) {
 		this.domain = domain;
-	}
-	public NetworkSite getSite() {
-		return site;
-	}
-	public void setSite(NetworkSite site) {
-		this.site = site;
 	}
 	public boolean isAdmin() {
 		return admin;

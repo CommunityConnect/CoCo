@@ -326,10 +326,10 @@ class MDCoCoTopoNorth(Topo):
 
             self.addLink(router, sw)
 
-	if mode == 'full' or mode == 'bgp' or mode == "all":
+#	if mode == 'full' or mode == 'bgp' or mode == "all":
         	# Connect BGP speaker to the root namespace
-        	root = self.addHost('root', inNamespace=False)
-        	self.addLink(root, bgp)
+#        	root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+#        	self.addLink(root, bgp)
 
 	if mode == 'full':
 	        # Wire up the switches in the topology
@@ -337,6 +337,12 @@ class MDCoCoTopoNorth(Topo):
 	        self.addLink(tn_pc1, tn_pe2)
 	        self.addLink(tn_pe2, tn_gw_ts)
 		self.addLink(bgp, tn_pc1)
+
+	if mode == 'full' or mode == 'bgp' or mode == "all":
+                # Connect BGP speaker to the root namespace
+                root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+                self.addLink(root, bgp)
+
 
 
 # [PZ] perhaps we will add s4 later; now we want to avoid loop problems

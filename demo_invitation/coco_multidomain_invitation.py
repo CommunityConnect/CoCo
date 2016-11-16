@@ -363,10 +363,10 @@ class MDCoCoTopoSouth(Topo):
         domID = 3
 
 	if mode == 'full':
-                ts_pe1 = self.addSwitch('ts_pe1', dpid='0000000000000001', datapath='user')
+                ts_pe1 = self.addSwitch('ts_pe1', dpid='0000000000000031', datapath='user')
                 #        ts_pc1 = self.addSwitch('ts_pc1', dpid='0000000000000002')
                 #        ts_pe2 = self.addSwitch('ts_pe2', dpid='0000000000000003')
-                ts_gw_tn = self.addSwitch('ts_gw_tn', dpid='0000000000000024')
+                ts_gw_tn = self.addSwitch('ts_gw_tn', dpid='0000000000000032')
 
                 pinghost = self.addHost('ts_ph_tn', cls=PingableHost, ip='10.0.0.4/24', mac='00:10:00:00:00:04',
                                 remoteIP='10.0.0.3', remoteMAC='00:10:00:00:00:03')

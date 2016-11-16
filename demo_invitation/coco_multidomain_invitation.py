@@ -326,10 +326,6 @@ class MDCoCoTopoNorth(Topo):
 
             self.addLink(router, sw)
 
-#	if mode == 'full' or mode == 'bgp' or mode == "all":
-        	# Connect BGP speaker to the root namespace
-#        	root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
-#        	self.addLink(root, bgp)
 
 	if mode == 'full':
 	        # Wire up the switches in the topology
@@ -476,10 +472,10 @@ class MDCoCoTopoSouth(Topo):
 
             self.addLink(router, sw)
 
-	if mode == 'full' or mode == 'bgp' or mode == 'all':
+#	if mode == 'full' or mode == 'bgp' or mode == 'all':
                 # Connect BGP speaker to the root namespace
-                root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
-                self.addLink(root, bgp)
+#                root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+#                self.addLink(root, bgp)
 
         if mode == 'full':
                 self.addLink(bgp, ts_pe1)
@@ -487,6 +483,12 @@ class MDCoCoTopoSouth(Topo):
                 ##for a moment only one switch is present in TNO south
                 self.addLink(ts_pe1, ts_gw_tn)
                 # self.addLink( ts_pc1, ts_pe2 )
+
+
+	if mode == 'full' or mode == 'bgp' or mode == 'all':
+                # Connect BGP speaker to the root namespace
+                root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+                self.addLink(root, bgp)
 
 
 def returnSwitchConnections(mn_topo, switches, operSwNames):

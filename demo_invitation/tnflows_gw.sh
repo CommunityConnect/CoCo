@@ -67,26 +67,27 @@ sudo ovs-ofctl add-flow tn_pe2 -O OpenFlow13 priority=101,tcp,in_port=2,nw_src=1
 
 sudo ovs-ofctl add-flow tn_pe1 -O OpenFlow13 icmp,in_port=2,nw_src=10.2.0.1,nw_dst=10.2.0.254,actions=output:3
 sudo ovs-ofctl add-flow tn_pe1 -O OpenFlow13 icmp,in_port=3,nw_src=10.2.0.254,nw_dst=10.2.0.1,actions=output:2
-
-
 sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 icmp,in_port=1,nw_src=10.2.0.1,nw_dst=10.2.0.254,actions=output:3
 sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 icmp,in_port=3,nw_src=10.2.0.254,nw_dst=10.2.0.1,actions=output:1
 
-
 sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 icmp,in_port=2,nw_src=10.2.0.2,nw_dst=10.2.0.254,actions=output:3
 sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 icmp,in_port=3,nw_src=10.2.0.254,nw_dst=10.2.0.2,actions=output:2
-
 sudo ovs-ofctl add-flow tn_pe2 -O OpenFlow13 icmp,in_port=2,nw_src=10.2.0.2,nw_dst=10.2.0.254,actions=output:3
 sudo ovs-ofctl add-flow tn_pe2 -O OpenFlow13 icmp,in_port=3,nw_src=10.2.0.254,nw_dst=10.2.0.2,actions=output:2
+
+sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 icmp,in_port=2,nw_src=10.3.0.254,nw_dst=10.2.0.254,actions=output:3
+sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 icmp,in_port=3,nw_src=10.2.0.254,nw_dst=10.3.0.254,actions=output:2
+sudo ovs-ofctl add-flow tn_pe2 -O OpenFlow13 icmp,in_port=3,nw_src=10.2.0.254,nw_dst=10.3.0.254,actions=output:4
+sudo ovs-ofctl add-flow tn_pe2 -O OpenFlow13 icmp,in_port=4,nw_src=10.3.0.254,nw_dst=10.2.0.254,actions=output:3
 
 
 
 #BGP between domain BGP speakers from TN and TS
 
-sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 priority=101,tcp,in_port=3,nw_src=10.3.0.254,nw_dst=10.2.0.254,tp_dst=179,actions=output:1
-sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 priority=101,tcp,in_port=1,nw_src=10.2.0.254,nw_dst=10.3.0.254,tp_dst=179,actions=output:3
-sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 priority=101,tcp,in_port=3,nw_src=10.3.0.254,nw_dst=10.2.0.254,tp_src=179,actions=output:1
-sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 priority=101,tcp,in_port=1,nw_src=10.2.0.254,nw_dst=10.3.0.254,tp_src=179,actions=output:3
+sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 priority=101,tcp,in_port=2,nw_src=10.3.0.254,nw_dst=10.2.0.254,tp_dst=179,actions=output:3
+sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 priority=101,tcp,in_port=3,nw_src=10.2.0.254,nw_dst=10.3.0.254,tp_dst=179,actions=output:2
+sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 priority=101,tcp,in_port=2,nw_src=10.3.0.254,nw_dst=10.2.0.254,tp_src=179,actions=output:3
+sudo ovs-ofctl add-flow tn_pc1 -O OpenFlow13 priority=101,tcp,in_port=3,nw_src=10.2.0.254,nw_dst=10.3.0.254,tp_src=179,actions=output:2
 
 #sudo ovs-ofctl add-flow tn_pe2 -O OpenFlow13 priority=101,tcp,in_port=3,nw_src=10.2.0.254,nw_dst=10.3.0.254,tp_dst=179,actions=output:${GRE_TN_TS}
 #sudo ovs-ofctl add-flow tn_pe2 -O OpenFlow13 priority=101,tcp,in_port=${GRE_TN_TS},nw_src=10.3.0.254,nw_dst=10.2.0.254,tp_dst=179,actions=output:3

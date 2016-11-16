@@ -12,7 +12,7 @@ DB_PWD="cocorules!"
 DB_NAME="CoCoINV"
 
 def database_set_up(db_host):
-	
+
 	db = mdb.connect(db_host, DB_USER, DB_PWD, DB_NAME)
         cursor = db.cursor()
         cursor.execute('SET FOREIGN_KEY_CHECKS=0;')
@@ -164,6 +164,7 @@ def database_set_up(db_host):
                 `subnet` VARCHAR(45) NOT NULL,
                 `site` int(10) unsigned NOT NULL,
                 PRIMARY KEY (`id`),
+				UNIQUE KEY `subnet_UNIQUE` (`subnet`),
                 INDEX `fk_subnets_site1_idx` (`site` ASC),
                 CONSTRAINT `fk_subnets_site1`
                 FOREIGN KEY (`site`)    REFERENCES `sites` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
@@ -257,7 +258,7 @@ def database_set_up(db_host):
 
 
 def database_insert_data(domain, db_host, mode):
-	
+
 	db = mdb.connect(db_host, DB_USER, DB_PWD, DB_NAME)
 	cursor = db.cursor()
 	cursor.execute('SET FOREIGN_KEY_CHECKS=0;')
@@ -271,7 +272,8 @@ def database_insert_data(domain, db_host, mode):
 
 
 	sql = """INSERT  INTO `domains` (portal_address, email_domain, bgp_ip, as_num, as_name)
-	    VALUES ('http://134.221.121.203:9090/CoCo-agent','emailtemp84','10.2.0.254',65020,'tno-north'),('http://134.221.121.218:9090/CoCo-agent','emailtemp2','10.3.0.254',65030,'tno-south');"""
+	    VALUES 	('http://134.221.121.203:9090/CoCo-agent/static/index.html','email203','10.2.0.254',65020,'tno-north'),
+				('http://134.221.121.218:9090/CoCo-agent/static/index.html','email218','10.3.0.254',65030,'tno-south');"""
 	try:
 		# Execute the SQL command
 	        cursor.execute(sql)
@@ -364,11 +366,11 @@ def database_insert_data(domain, db_host, mode):
 
 	#Random data
 	sql = """INSERT INTO `users` (name, email, domain, admin)
-                            VALUES ('tn_admin','tn_admin@mail.com','%d',1),
-                                    ('bill_tn','bill_tn@mail.com','%d',0),
+            VALUES 	('tn_admin','tn_admin@mail.com','%d',1),
+                    ('bill_tn','bill_tn@mail.com','%d',0),
 				    ('mark_tn','mark_tn@mail.com','%d',0),
 				    ('tn_user','tn_user@mail.com','%d',0),
-				    ('tn_admin','tn_admin@mail.com','%d',1),
+				    ('ts_admin','ts_admin@mail.com','%d',1),
 				    ('ts_user','ts_user@mail.com','%d',0),
 				    ('mike_ts','mike_ts@mail.com','%d',0),
 				    ('harry_ts','harry_ts@mail.com','%d',0);""" %(id_north, id_north,id_north, id_north, id_south, id_south, id_south, id_south)
@@ -380,9 +382,9 @@ def database_insert_data(domain, db_host, mode):
 	except:
 	        # Rollback in case there is any error
 	        db.rollback()
-	
-	
-	
+
+
+
 	#data prepared for tests
 	sql = """INSERT INTO `users` (name, email, domain, site, admin) VALUES ('simon', 'simongunkel@googlemail.com', '1', '1', '0');"""
 	try:

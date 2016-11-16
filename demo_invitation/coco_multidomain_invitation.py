@@ -180,7 +180,7 @@ class EXABGPRouteReflector(Host):
 
 
 class MDCoCoTopoNorth(Topo):
-    
+
     # TODO : call MDCoCoTopo with domain name parameter
     # we were not successful with
     # def __init__(self, domainname):
@@ -228,7 +228,7 @@ class MDCoCoTopoNorth(Topo):
         # Set up the internal BGP speaker
         bgpEth0 = {'mac': '00:10:0%s:00:02:54' % domID,
                    'ipAddrs': '10.%s.0.254/24' % domID}
-        
+
 	if mode == 'full':
 		bgpEth1 = {'ipAddrs': '10.10.10.1/24'}
         	bgpIntfs = {'tn_bgp1-eth0': bgpEth0,
@@ -256,7 +256,7 @@ class MDCoCoTopoNorth(Topo):
         ARPBGPpeers = {'ts_bgp1': ts_bgp1,
                        'tn_ce1_arp': tn_ce1_arp,
                        'tn_ce2_arp': tn_ce2_arp}
-	
+
 	if mode == 'bgp' or mode == 'full' or mode == 'all':
 		#        bgp = self.addHost("tn_bgp1", cls=QBGPRouter,
 		#                           quaggaConfFile='%s/tn_bgp1.conf' % CONFIG_DIR,
@@ -300,16 +300,16 @@ class MDCoCoTopoNorth(Topo):
             ARPfakegw = {'bgpgw': bgpgw}
 
             quaggaConf = '%s/tn_ce%s.conf' % (CONFIG_DIR, i)
-            
+
 	    router = self.addHost(name, cls=QBGPRouter, quaggaConfFile=quaggaConf,
                                   zebraConfFile=zebraConf, intfDict=intfs, ARPDict=ARPfakegw)
-            
+
 	    #switch to modify MAC address in Ethernet frame
             sw_mac = self.addSwitch('tn_mac_ce%s' % i)
 
 	    if mode == 'full':
 		self.addLink(sw_mac, router)
-		self.addLink(sw_mac, attachmentSwitches[i - 1]) 
+		self.addLink(sw_mac, attachmentSwitches[i - 1])
 	    else:
 		root = self.addHost('root', inNamespace=False)
 		self.addLink(sw_mac, router)
@@ -449,7 +449,7 @@ class MDCoCoTopoSouth(Topo):
 
             router = self.addHost(name, cls=QBGPRouter, quaggaConfFile=quaggaConf,
                                   zebraConfFile=zebraConf, intfDict=intfs, ARPDict=ARPfakegw)
-	    
+
             #switch to modify MAC address in Ethernet frame
             sw_mac = self.addSwitch('ts_mac_ce%s' % i)
 
@@ -559,7 +559,7 @@ def returnNodeConnections(nodes, operSwNames,cocoSiteNames):
                 hosttable[0]=node.name
 
                 if swName in operSwNames: #interface pointing to WAN
-                # TODO it may happen that two hosts are connected back-to-back, then far end is not a switch
+                    # TODO it may happen that two hosts are connected back-to-back, then far end is not a switch
                     hosttable[3]=operSwNames.index(swName) + 1
                     hosttable[4]=int(swNamePort[1]) #number after eth
                     hosttable[8]=locintf.mac
@@ -619,7 +619,7 @@ def databaseDump(net, domain, mode):
 
 
     if mode == "full":
-    	###############   switches 
+    	###############   switches
 
     	bigswitchtable = returnSwitchConnections(net, net.switches, operSwNames)
 
@@ -790,7 +790,7 @@ def databaseDump(net, domain, mode):
     if domain == 'MDCoCoTopoSouth':
     	sql = """INSERT INTO `subnetUsers` (`user`, `subnet`)
 				VALUES ('7','1');"""
-	
+
     try:
     	# Execute the SQL command
         cursor.execute(sql)
@@ -847,7 +847,7 @@ if __name__ == '__main__':
     else:
 	chosen_topo = sys.argv[1]
 	mode = sys.argv[2]
-    
+
     if chosen_topo not in ['tn', 'ts']:
 	 print('Wrong topology name: using default topo tn')
          chosen_topo = 'tn'
@@ -861,7 +861,7 @@ if __name__ == '__main__':
     else:
 	DB_HOST = DB_HOST_TS
         topo = MDCoCoTopoSouth(mode)
-    
+
     net = Mininet(topo=topo, controller=RemoteController)
     # hp = net.hosts[-1]
     # info(hp)
@@ -870,7 +870,7 @@ if __name__ == '__main__':
     #    hp.setARP('10.0.0.3', '00:10:00:00:00:03')
     # if hp.name[0:2] == 'tn':
     #    hp.setARP('10.0.0.4', '00:10:00:00:00:04')
-    if mode == 'full' or mode == 'all': 
+    if mode == 'full' or mode == 'all':
 	if chosen_topo =='tn':
 		database_set_up.main('tn', mode)
 	else:

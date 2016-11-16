@@ -326,10 +326,6 @@ class MDCoCoTopoNorth(Topo):
 
             self.addLink(router, sw)
 
-	if mode == 'full' or mode == 'bgp' or mode == "all":
-        	# Connect BGP speaker to the root namespace
-        	root = self.addHost('root', inNamespace=False)
-        	self.addLink(root, bgp)
 
 	if mode == 'full':
 	        # Wire up the switches in the topology
@@ -337,6 +333,12 @@ class MDCoCoTopoNorth(Topo):
 	        self.addLink(tn_pc1, tn_pe2)
 	        self.addLink(tn_pe2, tn_gw_ts)
 		self.addLink(bgp, tn_pc1)
+
+	if mode == 'full' or mode == 'bgp' or mode == "all":
+                # Connect BGP speaker to the root namespace
+                root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+                self.addLink(root, bgp)
+
 
 
 # [PZ] perhaps we will add s4 later; now we want to avoid loop problems
@@ -470,10 +472,10 @@ class MDCoCoTopoSouth(Topo):
 
             self.addLink(router, sw)
 
-	if mode == 'full' or mode == 'bgp' or mode == 'all':
+#	if mode == 'full' or mode == 'bgp' or mode == 'all':
                 # Connect BGP speaker to the root namespace
-                root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
-                self.addLink(root, bgp)
+#                root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+#                self.addLink(root, bgp)
 
         if mode == 'full':
                 self.addLink(bgp, ts_pe1)
@@ -481,6 +483,12 @@ class MDCoCoTopoSouth(Topo):
                 ##for a moment only one switch is present in TNO south
                 self.addLink(ts_pe1, ts_gw_tn)
                 # self.addLink( ts_pc1, ts_pe2 )
+
+
+	if mode == 'full' or mode == 'bgp' or mode == 'all':
+                # Connect BGP speaker to the root namespace
+                root = self.addHost('root', inNamespace=False, ip='10.10.10.2/24')
+                self.addLink(root, bgp)
 
 
 def returnSwitchConnections(mn_topo, switches, operSwNames):
@@ -756,30 +764,6 @@ def databaseDump(net, domain, mode):
 
 
 
-    sql = """SELECT `id`, `name` FROM %s.sites ;""" % DB_NAME
-    cursor.execute(sql)
-
-    for site in cursor:
-        	#default TN domain
-        	id_temp = id_north
-        	if "tn" in site[1]:
-            		id_temp = id_north
-        	elif "ts" in site[1]:
-            		id_temp = id_south
-        	sql = """INSERT INTO `users` (name, email, domain, site, admin)
-	            VALUES ('%s_admin','%s_admin@mail.com','%d','%d',1),
-	                    ('%s_user','%s_user@mail.com','%d','%d',0);""" \
-                        % (site[1], site[1], id_temp, site[0], site[1], site[1], id_temp, site[0])
-        	try:
-            		# Execute the SQL command
-            		cursor.execute(sql)
-            		# Commit your changes in the database
-            		db.commit()
-        	except:
-            		# Rollback in case there is any error
-            		db.rollback()
-
-
     for trow in range(len(bighosttable)):
         # Prepare SQL query to INSERT a record into the database.
         crow = bighosttable[trow]
@@ -798,41 +782,44 @@ def databaseDump(net, domain, mode):
             # Rollback in case there is any error
             db.rollback()
 
+    if domain == 'MDCoCoTopoNorth':
+	sql = """INSERT INTO `subnetUsers` (`user`, `subnet`)
+                                VALUES ('2','1'),
+                                       ('3','2');"""
 
-
-    sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME
-    cursor.execute(sql)
-
-    for subnet in cursor:
-       	sql="""SELECT `name` FROM %s.sites WHERE id = %d ;""" % (DB_NAME, subnet[1])
-       	cursor.execute(sql)
-       	site_name = cursor.fetchone()[0]
-       	sql="""SELECT `id` FROM %s.users WHERE  `name` LIKE '%s_user';""" % (DB_NAME, site_name)
-       	cursor.execute(sql)
-        user_id = cursor.fetchone()[0]
-        sql = """INSERT INTO `subnetUsers` VALUES (NULL, '%d','%d');""" % (user_id, subnet[0])
-        try:
-            # Execute the SQL command
-            cursor.execute(sql)
-            # Commit your changes in the database
-            db.commit()
-        except:
-            # Rollback in case there is any error
-            db.rollback();
-
-
-    sql="""INSERT INTO `subnetUsers` (`user`, `subnet`) 
-			VALUES ((SELECT `id` FROM `users` WHERE `name` = 'simon'), '1'),
-			       ((SELECT `id` FROM `users` WHERE `name` = 'simon'), '2'); """
+    if domain == 'MDCoCoTopoSouth':
+    	sql = """INSERT INTO `subnetUsers` (`user`, `subnet`)
+				VALUES ('7','1');"""
+	
     try:
     	# Execute the SQL command
-    	cursor.execute(sql)
-    	# Commit your changes in the database
-    	db.commit()
-    except mdb.Error, e:
-	print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-    	# Rollback in case there is any error
-    	db.rollback();
+        cursor.execute(sql)
+        # Commit your changes in the database
+        db.commit()
+    except:
+        # Rollback in case there is any error
+        db.rollback();
+
+    #Automantic way
+    #sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME
+    #cursor.execute(sql)
+    #for subnet in cursor:
+    #   	sql="""SELECT `name` FROM %s.sites WHERE id = %d ;""" % (DB_NAME, subnet[1])
+    #   	cursor.execute(sql)
+    #   	site_name = cursor.fetchone()[0]
+    #   	sql="""SELECT `id` FROM %s.users WHERE  `name` LIKE '%s_user';""" % (DB_NAME, site_name)
+    #   	cursor.execute(sql)
+    #    user_id = cursor.fetchone()[0]
+    #    sql = """INSERT INTO `subnetUsers` VALUES (NULL, '%d','%d');""" % (user_id, subnet[0])
+    #    try:
+    #        # Execute the SQL command
+    #        cursor.execute(sql)
+    #        # Commit your changes in the database
+    #        db.commit()
+    #    except:
+    #        # Rollback in case there is any error
+    #        db.rollback();
+
 
 
     ##database processing ends
@@ -884,7 +871,10 @@ if __name__ == '__main__':
     # if hp.name[0:2] == 'tn':
     #    hp.setARP('10.0.0.4', '00:10:00:00:00:04')
     if mode == 'full' or mode == 'all': 
-	database_set_up.main()
+	if chosen_topo =='tn':
+		database_set_up.main('tn', mode)
+	else:
+		database_set_up.main('ts', mode)
     net.start()
     databaseDump(net,type(topo).__name__, mode) #nort or south?
     # hp.cmd('arp -s 10.0.0.4 00:10:00:00:00:04')
@@ -896,6 +886,7 @@ if __name__ == '__main__':
         subprocess.call("/home/coco/CoCo/demo_invitation/bridge_set_up.sh "+chosen_topo+" BGP1", shell=True)
     else:
 	subprocess.call("/home/coco/CoCo/demo_invitation/"+chosen_topo+"flows_mac.sh all", shell=True)
+	subprocess.call("/home/coco/CoCo/demo_invitation/"+chosen_topo+"flows_gw.sh", shell=True)
     CLI(net)
 
     net.stop()

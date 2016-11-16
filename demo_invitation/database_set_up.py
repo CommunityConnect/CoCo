@@ -5,15 +5,15 @@ import sys
 
 #mysql parameters
 DB_HOST_TN="134.221.121.203"
-DB_HOST_TS="l34.221.121.218"
+DB_HOST_TS="134.221.121.218"
 
-DB_HOST="localhost"
 DB_USER="coco"
 DB_PWD="cocorules!"
 DB_NAME="CoCoINV"
 
-def database_set_up():
-	db = mdb.connect(DB_HOST, DB_USER, DB_PWD, DB_NAME)
+def database_set_up(db_host):
+	
+	db = mdb.connect(db_host, DB_USER, DB_PWD, DB_NAME)
         cursor = db.cursor()
         cursor.execute('SET FOREIGN_KEY_CHECKS=0;')
 
@@ -125,14 +125,11 @@ def database_set_up():
                 `name` VARCHAR(45) NULL,
                 `email` VARCHAR(45) NOT NULL,
                 `domain` int(10) unsigned NOT NULL,
-                `site` int(10) unsigned NOT NULL,
                 `admin` TINYINT(1) NOT NULL,
                 PRIMARY KEY (`id`),
                 INDEX `pk_user_idx` (`id` ASC) ,
                 INDEX `domainId_idx` (`domain` ASC),
-                INDEX `fk_user_site1_idx` (`site` ASC),
-                CONSTRAINT `domainId_users`    FOREIGN KEY (`domain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-                CONSTRAINT `fk_user_site1`    FOREIGN KEY (`site`)    REFERENCES `sites` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
+                CONSTRAINT `domainId_users`    FOREIGN KEY (`domain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
                 ENGINE = InnoDB
                 CHARSET=latin1;"""
         cursor.execute(sql)
@@ -225,33 +222,33 @@ def database_set_up():
                 CHARSET=latin1;"""
         cursor.execute(sql)
 
-		#################
-		#BGP
-		################
-		sql = """CREATE TABLE `bgps` (
-				`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-				`hash` varchar(45) DEFAULT NULL,
-				`nonce` varchar(45) DEFAULT NULL,
-				`target` varchar(45) DEFAULT NULL,
-				`localDomain` int(11) unsigned NOT NULL,
-				`remoteDomain` int(11) unsigned NOT NULL,
-				`vpn` int(11) unsigned DEFAULT NULL,
-				`subnet` int(11) unsigned DEFAULT NULL,
-				`time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				`announce` varchar(45) DEFAULT NULL,
-		 		PRIMARY KEY (id),
-				INDEX `bgps_fk_vpn_idx` (`vpn` ASC),
-				INDEX `bgps_fk_local_idx` (`localDomain` ASC),
-				INDEX `bgps_fk_remote_idx` (`remoteDomain` ASC),
-				INDEX `bgps_fk_subnet_idx` (`subnet` ASC),
-				CONSTRAINT `bgps_fk_vpn_idx`    FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-				CONSTRAINT `bgps_fk_local_idx`    FOREIGN KEY (`localDomain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-				CONSTRAINT `bgps_fk_remote_idx`    FOREIGN KEY (`remoteDomain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
-				CONSTRAINT `bgps_fk_subnet_idx`  FOREIGN KEY (`subnet`)    REFERENCES `subnets` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
-				ENGINE = InnoDB
-				AUTO_INCREMENT=5
-				DEFAULT CHARSET=latin1;"""
-		cursor.execute(sql)
+	#################
+	#BGP
+	################
+	sql = """CREATE TABLE `bgps` (
+			`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+			`hash` varchar(45) DEFAULT NULL,
+			`nonce` varchar(45) DEFAULT NULL,
+			`target` varchar(45) DEFAULT NULL,
+			`localDomain` int(11) unsigned NOT NULL,
+			`remoteDomain` int(11) unsigned NOT NULL,
+			`vpn` int(11) unsigned DEFAULT NULL,
+			`subnet` int(11) unsigned DEFAULT NULL,
+			`time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			`announce` varchar(45) DEFAULT NULL,
+	 		PRIMARY KEY (id),
+			INDEX `bgps_fk_vpn_idx` (`vpn` ASC),
+			INDEX `bgps_fk_local_idx` (`localDomain` ASC),
+			INDEX `bgps_fk_remote_idx` (`remoteDomain` ASC),
+			INDEX `bgps_fk_subnet_idx` (`subnet` ASC),
+			CONSTRAINT `bgps_fk_vpn_idx`    FOREIGN KEY (`vpn`)    REFERENCES `vpns` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
+			CONSTRAINT `bgps_fk_local_idx`    FOREIGN KEY (`localDomain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
+			CONSTRAINT `bgps_fk_remote_idx`    FOREIGN KEY (`remoteDomain`)    REFERENCES `domains` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION,
+			CONSTRAINT `bgps_fk_subnet_idx`  FOREIGN KEY (`subnet`)    REFERENCES `subnets` (`id`)    ON DELETE NO ACTION    ON UPDATE NO ACTION)
+			ENGINE = InnoDB
+			AUTO_INCREMENT=5
+			DEFAULT CHARSET=latin1;"""
+	cursor.execute(sql)
 
         ##database processing ends
         cursor.execute('SET FOREIGN_KEY_CHECKS=1;')
@@ -259,8 +256,9 @@ def database_set_up():
 
 
 
-def database_insert_data(domain):
-	db = mdb.connect(DB_HOST, DB_USER, DB_PWD, DB_NAME)
+def database_insert_data(domain, db_host, mode):
+	
+	db = mdb.connect(db_host, DB_USER, DB_PWD, DB_NAME)
 	cursor = db.cursor()
 	cursor.execute('SET FOREIGN_KEY_CHECKS=0;')
 
@@ -273,7 +271,7 @@ def database_insert_data(domain):
 
 
 	sql = """INSERT  INTO `domains` (portal_address, email_domain, bgp_ip, as_num, as_name)
-	    VALUES ('http://134.221.121.203:9090/CoCo-agent','emailtemp54','10.2.0.254',65020,'tno-north'),('http://134.221.121.218:9090/CoCo-agent','emailtemp2','10.3.0.254',65030,'tno-south');"""
+	    VALUES ('http://134.221.121.203:9090/CoCo-agent','emailtemp84','10.2.0.254',65020,'tno-north'),('http://134.221.121.218:9090/CoCo-agent','emailtemp2','10.3.0.254',65030,'tno-south');"""
 	try:
 		# Execute the SQL command
 	        cursor.execute(sql)
@@ -297,24 +295,24 @@ def database_insert_data(domain):
 	################
 	#SWITCHES
 	###############
+	if mode != 'full':
+		if domain == 'tn':
+			sql = """INSERT INTO `switches` (id, name, mininetname, x, y, mpls_label)
+	                         		VALUES ('1', 'TN-PE1', 'tn-pe1' , '0', '0', '1' ),
+							('2', 'TN-PE2', 'tn-pe2' , '0', '0', '1' ),
+							('3', 'TN-PC1', 'tn-pc1' , '0', '0', '1' );"""
+		else:
+	        	sql = """INSERT INTO `switches` (id, name, mininetname, x, y, mpls_label)
+	                         		VALUES ('1', 'TS-PE1', 'ts-pe1' , '0', '0', '2' );"""
 
-	if domain == 'tn':
-		sql = """INSERT INTO `switches` (id, name, mininetname, x, y, mpls_label)
-	                         VALUES ('1', 'TN-PE1', 'tn-pe1' , '0', '0', '1' ),
-					('2', 'TN-PE2', 'tn-pe2' , '0', '0', '1' ),
-					('3', 'TN-PC1', 'tn-pc1' , '0', '0', '1' );"""
-	else:
-	        sql = """INSERT INTO `switches` (id, name, mininetname, x, y, mpls_label)
-	                         VALUES ('1', 'TS-PE1', 'ts-pe1' , '0', '0', '2' );"""
-
-	try:
-		# Execute the SQL command
-	        cursor.execute(sql)
-	        # Commit your changes in the database
-	        db.commit()
-	except:
-	        # Rollback in case there is any error
-	        db.rollback()
+		try:
+			# Execute the SQL command
+	        	cursor.execute(sql)
+	        	# Commit your changes in the database
+	        	db.commit()
+		except:
+	        	# Rollback in case there is any error
+	        	db.rollback()
 
 
 	###############
@@ -325,72 +323,66 @@ def database_insert_data(domain):
 	############
 	#LINKS
 	###########
-        if  domain == 'tn':
-                sql = """INSERT INTO `links` (`from`, `to`)
-                                 VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PC1'),(SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE1')),
-                                        ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PC1'),(SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE2'));"""
-        else:
-                sql = """INSERT INTO `links` (`from`, `to`)
-                                 VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TS-PC1'),(SELECT `id` FROM `switches` WHERE  `name` = 'TS-PE1'));"""
-        try:
-                # Execute the SQL command
-                cursor.execute(sql)
-                # Commit your changes in the database
-                db.commit()
-        except mdb.Error, e:
-                print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-                # Rollback in case there is any error
-                db.rollback()
+	if mode != 'full':
+        	if  domain == 'tn':
+                	sql = """INSERT INTO `links` (`from`, `to`)
+                        	         VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PC1'),(SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE1')),
+                                	        ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PC1'),(SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE2'));"""
+        		try:
+                		# Execute the SQL command
+                		cursor.execute(sql)
+                		# Commit your changes in the database
+                		db.commit()
+        		except mdb.Error, e:
+                		print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+                		# Rollback in case there is any error
+                		db.rollback()
 
 
 	###########
 	#EXT LINKS
 	##########
-	if  domain == 'tn':
-		sql = """INSERT INTO `extLinks` (`switch`, `domain`)
+	if mode != 'full':
+		if  domain == 'tn':
+			sql = """INSERT INTO `extLinks` (`switch`, `domain`)
 	                         VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE2'), '1');"""
-	else:
-		sql = """INSERT INTO `extLinks` (`switch`, `domain`)
+		else:
+			sql = """INSERT INTO `extLinks` (`switch`, `domain`)
                                  VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TS-PE1'), '2');"""
-	try:
-		# Execute the SQL command
-	        cursor.execute(sql)
-	        # Commit your changes in the database
-	        db.commit()
-	except mdb.Error, e:
-		print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-	        # Rollback in case there is any error
-	        db.rollback()
+		try:
+			# Execute the SQL command
+	        	cursor.execute(sql)
+	        	# Commit your changes in the database
+	        	db.commit()
+		except mdb.Error, e:
+			print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+	        	# Rollback in case there is any error
+	        	db.rollback()
 	############
 	#users
 	############
 
 	#Random data
-	sql = """SELECT `id`, `name` FROM %s.sites ;""" % DB_NAME
-	cursor.execute(sql)
-
-	for site in cursor:
-	        #default TN domain
-	        id_temp = id_north
-	        if "tn" in site[1]:
-	            id_temp = id_north
-	        elif "ts" in site[1]:
-	            id_temp = id_south
-	        sql = """INSERT INTO `users` (name, email, domain, site, admin)
-	                    VALUES ('%s_admin','%s_admin@mail.com','%d','%d',1),
-	                            ('%s_user','%s_user@mail.com','%d','%d',0);""" \
-	                        % (site[1], site[1], id_temp, site[0], site[1], site[1], id_temp, site[0])
-	        try:
-	            # Execute the SQL command
-	            cursor.execute(sql)
-	            # Commit your changes in the database
-	            db.commit()
-	        except:
-	            # Rollback in case there is any error
-	            db.rollback()
-
-
-
+	sql = """INSERT INTO `users` (name, email, domain, admin)
+                            VALUES ('tn_admin','tn_admin@mail.com','%d',1),
+                                    ('bill_tn','bill_tn@mail.com','%d',0),
+				    ('mark_tn','mark_tn@mail.com','%d',0),
+				    ('tn_user','tn_user@mail.com','%d',0),
+				    ('tn_admin','tn_admin@mail.com','%d',1),
+				    ('ts_user','ts_user@mail.com','%d',0),
+				    ('mike_ts','mike_ts@mail.com','%d',0),
+				    ('harry_ts','harry_ts@mail.com','%d',0);""" %(id_north, id_north,id_north, id_north, id_south, id_south, id_south, id_south)
+	try:
+		# Execute the SQL command
+		cursor.execute(sql)
+		# Commit your changes in the database
+	        db.commit()
+	except:
+	        # Rollback in case there is any error
+	        db.rollback()
+	
+	
+	
 	#data prepared for tests
 	sql = """INSERT INTO `users` (name, email, domain, site, admin) VALUES ('simon', 'simongunkel@googlemail.com', '1', '1', '0');"""
 	try:
@@ -417,26 +409,6 @@ def database_insert_data(domain):
 	################
 
 
-	sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME
-	cursor.execute(sql)
-
-	for subnet in cursor:
-	        sql="""SELECT `name` FROM %s.sites WHERE id = %d ;""" % (DB_NAME, subnet[1])
-	        cursor.execute(sql)
-	        site_name = cursor.fetchone()[0]
-	        sql="""SELECT `id` FROM %s.users WHERE  `name` LIKE '%s_user';""" % (DB_NAME, site_name)
-	        cursor.execute(sql)
-	        user_id = cursor.fetchone()[0]
-	        sql = """INSERT INTO `subnetUsers` VALUES (NULL, '%d','%d');""" % (user_id, subnet[0])
-	        try:
-	            # Execute the SQL command
-	            cursor.execute(sql)
-	            # Commit your changes in the database
-	            db.commit()
-	        except:
-	            # Rollback in case there is any error
-	            db.rollback()
-
 	################
 	#VPN USERS
 	###############
@@ -452,24 +424,27 @@ def database_insert_data(domain):
 	cursor.execute('SET FOREIGN_KEY_CHECKS=1;')
 	db.close()
 
-def main(domain_arg=None):
+def main(domain_arg=None, mode="all"):
 	#by default tn domain
         domain = 'tn'
+	db_host = 'localhost'
 	if domain_arg:
 		domain = domain_arg
 	if domain == 'ts':
-                DB_HOST = DB_HOST_TS
+                db_host = DB_HOST_TS
         else:
-                DB_HOST = DB_HOST_TN
+                db_host = DB_HOST_TN
 
-        database_set_up()
-	database_insert_data(domain)
+        database_set_up(db_host)
+	database_insert_data(domain, db_host, mode)
 
 if __name__ == '__main__':
 	#by default tn domain
 	domain = 'tn'
-	if len(sys.argv) < 2:
-        	print "No domain provided; TN used by default"
+	mode = 'full'
+	if len(sys.argv) < 3:
+        	print "No domain or mode provided; TN/full used by default"
 	else:
         	domain = sys.argv[1]
-	main(domain)
+		mode = sys.argv[2]
+	main(domain,mode)

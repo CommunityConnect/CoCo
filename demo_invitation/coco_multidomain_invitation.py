@@ -174,6 +174,10 @@ class EXABGPRouteReflector(Host):
 	self.cmd("mv %s/exabgp%s.log %s/exabgp%s_`cat %s/exabgp%s.pid`.log" %(
             EXABGP_LOG_DIR, self.name, EXABGP_LOG_DIR, self.name, EXABGP_RUN_DIR, self.name))
         self.cmd("kill `cat %s/exabgp%s.pid`" % (EXABGP_RUN_DIR, self.name))
+#sometimes pid is not removed
+        self.cmd("rm %s/exabgp%s.pid`" % (EXABGP_RUN_DIR, self.name))
+#brutal but we have troubles with gentle killing
+        self.cmd("killall -KILL exabgp")
 
 
         Host.terminate(self)

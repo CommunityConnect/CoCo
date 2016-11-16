@@ -5,7 +5,7 @@ import sys
 
 #mysql parameters
 DB_HOST_TN="134.221.121.203"
-DB_HOST_TS="l34.221.121.218"
+DB_HOST_TS="134.221.121.218"
 
 DB_USER="coco"
 DB_PWD="cocorules!"

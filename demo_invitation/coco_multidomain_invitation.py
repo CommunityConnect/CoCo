@@ -603,7 +603,6 @@ def databaseDump(net, domain, mode):
     cocoSiteNames = [h.name for i, h in enumerate(net.hosts)]
     cocoSiteNames = filter(cocosite, cocoSiteNames) #get rid of all hosts not being actual coco sites (hosts/ce-routers)
 
-    print "db dump "+DB_HOST
     db = mdb.connect(DB_HOST, DB_USER, DB_PWD, DB_NAME)
     cursor = db.cursor()
     cursor.execute('SET FOREIGN_KEY_CHECKS=0;')

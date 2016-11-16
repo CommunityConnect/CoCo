@@ -29,8 +29,8 @@ EXABGP_LOG_DIR = '/var/log/exabgp'
 #/home/coco/demo_invitation/exabgp
 #mysql parameters
 #TODO addres conditional on the domain/host
-DB_HOST_TN="134.221.121.203"
-DB_HOST_TS="134.221.121.218"
+DB_HOST_TN="134.221.121.202"
+DB_HOST_TS="134.221.121.201"
 DB_HOST="localhost"
 
 DB_USER="coco"

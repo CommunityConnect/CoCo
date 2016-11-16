@@ -4,8 +4,8 @@ import MySQLdb as mdb
 import sys
 
 #mysql parameters
-DB_HOST_TN="134.221.121.203"
-DB_HOST_TS="134.221.121.218"
+DB_HOST_TN="134.221.121.202"
+DB_HOST_TS="134.221.121.201"
 
 DB_USER="coco"
 DB_PWD="cocorules!"
@@ -272,8 +272,8 @@ def database_insert_data(domain, db_host, mode):
 
 
 	sql = """INSERT  INTO `domains` (portal_address, email_domain, bgp_ip, as_num, as_name)
-	    VALUES 	('http://134.221.121.203:9090/CoCo-agent/static/index.html','email203','10.2.0.254',65020,'tno-north'),
-				('http://134.221.121.218:9090/CoCo-agent/static/index.html','email218','10.3.0.254',65030,'tno-south');"""
+	    VALUES 	('http://134.221.121.202:9090/CoCo-agent/static/index.html','email203','10.2.0.254',65020,'tno-north'),
+				('http://134.221.121.201:9090/CoCo-agent/static/index.html','email218','10.3.0.254',65030,'tno-south');"""
 	try:
 		# Execute the SQL command
 	        cursor.execute(sql)

@@ -22,7 +22,7 @@ public class NetworkElement {
 	}
 
 	public enum NODE_TYPE {
-		CUSTOMER, SWITCH, EXTERNAL_AS, CUSTOMER_NO
+		CUSTOMER, SWITCH, EXTERNAL_AS, CUSTOMER_NO, CUSTOMER_BGP
 	}
 	
 	public NODE_TYPE nodeType;

@@ -27,12 +27,15 @@ public class TopologyService {
 		List<NetworkInterface> if_inni = topologyDao.getNetworkInterfaces_ENNI();
 		List<NetworkInterface> if_uni = topologyDao.getNetworkInterfaces_UNI();
 		List<NetworkInterface> if_uni_no = topologyDao.getNetworkInterfaces_UNI_NO();
-
+		List<NetworkInterface> if_bgp = topologyDao.getNetworkInterfaces_BGP();
+				
 		List<NetworkInterface> interfaces = new ArrayList<NetworkInterface>();
 		interfaces.addAll(if_enni);
 		interfaces.addAll(if_inni);
 		interfaces.addAll(if_uni);
 		interfaces.addAll(if_uni_no);
+		// ERROR, possibly with null values
+		//interfaces.addAll(if_bgp);
 
 		return interfaces;
 	}
@@ -69,7 +72,10 @@ public class TopologyService {
 				fakeId = 200 + networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER_NO)) {
 				fakeId = networkElement.getId();
+			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER_BGP)){
+				fakeId = 300 + networkElement.getId();
 			}
+				
 			visJson.append("{\"id\": \"");
 			visJson.append(fakeId);
 			visJson.append("\", \"label\": \"");
@@ -97,6 +103,8 @@ public class TopologyService {
 				fakeId = 200 + networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER_NO)) {
 				fakeId = networkElement.getId();
+			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER_BGP)){
+				fakeId = 300 + networkElement.getId();
 			}
 			visJson.append("{\"from\": \"");
 			visJson.append(fakeId);
@@ -111,6 +119,8 @@ public class TopologyService {
 				fakeId = 200 + networkElement.getId();
 			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER_NO)) {
 				fakeId = networkElement.getId();
+			} else if (networkElement.nodeType.equals(NetworkElement.NODE_TYPE.CUSTOMER_BGP)){
+				fakeId = 300 + networkElement.getId();
 			}
 			visJson.append("\", \"to\": \"");
 			visJson.append(fakeId);

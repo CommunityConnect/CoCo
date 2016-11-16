@@ -603,6 +603,7 @@ def databaseDump(net, domain, mode):
     cocoSiteNames = [h.name for i, h in enumerate(net.hosts)]
     cocoSiteNames = filter(cocosite, cocoSiteNames) #get rid of all hosts not being actual coco sites (hosts/ce-routers)
 
+    print "db dump "+DB_HOST
     db = mdb.connect(DB_HOST, DB_USER, DB_PWD, DB_NAME)
     cursor = db.cursor()
     cursor.execute('SET FOREIGN_KEY_CHECKS=0;')
@@ -872,9 +873,9 @@ if __name__ == '__main__':
     #    hp.setARP('10.0.0.4', '00:10:00:00:00:04')
     if mode == 'full' or mode == 'all': 
 	if chosen_topo =='tn':
-		database_set_up.main('tn')
+		database_set_up.main('tn', mode)
 	else:
-		database_set_up.main('ts')
+		database_set_up.main('ts', mode)
     net.start()
     databaseDump(net,type(topo).__name__, mode) #nort or south?
     # hp.cmd('arp -s 10.0.0.4 00:10:00:00:00:04')
@@ -886,6 +887,7 @@ if __name__ == '__main__':
         subprocess.call("/home/coco/CoCo/demo_invitation/bridge_set_up.sh "+chosen_topo+" BGP1", shell=True)
     else:
 	subprocess.call("/home/coco/CoCo/demo_invitation/"+chosen_topo+"flows_mac.sh all", shell=True)
+	subprocess.call("/home/coco/CoCo/demo_invitation/"+chosen_topo+"flows_gw.sh", shell=True)
     CLI(net)
 
     net.stop()

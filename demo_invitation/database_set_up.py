@@ -279,9 +279,10 @@ def database_insert_data(domain, db_host, mode):
 	        cursor.execute(sql)
 	        # Commit your changes in the database
 	        db.commit()
-	except:
-	        # Rollback in case there is any error
-	        db.rollback()
+	except mdb.Error, e:
+			print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+			# Rollback in case there is any error
+			db.rollback()
 
 
 	############### get Ids for domains
@@ -312,7 +313,8 @@ def database_insert_data(domain, db_host, mode):
 	        	cursor.execute(sql)
 	        	# Commit your changes in the database
 	        	db.commit()
-		except:
+		except mdb.Error, e:
+				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
 	        	# Rollback in case there is any error
 	        	db.rollback()
 
@@ -357,7 +359,7 @@ def database_insert_data(domain, db_host, mode):
 	        	# Commit your changes in the database
 	        	db.commit()
 		except mdb.Error, e:
-			print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
 	        	# Rollback in case there is any error
 	        	db.rollback()
 	############
@@ -379,9 +381,10 @@ def database_insert_data(domain, db_host, mode):
 		cursor.execute(sql)
 		# Commit your changes in the database
 	        db.commit()
-	except:
-	        # Rollback in case there is any error
-	        db.rollback()
+	except mdb.Error, e:
+			print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+			# Rollback in case there is any error
+			db.rollback()
 
 
 
@@ -392,9 +395,10 @@ def database_insert_data(domain, db_host, mode):
 	        cursor.execute(sql)
 	        # Commit your changes in the database
 	        db.commit()
-	except:
-	        # Rollback in case there is any error
-	        db.rollback()
+	except mdb.Error, e:
+			print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+			# Rollback in case there is any error
+			db.rollback()
 
 
 

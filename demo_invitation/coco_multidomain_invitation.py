@@ -639,9 +639,10 @@ def databaseDump(net, domain, mode):
             		cursor.execute(sql)
             		# Commit your changes in the database
             		db.commit()
-        	except:
-            		# Rollback in case there is any error
-            		db.rollback()
+        	except mdb.Error, e:
+    				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+    	        	# Rollback in case there is any error
+    	        	db.rollback()
 
     bighosttable = returnNodeConnections(net.hosts, operSwNames, cocoSiteNames)
     for trow in range(len(bighosttable)):
@@ -665,9 +666,10 @@ def databaseDump(net, domain, mode):
             		cursor.execute(sql)
             		# Commit your changes in the database
             		db.commit()
-        	except:
-            		# Rollback in case there is any error
-            		db.rollback()
+        	except mdb.Error, e:
+    				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+    	        	# Rollback in case there is any error
+    	        	db.rollback()
 
     if mode == "full":
     	############ links
@@ -691,9 +693,10 @@ def databaseDump(net, domain, mode):
             		cursor.execute(sql)
             		# Commit your changes in the database
             		db.commit()
-        	except:
-            		# Rollback in case there is any error
-            		db.rollback()
+        	except mdb.Error, e:
+    				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+    	        	# Rollback in case there is any error
+    	        	db.rollback()
 
 # To be implemented in case of multi switches connected to a single site
     # ############ sitelinks
@@ -762,9 +765,10 @@ def databaseDump(net, domain, mode):
             		cursor.execute(sql)
             		# Commit your changes in the database
             		db.commit()
-        	except:
-            		# Rollback in case there is any error
-            		db.rollback()
+        	except mdb.Error, e:
+    				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+    	        	# Rollback in case there is any error
+    	        	db.rollback()
 
 
 
@@ -782,9 +786,10 @@ def databaseDump(net, domain, mode):
             cursor.execute(sql)
             # Commit your changes in the database
             db.commit()
-        except:
-            # Rollback in case there is any error
-            db.rollback()
+        except mdb.Error, e:
+				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+	        	# Rollback in case there is any error
+	        	db.rollback()
 
     if domain == 'MDCoCoTopoNorth':
 	sql = """INSERT INTO `subnetUsers` (`user`, `subnet`)
@@ -800,9 +805,10 @@ def databaseDump(net, domain, mode):
         cursor.execute(sql)
         # Commit your changes in the database
         db.commit()
-    except:
-        # Rollback in case there is any error
-        db.rollback();
+    except mdb.Error, e:
+            print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            # Rollback in case there is any error
+            db.rollback()
 
     #Automantic way
     #sql = """SELECT `id`, `site` FROM %s.subnets ;""" % DB_NAME

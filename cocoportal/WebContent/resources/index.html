@@ -447,6 +447,8 @@
 	
 	<script>
 
+
+	
 // Very bad grobal variable
 var currentVPN = -1;
 	
@@ -463,7 +465,7 @@ function webside_onload() {
 	// TODO populate_vpnlist is not the correct command here:
 
 	//lets check first if the topology is completly loaded!
-	if (network == null){
+	if (typeof(network) == "undefined" || network == null){
 		// lets restart the function in 100ms
 		window.setTimeout(webside_onload, 100);
 		return;

@@ -71,7 +71,7 @@ public class DomainDao {
 
         String query = "SELECT * FROM domains "
                 + "WHERE bgp_ip = :bgp_ip ;";
-        log.trace(query);
+        log.trace(query.replace(":bgp_ip", ip));
         
         List<Domain> domains = getDomainList(query, params);
         

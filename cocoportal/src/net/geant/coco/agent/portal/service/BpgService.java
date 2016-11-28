@@ -57,6 +57,11 @@ public class BpgService {
 	public void setSubnetDao(SubnetDao subnetDao) {
 		this.subnetDao = subnetDao;
 	}
+    
+    @Autowired
+	public void setUsersService(UsersService usersService) {
+		this.usersService = usersService;
+	}
 
 	private Bgp setupBgp(Bgp bgp){
     	if (bgp == null){
@@ -309,8 +314,8 @@ public class BpgService {
 				Map<String, String> address = (Map<String, String>) neighbor.get("address");
 				// note: the bgp message has local as origin
 				// 		 this local domain is the destination
-				String destination = address.get("peer");
-				String origin = address.get("local");
+				String peer_string = address.get("peer");
+				String local_string = address.get("local");
 				
 				// find the subnet in the json
 				pattern = Pattern.compile("[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}/[0-9]{1,3}");
@@ -320,6 +325,11 @@ public class BpgService {
 		    		subnet_string = matcher.group();
 		    	}
 				
+		    	if (neighbor.get("message") == null){
+		    		log.warn("BGP update without message");
+		    		return false;
+		    	}
+		    	
 				Map<String, Object> message = (Map<String, Object>) neighbor.get("message");
 				Map<String, Object> update = (Map<String, Object>) message.get("update");
 				Map<String, Object> attribute = (Map<String, Object>) update.get("attribute");
@@ -354,7 +364,7 @@ public class BpgService {
 				if (target != null && nonce != null){
 					log.info("got bgp update - " + host + " - " + target + " - " + nonce);
 					
-					Domain localdomain = domainDao.getDomainByBgp(destination);
+					Domain localdomain = domainDao.getDomainByBgp(local_string);
 					
 					Vpn vpn = new Vpn(String.format("BGP - %s", target));
 					vpn.setDomain(localdomain);
@@ -367,11 +377,11 @@ public class BpgService {
 					
 					vpn.setOwner(admin);
 					if (vpnDao.createVpn(vpn)){
-						vpn = vpnDao.getVpn(vpn.getId());
+						vpn = vpnDao.getVpn(vpn.getName());
 						
 						Bgp new_bgp = new Bgp();
 			    		new_bgp.setLocal_domain(localdomain);
-			    		new_bgp.setRemote_domain(domainDao.getDomainByBgp(origin));
+			    		new_bgp.setRemote_domain(domainDao.getDomainByBgp(peer_string));
 			    		new_bgp.setNonce(nonce);
 			    		new_bgp.setTarget(target);
 			    		new_bgp.setAnnounce(subnet_string);
@@ -386,7 +396,7 @@ public class BpgService {
 				}
 			} else {
 				// lets ignore the message
-				log.error("ERROR type is wrong - " + type);
+				log.warn("BGP has wrong type - " + type);
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

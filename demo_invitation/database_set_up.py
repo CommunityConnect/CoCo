@@ -29,7 +29,7 @@ def database_set_up(db_host):
     ################ domainns - create very first - as it has no dependencies on other tables
     sql = """ CREATE TABLE `domains` (
             `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-            `portal_address` VARCHAR(45) NOT NULL,
+            `portal_address` VARCHAR(100) NOT NULL,
             `email_domain` VARCHAR(45) NOT NULL,
             `bgp_ip` varchar(45) DEFAULT NULL,
             `as_num` int(11) DEFAULT NULL,
@@ -272,8 +272,8 @@ def database_insert_data(domain, db_host, mode):
 
 
     sql = """INSERT  INTO `domains` (portal_address, email_domain, bgp_ip, as_num, as_name)
-        VALUES 	('http://134.221.121.202:9090/CoCo-agent/static/index.html','email203','10.2.0.254',65020,'tno-north'),
-                ('http://134.221.121.201:9090/CoCo-agent/static/index.html','email218','10.3.0.254',65030,'tno-south');"""
+        VALUES 	('http://134.221.121.202:9090/CoCo-agent/static/index.html','email202','10.2.0.254',65020,'tno-north'),
+                ('http://134.221.121.201:9090/CoCo-agent/static/index.html','email201','10.3.0.254',65030,'tno-south');"""
     try:
         # Execute the SQL command
             cursor.execute(sql)

@@ -51,7 +51,7 @@ public class BgpDao {
             	bgp.setNonce(rs.getString("nonce"));
             	bgp.setSubnet_id(rs.getInt("subnet"));
             	bgp.setTarget(rs.getString("target"));
-            	bgp.setVpn_id(rs.getInt("vpn_id"));
+            	bgp.setVpn_id(rs.getInt("vpn"));
             	bgp.setAnnounce(rs.getString("announce"));
             	
             	
@@ -69,13 +69,13 @@ public class BgpDao {
     	
     }
     
-    public Bgp getBgp(String hash) {
+    public Bgp getBgpByTarget(String target) {
         MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("hash", hash);
+        params.addValue("target", target);
         
         String query = "SELECT * FROM bgps "
-                + "WHERE hash = :hash ;";
-        log.debug(query.replace(":hash", ""+ hash));
+                + "WHERE target = :target ;";
+        log.debug(query.replace(":target", "\"" + target + "\""));
         
         List<Bgp> bgps = getBgpList(query, params);
         

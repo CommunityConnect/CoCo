@@ -108,6 +108,7 @@ def database_set_up(db_host):
             `id` int(11) NOT NULL  AUTO_INCREMENT,
             `switch` int(11) ,
             `domain` int(10) unsigned,
+            `port` int(10) unsigned NOT NULL,
             PRIMARY KEY (`id`),
             KEY `switch_idx` (`switch`),
             KEY `domain_idx` (`domain`),
@@ -348,11 +349,11 @@ def database_insert_data(domain, db_host, mode):
     ##########
     if mode != 'full':
         if  domain == 'tn':
-            sql = """INSERT INTO `extLinks` (`switch`, `domain`)
-                             VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE2'), '1');"""
+            sql = """INSERT INTO `extLinks` (`switch`, `domain`, `port`)
+                             VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TN-PE2'), '1', '4');"""
         else:
             sql = """INSERT INTO `extLinks` (`switch`, `domain`)
-                                 VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TS-PE1'), '2');"""
+                                 VALUES ((SELECT `id` FROM `switches` WHERE  `name` = 'TS-PE1'), '2', '4');"""
         try:
             # Execute the SQL command
                 cursor.execute(sql)

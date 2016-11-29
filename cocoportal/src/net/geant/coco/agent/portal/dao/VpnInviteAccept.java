@@ -13,6 +13,7 @@ public class VpnInviteAccept implements Serializable {
 	private int vpn = -1;
 	private String subnet;
 	private String hash;
+	private String target;
 	
 	
 	public int getVpn() {
@@ -32,5 +33,11 @@ public class VpnInviteAccept implements Serializable {
 	}
 	public void setHash(String hash) {
 		this.hash = hash;
+	}
+	public String getTarget() {
+		return target;
+	}
+	public void setTarget(String target) {
+		this.target = target;
 	}
 }

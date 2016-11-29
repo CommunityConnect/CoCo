@@ -447,6 +447,8 @@
 	
 	<script>
 
+
+	
 // Very bad grobal variable
 var currentVPN = -1;
 	
@@ -463,7 +465,7 @@ function webside_onload() {
 	// TODO populate_vpnlist is not the correct command here:
 
 	//lets check first if the topology is completly loaded!
-	if (network == null){
+	if (typeof(network) == "undefined" || network == null){
 		// lets restart the function in 100ms
 		window.setTimeout(webside_onload, 100);
 		return;
@@ -486,7 +488,11 @@ function webside_onload() {
 			// id of the vpn to join
 			currentVPN = VARS['vpn'];
 
-			vpn_list_on_click(currentVPN);
+			if (currentVPN == "BGP"){
+				//TODO: What to do here??
+			} else {
+				vpn_list_on_click(currentVPN);
+			}
 		}
 		else{
 			// we will join a VPN of another domain
@@ -778,7 +784,6 @@ function populate_sitelist(vpnID)
 		//var vpn = data["vpn"][0];
 		var sites = data;
 		var i;
-		for ( i =0; i < sites.length; i++)
 		{
 			var site = sites[i];
 			$('#site-list').append("<li id=\"" + site.name + "\" href=\"#\" class=\"list-group-item\"><span class=\"badge\">"+ site.user.email +"</span>" + site.name + "</li>");
@@ -900,14 +905,19 @@ function accept_vpn_invite()
 	var subnet = sub_select.options[sub_select.selectedIndex].value;
 	
 	var invite_accept = {};
-	invite_accept["vpn"] = parseInt(currentVPN);
+	// note we curently dont know the vpn id when joining
+	invite_accept["vpn"] = -1; //parseInt(currentVPN);
 
 	invite_accept["subnet"] = subnet;
 
 	VARS = getUrlVars();
 	var join_hash = VARS['join'];
+	var join_target = VARS['target'];
 	
 	invite_accept["hash"] = join_hash;
+	invite_accept["target"] = join_target;
+
+	console.log("send vpn join accept vpn:" + invite_accept["vpn"] + "  subnet:" + invite_accept["subnet"] + " hash:" +invite_accept["hash"] + " target:" + invite_accept["target"]);
 	
 	$.postJSON('../rest/vpn/accept' , invite_accept, function(response) {
 		// Do something with the request

@@ -1,6 +1,9 @@
 package net.geant.coco.agent.portal.service;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -57,6 +60,11 @@ public class BpgService {
 	public void setSubnetDao(SubnetDao subnetDao) {
 		this.subnetDao = subnetDao;
 	}
+    
+    @Autowired
+	public void setUsersService(UsersService usersService) {
+		this.usersService = usersService;
+	}
 
 	private Bgp setupBgp(Bgp bgp){
     	if (bgp == null){
@@ -73,7 +81,11 @@ public class BpgService {
 			bgp.setVpn(vpnDao.getVpn(bgp.getVpn_id()));
 		}
 		if (bgp.getSubnet_id() >= 0){
-			bgp.setSubnet(subnetDao.getSubnet(bgp.getSubnet_id()));
+			// we need to check if a subnet exists, as it is not required
+			Subnet sub = subnetDao.getSubnet(bgp.getSubnet_id());
+			if (sub != null){
+				bgp.setSubnet(sub);
+			}
 		}
 		
 		return bgp;
@@ -87,8 +99,8 @@ public class BpgService {
     	return bgps;
     }
     
-    public Bgp getBgp(String hash) {
-    	return this.setupBgp(bgpDao.getBgp(hash));
+    public Bgp getBgpByTarget(String target) {
+    	return this.setupBgp(bgpDao.getBgpByTarget(target));
     }
     
     public Bgp getBgp(int bgp_id) {
@@ -119,7 +131,7 @@ public class BpgService {
     	// lets fill the HEX to 4 byte -> 8 HEX characters
     	vpn_id_str = empty.substring(vpn_id_str.length()) + vpn_id_str;
     	
-    	return String.format("%s%s%s", target_prefix, as_num_str, vpn_id_str);
+    	return String.format("%s%s%s", target_prefix, as_num_str, vpn_id_str).toUpperCase();
     }
     
     public String createBGPHash(String id, String nonce, String target){
@@ -127,23 +139,23 @@ public class BpgService {
     	//b.	6B nonce N1
     	//c.	VPN Route Target
     	
-    	String complete_string = String.format("%s%s%s", id, nonce, target);
+    	String complete_string = String.format("%s%s%s", id.toUpperCase(), nonce.toUpperCase(), target.toUpperCase());
     	int hash_int = complete_string.hashCode();
     	
     	String hash = Integer.toHexString(hash_int);
     	
     	log.debug(String.format("Create new hash - %s - hash - %s", complete_string, hash));
     	
-    	return hash;
+    	return hash.toUpperCase();
     }
     
     public String createLocalHash(String owner_id, String invitee_id, String vpn_id){
-    	String complete_string = String.format("%s%s%s", owner_id, invitee_id, vpn_id);
+    	String complete_string = String.format("%s%s%s", owner_id.toUpperCase(), invitee_id.toUpperCase(), vpn_id.toUpperCase());
     	int hash_int = complete_string.hashCode();
     	
     	String hash = Integer.toHexString(hash_int);
     	
-    	return hash;
+    	return hash.toUpperCase();
     }
     
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
@@ -175,8 +187,37 @@ public class BpgService {
 //    	}
     	
     	try {
-			Process p = Runtime.getRuntime().exec("curl --form \"" + parameter + "\" " + url);
-		} catch (IOException e) {
+    		// NOTE: dont use " for the parameter in @ProcessBuilder
+    		ProcessBuilder pb = new ProcessBuilder("curl", "--form", parameter, url);
+    		
+    		pb.redirectErrorStream(true); // equivalent of 2>&1
+    		Process p = pb.start();
+    		
+    		String curl_cmd = "curl --form \"" + parameter + "\" " + url;
+    		//log.debug(curl_cmd);
+			//Process p = Runtime.getRuntime().exec(curl_cmd);
+    		
+			log.debug("Waiting for curl to finish: " + curl_cmd);
+		    p.waitFor();
+			/* Note: if i want to read the process output i get stuck... */
+		    InputStream is = p.getInputStream();
+		    InputStreamReader isr = new InputStreamReader(is);
+		    BufferedReader br = new BufferedReader(isr);
+		    String line, lastline = null;
+
+		    while ((line = br.readLine()) != null) {
+		    	log.debug(line);
+		    	lastline = line;
+		    }
+		    
+		    if (lastline != null && lastline.contains("Success")){
+		    	log.debug("CURL finished with success!");
+		    } else {
+		    	log.error("CURL failed!");
+		    	return false;
+		    }
+			
+		} catch (IOException | InterruptedException e) {
 			log.error(e.getMessage());
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -221,19 +262,23 @@ public class BpgService {
         	String next_hop = bgp.getLocal_domain().getBgp_ip();
         	String target = this.createTarget(bgp.getLocal_domain().getAs_num(), vpn.getId());
     		
-    		String parameter = String.format("command=neighbor %s announce route %s next-hop %s extended-community %s extended-community %s", neighbor, route, next_hop, bgp.getNonce(), target);
+        	//NOTE: we tread the hex value as string - add 0x before sending over curl
+    		String parameter = String.format("command=neighbor %s announce route %s next-hop %s extended-community 0x%s extended-community 0x%s", neighbor, route, next_hop, bgp.getNonce(), target);
     		
     		return this.cURL(BGPSERVER, parameter);
+    	}
+    	else {
+    		log.error("acceptRoute with wrong hash " + hash + " expected " + bgp_hash);
     	}
     	return false;
     }
     
-    public String annouceRoute(User creator, User invitee, Subnet subnet, Vpn vpn){
+    public Bgp annouceRoute(User creator, User invitee, Subnet subnet, Vpn vpn){
     	// curl dummy command
     	// curl --form "command=neighbor 10.3.0.254 announce route 10.2.1.128/25 next-hop 10.2.0.254 extended-community 0x0002FDE800000001 extended-community 0x8ABCBEEFDEADBEEF" http://10.10.10.1:5001/
     	
     	Domain local_domain = domainDao.getDomain(creator.getDomain_id());
-    	Domain remote_domain = domainDao.getDomain(creator.getDomain_id());
+    	Domain remote_domain = domainDao.getDomain(invitee.getDomain_id());
     	
     	String neighbor = remote_domain.getBgp_ip();
     	String route = subnet.getSubnet();
@@ -246,7 +291,8 @@ public class BpgService {
     	//
     	String hash = this.createBGPHash("" + invitee.getId(), nonce, target);
     	
-    	String parameter = String.format("command=neighbor %s announce route %s next-hop %s extended-community %s extended-community %s", neighbor, route, next_hop, nonce, target);
+    	//NOTE: we tread the hex value as string - add 0x before sending over curl
+    	String parameter = String.format("command=neighbor %s announce route %s next-hop %s extended-community 0x%s extended-community 0x%s", neighbor, route, next_hop, nonce, target);
     	
     	//send the information to the 
     	if (this.cURL(BGPSERVER, parameter)){
@@ -261,13 +307,14 @@ public class BpgService {
     		
     		bgpDao.updateBgp(new_bgp);
     		
-    		return hash;
+    		return new_bgp;
     	}
     	
     	return null;
     }
     
     public boolean bgpServerUpdate(String update_json){
+    	//TODO: what is happening if you acept a route
     	
     	// first lets reformat the hex entries
     	Pattern pattern = Pattern.compile("[0-9]{11,20}");
@@ -309,8 +356,8 @@ public class BpgService {
 				Map<String, String> address = (Map<String, String>) neighbor.get("address");
 				// note: the bgp message has local as origin
 				// 		 this local domain is the destination
-				String destination = address.get("peer");
-				String origin = address.get("local");
+				String peer_string = address.get("peer");
+				String local_string = address.get("local");
 				
 				// find the subnet in the json
 				pattern = Pattern.compile("[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}/[0-9]{1,3}");
@@ -319,10 +366,27 @@ public class BpgService {
 		    	while(matcher.find()){
 		    		subnet_string = matcher.group();
 		    	}
+
 				
+		    	if (neighbor.get("message") == null){
+		    		log.warn("BGP update without 'message'");
+		    		return false;
+		    	}
 				Map<String, Object> message = (Map<String, Object>) neighbor.get("message");
+				if (message.get("update") == null){
+		    		log.warn("BGP update without 'update'");
+		    		return false;
+		    	}
 				Map<String, Object> update = (Map<String, Object>) message.get("update");
+				if (update.get("attribute") == null){
+		    		log.warn("BGP update without 'attribute'");
+		    		return false;
+		    	}
 				Map<String, Object> attribute = (Map<String, Object>) update.get("attribute");
+				if (attribute.get("extended-community") == null){
+		    		log.warn("BGP update without 'extended-community'");
+		    		return false;
+		    	}
 				List<Object> community = (List<Object>) attribute.get("extended-community");
 				
 				String target = null;
@@ -354,7 +418,7 @@ public class BpgService {
 				if (target != null && nonce != null){
 					log.info("got bgp update - " + host + " - " + target + " - " + nonce);
 					
-					Domain localdomain = domainDao.getDomainByBgp(destination);
+					Domain localdomain = domainDao.getDomainByBgp(local_string);
 					
 					Vpn vpn = new Vpn(String.format("BGP - %s", target));
 					vpn.setDomain(localdomain);
@@ -367,11 +431,11 @@ public class BpgService {
 					
 					vpn.setOwner(admin);
 					if (vpnDao.createVpn(vpn)){
-						vpn = vpnDao.getVpn(vpn.getId());
+						vpn = vpnDao.getVpn(vpn.getName());
 						
 						Bgp new_bgp = new Bgp();
 			    		new_bgp.setLocal_domain(localdomain);
-			    		new_bgp.setRemote_domain(domainDao.getDomainByBgp(origin));
+			    		new_bgp.setRemote_domain(domainDao.getDomainByBgp(peer_string));
 			    		new_bgp.setNonce(nonce);
 			    		new_bgp.setTarget(target);
 			    		new_bgp.setAnnounce(subnet_string);
@@ -386,7 +450,7 @@ public class BpgService {
 				}
 			} else {
 				// lets ignore the message
-				log.error("ERROR type is wrong - " + type);
+				log.warn("BGP has wrong type - " + type);
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

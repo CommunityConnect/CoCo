@@ -7,9 +7,9 @@ from httplib2 import Http
 import json
 
 
-# portalURL = 'http://localhost:9090/CoCo-agent/rest/bgp'
+portalURL = 'http://10.10.10.2:9090/CoCo-agent/rest/bgp/update'
 #portalURL = 'http://localhost:5003'
-portalURL = 'http://10.10.10.2:5003'
+#portalURL = 'http://10.10.10.2:5003'
 
 #fire up ~/demo_invitation/exabgp_tmpdev/tornado-web.py  for tests
 

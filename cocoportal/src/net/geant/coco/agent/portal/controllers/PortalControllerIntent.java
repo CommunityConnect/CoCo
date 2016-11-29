@@ -267,7 +267,7 @@ public class PortalControllerIntent {
 		
 		Subnet subnet = subnetDao.getSubnet(invite.getSubnet());
 		
-		String url = "[url]?vpn=[vpn_id]&join=[hash]";
+		String url = "[url]?vpn=[vpn_id]&join=[hash]&target=[target]";
 		
 		url = url.replace("[url]", receiver.getDomain().getPortal_address());
 		
@@ -278,18 +278,20 @@ public class PortalControllerIntent {
 			String hash = bgpService.createLocalHash( "" + vpn.getOwner_id(), "" + receiver.getId(), "" + vpn.getId());
 			hash.hashCode();
 			url = url.replace("[hash]", hash);
+			url = url.replace("[target]", "local");
 			
 		} else {		
 			// old code - we get the subnet from the user now - Subnet subnet = subnetDao.getSubnet(vpn.getSites().get(0).getIpv4Prefix());
 			if (subnet != null){
-				String hash = bgpService.annouceRoute(sender, receiver, subnet, vpn);
+				Bgp bgp = bgpService.annouceRoute(sender, receiver, subnet, vpn);
 				
-				if (hash == null){
+				if (bgp == null){
 					return false;
 				}
 				
 				url = url.replace("[vpn_id]", "BGP");
-				url = url.replace("[hash]", hash);
+				url = url.replace("[hash]", bgp.getHash());
+				url = url.replace("[target]", bgp.getTarget());
 				
 			} else {
 				return false;
@@ -297,7 +299,7 @@ public class PortalControllerIntent {
 		}
 		
 		
-		log.info("New Invite {"+ invite +"} from {" + sender + "} to {" + receiver + "} url {"+ url +";");
+		log.info("New Invite {"+ invite +"} from {" + sender + "} to {" + receiver + "} url {"+ url +"};");
 		// TODO: send invite to other user via email
 		// CoCoMail.sendCoCoMail(sender, receiver, invite.getInvite_text(), url);
 		
@@ -308,15 +310,22 @@ public class PortalControllerIntent {
 	public boolean inviteAcceptVpn(@RequestBody VpnInviteAccept accept) {
 		
 		User user = this.getCurrentUser();
-		Vpn vpn = vpnsService.getVpn(accept.getVpn());
+		
 		String hash = accept.getHash();
 		NetworkSite site = networkSiteService.getNetworkSite(accept.getSubnet());
 		Subnet subnet = subnetDao.getSubnet(accept.getSubnet());
+		String target = accept.getTarget();
 		
-		Bgp bgp = bgpService.getBgp(hash);
+		Bgp bgp = null;
+		if (!target.equalsIgnoreCase("local")){
+			bgp = bgpService.getBgpByTarget(accept.getTarget());
+		}
 		
 		if (bgp == null){
-			// we are in the same netowork / check if we have the correct hash
+			// we are in the same network - vpn as to be given in the accept
+			Vpn vpn = vpnsService.getVpn(accept.getVpn());
+			
+			// check if we have the correct hash
 			String comp_hash = bgpService.createLocalHash("" + vpn.getOwner_id(), "" + user.getId(), "" + accept.getVpn());
 			if (comp_hash.equals(hash)){
 				vpn.getSites().add(site);
@@ -326,14 +335,11 @@ public class PortalControllerIntent {
 				log.error(String.format("ERROR inviteAcceptVpn - HASH DOES NOT MATCH req:%s !- comp:%s",hash, comp_hash));
 			}
 		} else {
+			Vpn vpn = bgp.getVpn();
 			// we have to setup a bgp connection
-			// hash is matching the bgp -> lets proceed
-			// TODO: Check if the vpn does not match
 			
-			//if (vpn.getId() != bgp.getVpn_id()){
-			//	log.error(String.format("ERROR inviteAcceptVpn - VPN does not match accept.vpn = %d != bgp.vpn = %d", vpn.getId(), bgp.getVpn_id()));
-			//}
-			
+			// target is matching the bgp -> lets proceed
+			// hash is matched in acceptRoute
 			if (bgpService.acceptRoute(user, subnet, vpn, hash, bgp)){
 				vpn = bgp.getVpn();
 				vpn.getSites().add(site);

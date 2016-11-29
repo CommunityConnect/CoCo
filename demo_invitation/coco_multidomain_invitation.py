@@ -750,29 +750,33 @@ def databaseDump(net, domain, mode):
     if mode == 'full':
         if domain == 'MDCoCoTopoNorth':
             gwSwitchID = operSwNames.index('tn_pe2') + 1
+            #TODO: get the port dynamically
+            port = 4
             sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-south';""" % DB_NAME
 
-            if domain == 'MDCoCoTopoSouth':
-                gwSwitchID = operSwNames.index('ts_pe1') + 1
-                sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-north';""" % DB_NAME
+        if domain == 'MDCoCoTopoSouth':
+            gwSwitchID = operSwNames.index('ts_pe1') + 1
+            #TODO: get the port dynamically
+            port = 4
+            sql = """SELECT `id` FROM %s.domains WHERE  `as_name` LIKE 'tno-north';""" % DB_NAME
 
-            cursor.execute(sql)
-            for remoteASID in cursor:
-                #TODO find better way to access cursor content; now we assume there is only one entry
-                #print(remoteASID)
+        cursor.execute(sql)
+        for remoteASID in cursor:
+            #TODO find better way to access cursor content; now we assume there is only one entry
+            #print(remoteASID)
 
-                sql = """INSERT INTO `extLinks` (`switch`, `domain`)
-                     VALUES ('%d', '%d')""" % (gwSwitchID, int(remoteASID[0]))
+            sql = """INSERT INTO `extLinks` (`switch`, `domain`, `port`)
+                 VALUES ('%d', '%d')""" % (gwSwitchID, int(remoteASID[0], port))
 
-            try:
-                    # Execute the SQL command
-                    cursor.execute(sql)
-                    # Commit your changes in the database
-                    db.commit()
-            except mdb.Error, e:
-                    print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-                    # Rollback in case there is any error
-                    db.rollback()
+        try:
+                # Execute the SQL command
+                cursor.execute(sql)
+                # Commit your changes in the database
+                db.commit()
+        except mdb.Error, e:
+                print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+                # Rollback in case there is any error
+                db.rollback()
 
 
 

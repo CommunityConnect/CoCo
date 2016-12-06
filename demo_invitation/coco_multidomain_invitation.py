@@ -543,13 +543,14 @@ def returnSwitchConnections(mn_topo, switches, operSwNames):
     return bigswitchtable
 
 
-def returnNodeConnections(nodes, operSwNames,cocoSiteNames):
+def returnNodeConnections(nodes, switches,operSwNames,macSwNames,cocoSiteNames):
     "Dump connections to/from nodes."
 
-    def returnConnections(node, operSwNames):
+    def returnConnections(node, switches, operSwNames,macSwNames):
         "Helper function: dump connections to node"
         hosttable=['', 0, 0, 0, 0, 0, 0, '', '']
         #0:name, 1:x, 2:y, 3:switch, 4:remote_port, 5:local_port, 6:vlanid, 7:ipv4prefix, 8:mac_address
+        hosttable[0] = node.name
 
         # TODO we assume host/site has only one link pointing to the core (no multihome)
         # TODO ugly workaround: if we have a router not a host, part of information (switch, remote port)
@@ -564,13 +565,29 @@ def returnNodeConnections(nodes, operSwNames,cocoSiteNames):
                 swNamePort = intfs[0].name  # has form like s2-eth3
                 swNamePort=swNamePort.split('-eth') # ['s2','3'] as we get rid of eth
                 swName=swNamePort[0]
-                hosttable[0]=node.name
-
-                if swName in operSwNames: #interface pointing to WAN
-                    # TODO it may happen that two hosts are connected back-to-back, then far end is not a switch
-                    hosttable[3]=operSwNames.index(swName) + 1
-                    hosttable[4]=int(swNamePort[1]) #number after eth
-                    hosttable[8]=locintf.mac
+#if intent feature in ODL allows for mac setup, we get rid of mac re-writing switches and use the commented code below
+#                if swName in operSwNames: #interface pointing to WAN
+#                    # TODO it may happen that two hosts are connected back-to-back, then far end is not a switch
+#                    hosttable[3]=operSwNames.index(swName) + 1
+#                    hosttable[4]=int(swNamePort[1]) #number after eth
+#                    hosttable[8]=locintf.mac
+                if swName in macSwNames: #interface pointing to WAN
+                    # we are in fact NOT interested in the port number of mac_gw switch but the port of PE switch
+                    #to which mac_gw is connected
+                    # CE-----[not-this-port]mac_gw-----[this-port!][this-switch-id PE]
+                    for sw in switches:
+                        if sw.name == swName: #found mac_gw switch
+                            for locintf_gw in sw.intfList():
+                                if locintf_gw.link:
+                                    intfs = [locintf_gw.link.intf1, locintf_gw.link.intf2]
+                                    intfs.remove(locintf_gw)  # infts will store only far end now
+                                    farNamePort = intfs[0].name  # has form like s2-eth3
+                                    farNamePort = farNamePort.split('-eth')  # ['s2','3'] as we get rid of eth
+                                    farName = farNamePort[0]
+                                    if farName in operSwNames:
+                                        hosttable[3]=operSwNames.index(farName) + 1
+                                        hosttable[4]=int(farNamePort[1]) #number after eth
+                                        hosttable[8]=locintf.mac #yes, locintf NOT locintf_gw - we need CE mac here
 
                 else: #interface pointing to LAN
                     # no vlans
@@ -592,7 +609,7 @@ def returnNodeConnections(nodes, operSwNames,cocoSiteNames):
 
     for node in nodes:
         if node.name in cocoSiteNames:
-            conn=returnConnections(node, operSwNames)
+            conn=returnConnections(node, switches, operSwNames,macSwNames)
             if conn: #may be empty in conrer cases like 2 hosts connected to each other
                 bighosttable.append(conn)
     return bighosttable
@@ -600,13 +617,18 @@ def returnNodeConnections(nodes, operSwNames,cocoSiteNames):
 def operswitch(element): #to pick only operator's switches
     return ('_pc' in element) | ('_pe' in element) # no gateway switch needed in db| ('_gw' in element)
 
+def macswitch(element): #to pick only operator's switches
+    return ('_mac' in element)  # mac re-write switches only
+
 def cocosite(element): #to pick only actual coco sites
     return ('_ce' in element)
 
 def databaseDump(net, domain, mode):
 
-    operSwNames = [sw.name for i, sw in enumerate(net.switches)]
-    operSwNames  = filter(operswitch, operSwNames) #get rid of switches in customer domains
+    SwNames = [sw.name for i, sw in enumerate(net.switches)]
+    operSwNames  = filter(operswitch, SwNames) #get rid of switches in customer domains, mac gw etc, keep only PE/PC
+
+    macSwNames  = filter(macswitch, SwNames) #keep only mac re-write switches
 
     cocoSiteNames = [h.name for i, h in enumerate(net.hosts)]
     cocoSiteNames = filter(cocosite, cocoSiteNames) #get rid of all hosts not being actual coco sites (hosts/ce-routers)
@@ -648,7 +670,7 @@ def databaseDump(net, domain, mode):
                     # Rollback in case there is any error
                     db.rollback()
 
-    bighosttable = returnNodeConnections(net.hosts, operSwNames, cocoSiteNames)
+    bighosttable = returnNodeConnections(net.hosts, net.switches, operSwNames, macSwNames, cocoSiteNames)
     for trow in range(len(bighosttable)):
         # Prepare SQL query to INSERT a record into the database.
         crow = bighosttable[trow]
@@ -766,7 +788,7 @@ def databaseDump(net, domain, mode):
             #print(remoteASID)
 
             sql = """INSERT INTO `extLinks` (`switch`, `domain`, `port`)
-                 VALUES ('%d', '%d')""" % (gwSwitchID, int(remoteASID[0], port))
+                 VALUES ('%d', '%d', '%d')""" % (gwSwitchID, int(remoteASID[0]), port)
 
         try:
                 # Execute the SQL command

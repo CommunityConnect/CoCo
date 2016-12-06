@@ -3,7 +3,9 @@ package net.geant.coco.agent.portal.dao;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -210,7 +212,7 @@ public class NetworkSiteDao {
         String query = "SELECT sites.*, switches.name as switch_name FROM sites "
                 + "JOIN switches WHERE sites.switch = switches.id "
                 + "AND sites.id = :id;";
-        log.trace("getNetworkSite " + id + "  " + query);
+        log.debug("getNetworkSite " + id + "  " + query);
         return jdbc.query(query, params, new ResultSetExtractor<NetworkSite>() {
 
             @Override
@@ -224,6 +226,55 @@ public class NetworkSiteDao {
             }
 
         });
+    }
+    
+    public NetworkSite getExternalNetworkSite(Bgp bgp){
+
+    	MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("domain_id", bgp.getRemote_domain_id());
+        
+        String query = "SELECT sites.*, switches.name as switch_name FROM sites "
+                + "JOIN switches WHERE sites.switch = switches.id "
+                + "AND sites.domain = :domain_id;";
+        
+        log.debug("getNetworkSite " + query.replace(":domain_id", "" + bgp.getRemote_domain_id()));
+        
+        NetworkSite site = jdbc.query(query, params, new ResultSetExtractor<NetworkSite>() {
+
+            @Override
+            public NetworkSite extractData(ResultSet rs) throws SQLException {               
+                //TODO fix here, if there are no results
+                rs.next();
+                
+                NetworkSite networkSite = extractDataNS(rs);
+
+                return networkSite;
+            }
+
+        });
+        
+        if (site == null){
+        	return null;
+        }
+        
+        // NOTE: THIS IS A HACK
+        // What we do here is to abuse the site table in order to resolve the provider port for BGP vpns
+        
+        // replace the ID here, will will not make changes to this NetworkSite object
+        site.setId(1000 + bgp.getId());
+    	
+    	String sitePrefix = bgp.getAnnounce();
+    	site.setName("BGP" + sitePrefix);
+    	site.setIpv4Prefix(sitePrefix);
+    	
+    	// TODO: check what we really want here as a type
+    	site.nodeType = NetworkElement.NODE_TYPE.CUSTOMER_BGP;
+    	
+    	site.setUser(userDao.getDomainAdmin(bgp.getRemote_domain_id()));
+    	
+    	site.setVpnName(bgp.getVpn().getName());
+        
+        return site;
     }
 
     public NetworkSite getNetworkSite(String subnet) {
@@ -249,7 +300,7 @@ public class NetworkSiteDao {
         });
     }
     
-    // TODO: (Simon) this still needs to be fixed but i did not found essential code that uses that function
+    // TODO: (Simon) this still needs to be fixed but i did not found essential code that uses that function - possible fix = delete
     @Deprecated
     public int insertNetworkSite(String name, int switchNumber, int remotePort, int localPort, int vlanId, String ipPrefix, String macAddress) {
     	MapSqlParameterSource params = new MapSqlParameterSource();
@@ -266,7 +317,7 @@ public class NetworkSiteDao {
         /*String query = "SELECT sites.* FROM sites "
                 + "JOIN switches WHERE sites.switch = switches.id "
                 + "AND sites.name = :name;";*/
-        log.trace("insertNetworkSite " + name + "  " + query);
+        log.debug("insertNetworkSite " + name + "  " + query);
         
         KeyHolder keyHolder = new GeneratedKeyHolder();
         int updateResultSites = jdbc.update(query, params, keyHolder);
@@ -299,7 +350,7 @@ public class NetworkSiteDao {
         /*String query = "SELECT sites.* FROM sites "
                 + "JOIN switches WHERE sites.switch = switches.id "
                 + "AND sites.name = :name;";*/
-        log.trace("deleteNetworkSite " + ipPrefix + "  " + query);
+        log.debug("deleteNetworkSite " + ipPrefix + "  " + query);
         
         return jdbc.update(query, params);
     }

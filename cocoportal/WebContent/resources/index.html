@@ -784,6 +784,7 @@ function populate_sitelist(vpnID)
 		//var vpn = data["vpn"][0];
 		var sites = data;
 		var i;
+		for ( i =0; i < sites.length; i++)
 		{
 			var site = sites[i];
 			$('#site-list').append("<li id=\"" + site.name + "\" href=\"#\" class=\"list-group-item\"><span class=\"badge\">"+ site.user.email +"</span>" + site.name + "</li>");
@@ -917,6 +918,11 @@ function accept_vpn_invite()
 	invite_accept["hash"] = join_hash;
 	invite_accept["target"] = join_target;
 
+	if (join_target=="local"){
+		// we need to send the vpn id if we are in the same domain
+		invite_accept["vpn"] = parseInt(currentVPN);
+	}
+
 	console.log("send vpn join accept vpn:" + invite_accept["vpn"] + "  subnet:" + invite_accept["subnet"] + " hash:" +invite_accept["hash"] + " target:" + invite_accept["target"]);
 	
 	$.postJSON('../rest/vpn/accept' , invite_accept, function(response) {
@@ -924,8 +930,10 @@ function accept_vpn_invite()
 		console.log(response);
 		
 		var vpn = response;
-		
-		populate_sitelist(vpn["id"]);
+
+		if (response="true"){
+			window.location = window.location.origin + window.location.pathname;
+		}
 		
 	}, 'json');
 

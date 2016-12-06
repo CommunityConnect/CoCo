@@ -32,9 +32,19 @@ public class BgpDao {
     
     public List<Bgp> getBgps() {
         String query = "SELECT * FROM bgps";
-        log.trace(query);
+        log.debug(query);
         
         return getBgpList(query, null);
+    }
+    
+    public List<Bgp> getBgps(int vpn_id) {
+    	MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("vpn_id", vpn_id);
+    	
+        String query = "SELECT * FROM bgps WHERE vpn = :vpn_id";
+        log.debug(query.replace(":vpn_id", "" + vpn_id));
+        
+        return getBgpList(query, params);
     }
      
     private List<Bgp> getBgpList(String query, SqlParameterSource params) {
@@ -137,8 +147,17 @@ public class BgpDao {
         Bgp old_bgp = this.getBgp(bgp.getId());
         
         if (old_bgp != null){
-        	query = query.replace("INSERT INTO", "UPDATE");
-        	params.addValue("id", null);
+        	query = "UPDATE bgps SET "
+        			+ "`localDomain`=:localDomain, "
+        			+ "`remoteDomain`=:remoteDomain, "
+        			+ "`hash`=:hash, "
+        			+ "`nonce`=:nonce, "
+        			+ "`subnet`=:subnet, "
+        			+ "`target`=:target, "
+        			+ "`vpn`=:vpn, "
+        			+ "`announce`=:announce "
+        			+ "WHERE `id`=:id;";
+        	params.addValue("id", old_bgp.getId());
         }
         
         String query_print = new String(query);

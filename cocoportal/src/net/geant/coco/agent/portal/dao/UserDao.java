@@ -35,19 +35,19 @@ public class UserDao {
 
     public List<User> getUsers() {    	
     	String query = "SELECT * FROM users";
-        log.trace(query);
+        log.debug(query);
         
         List<User> users = getUserList(query, null);
         
         return users;
     }
 
-    public User getDomainAdmin(Domain domain){
+    public User getDomainAdmin(int domain_id){
     	MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("domainID", domain.getId());
+        params.addValue("domainID", domain_id);
         String query = "SELECT * FROM users WHERE domain = :domainID and admin = 1;";
         
-        log.trace(query.replace(":domainID", "" + domain.getId()));
+        log.debug(query.replace(":domainID", "" + domain_id));
         
         List<User> users = getUserList(query, params);
         
@@ -63,7 +63,7 @@ public class UserDao {
         params.addValue("name", userName);
         
         String query = "SELECT * FROM users WHERE name = :name or email = :name;";
-        log.trace(query.replace(":name", userName));
+        log.debug(query.replace(":name", userName));
         
         List<User> users = getUserList(query, params);
         
@@ -79,7 +79,7 @@ public class UserDao {
         params.addValue("name", userID);
         
         String query = "SELECT * FROM users WHERE id = :name ;";
-        log.trace(query.replace(":name", "'" + userID + "'"));
+        log.debug(query.replace(":name", "'" + userID + "'"));
         
         List<User> users = getUserList(query, params);
         
@@ -177,7 +177,7 @@ public class UserDao {
                 + "(SELECT id FROM users WHERE `name` = :userName),"
                 + "(SELECT id FROM sites WHERE `name` = :siteName)"
                 + ");";
-        log.trace("userDao addSite: " + query);
+        log.debug("userDao addSite: " + query);
         return jdbc.update(query, params) == 1;
     }
 
@@ -191,7 +191,7 @@ public class UserDao {
                 + "INNER JOIN sites s ON s2v.siteid = s.id "
                 + "WHERE s.name = :siteName AND v.name = :userName ;";
         
-        log.trace("userDao deleteSite: " + query);
+        log.debug("userDao deleteSite: " + query);
         return jdbc.update(query, params) == 1;
     }
 }

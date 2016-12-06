@@ -25,10 +25,16 @@ public class NetworkSite extends NetworkElement {
     public String toString() {
         StringBuilder result = new StringBuilder();
         String NEW_LINE = "_";
+        
+        result.append("Site" + NEW_LINE);
 
         //TODO: do we have to add something here, is the name unique (we currently use the string to compare sites)
-        result.append(this.getName() + NEW_LINE);
-        //result.append(this.getIpv4Prefix() + NEW_LINE);
+        if (this.getName() != null){
+        	result.append(this.getName() + NEW_LINE);
+        }
+        if (this.getIpv4Prefix() != null){
+        	result.append(this.getIpv4Prefix() + NEW_LINE);
+        }
         //result.append(this.getMacAddress() + NEW_LINE);
 
         return result.toString();

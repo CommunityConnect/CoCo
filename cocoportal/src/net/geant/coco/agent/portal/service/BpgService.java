@@ -17,6 +17,7 @@ import net.geant.coco.agent.portal.dao.Bgp;
 import net.geant.coco.agent.portal.dao.BgpDao;
 import net.geant.coco.agent.portal.dao.Domain;
 import net.geant.coco.agent.portal.dao.DomainDao;
+import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.Subnet;
 import net.geant.coco.agent.portal.dao.SubnetDao;
 import net.geant.coco.agent.portal.dao.User;
@@ -35,9 +36,10 @@ import lombok.extern.slf4j.Slf4j;
 public class BpgService {
     private BgpDao bgpDao;
     private DomainDao domainDao;
-    private VpnDao vpnDao;
     private SubnetDao subnetDao;
     private UsersService usersService;
+    private NetworkSitesService networkSitesService;
+    private VpnsService vpnsService;
 
     final private static String BGPSERVER = "http://10.10.10.1:5001/";
     
@@ -50,11 +52,6 @@ public class BpgService {
     public void setDomainDao(DomainDao domainDao) {
 		this.domainDao = domainDao;
 	}
-    
-    @Autowired
-    public void setVpnDao(VpnDao vpnDao) {
-		this.vpnDao = vpnDao;
-	}
 
     @Autowired
 	public void setSubnetDao(SubnetDao subnetDao) {
@@ -64,6 +61,16 @@ public class BpgService {
     @Autowired
 	public void setUsersService(UsersService usersService) {
 		this.usersService = usersService;
+	}
+    
+    @Autowired
+	public void setNetworkSitesService(NetworkSitesService networkSitesService) {
+		this.networkSitesService = networkSitesService;
+	}
+    
+    @Autowired
+	public void setVpnsService(VpnsService vpnsService) {
+		this.vpnsService = vpnsService;
 	}
 
 	private Bgp setupBgp(Bgp bgp){
@@ -78,7 +85,7 @@ public class BpgService {
 			bgp.setRemote_domain(domainDao.getDomain(bgp.getRemote_domain_id()));
 		}
 		if (bgp.getVpn_id() >= 0){
-			bgp.setVpn(vpnDao.getVpn(bgp.getVpn_id()));
+			bgp.setVpn(vpnsService.getVpn(bgp.getVpn_id()));
 		}
 		if (bgp.getSubnet_id() >= 0){
 			// we need to check if a subnet exists, as it is not required
@@ -98,6 +105,16 @@ public class BpgService {
     	}
     	return bgps;
     }
+    
+    public List<Bgp> getBgps(int vpn_id) {
+    	List<Bgp> bgps = bgpDao.getBgps(vpn_id);
+    	for (Bgp bgp : bgps){
+    		this.setupBgp(bgp);
+    	}
+    	return bgps;
+    }
+    
+    
     
     public Bgp getBgpByTarget(String target) {
     	return this.setupBgp(bgpDao.getBgpByTarget(target));
@@ -251,7 +268,7 @@ public class BpgService {
     }
     
     public boolean acceptRoute(User invitee, Subnet subnet, Vpn vpn, String hash, Bgp bgp){
-    	
+    	// this function is called if a user accepts an bgp invite
     	String bgp_hash = this.createBGPHash("" + invitee.getId(), bgp.getNonce(), bgp.getTarget());
     	
     	if (bgp_hash.equals(hash)){
@@ -260,9 +277,9 @@ public class BpgService {
     		String neighbor = bgp.getRemote_domain().getBgp_ip();
         	String route = subnet.getSubnet();
         	String next_hop = bgp.getLocal_domain().getBgp_ip();
-        	String target = this.createTarget(bgp.getLocal_domain().getAs_num(), vpn.getId());
+        	String target = bgp.getTarget(); //this.createTarget(bgp.getLocal_domain().getAs_num(), vpn.getId());
     		
-        	//NOTE: we tread the hex value as string - add 0x before sending over curl
+        	//NOTE: we treat the hex value as string - add 0x before sending over curl
     		String parameter = String.format("command=neighbor %s announce route %s next-hop %s extended-community 0x%s extended-community 0x%s", neighbor, route, next_hop, bgp.getNonce(), target);
     		
     		return this.cURL(BGPSERVER, parameter);
@@ -274,6 +291,7 @@ public class BpgService {
     }
     
     public Bgp annouceRoute(User creator, User invitee, Subnet subnet, Vpn vpn){
+    	// this function is called invite another user via BGP
     	// curl dummy command
     	// curl --form "command=neighbor 10.3.0.254 announce route 10.2.1.128/25 next-hop 10.2.0.254 extended-community 0x0002FDE800000001 extended-community 0x8ABCBEEFDEADBEEF" http://10.10.10.1:5001/
     	
@@ -313,9 +331,11 @@ public class BpgService {
     	return null;
     }
     
+    public boolean updateBgp(Bgp bgp) {
+    	return bgpDao.updateBgp(bgp);
+    }
+    
     public boolean bgpServerUpdate(String update_json){
-    	//TODO: what is happening if you acept a route
-    	
     	// first lets reformat the hex entries
     	Pattern pattern = Pattern.compile("[0-9]{11,20}");
     	Matcher matcher = pattern.matcher(update_json);
@@ -415,6 +435,31 @@ public class BpgService {
 					}
 				}
 				
+				// First check if this is an accept or new offer
+				// Thus check if we already have a BGP entry with this target - target is universal uinique ID
+				if (target != null){
+					Bgp bgp = bgpDao.getBgpByTarget(target);
+					if (bgp != null){
+						// this is an accept of an offer we sent
+						log.info("got bgp update - accept of offer " + host + " - " + target + " - " + nonce);
+						
+						// update bgp - subnet
+						bgp.setAnnounce(subnet_string);
+						bgpDao.updateBgp(bgp);
+						
+						// add bgp site to VPN
+						Vpn vpn = vpnsService.getVpn(bgp.getVpn_id());
+						bgp.setVpn(vpn);
+						
+						NetworkSite bgpSite = networkSitesService.getExternalNetworkSite(bgp);
+						
+						// NOTE: we have to manually add the bgp site here, as it doesn't fit in the regular process
+						vpnsService.addSiteToVpn(vpn, bgpSite);
+						
+						return true;
+					}
+				}
+				
 				if (target != null && nonce != null){
 					log.info("got bgp update - " + host + " - " + target + " - " + nonce);
 					
@@ -422,6 +467,8 @@ public class BpgService {
 					
 					Vpn vpn = new Vpn(String.format("BGP - %s", target));
 					vpn.setDomain(localdomain);
+					vpn.setFailoverType("slow-reroute");
+					vpn.setPathProtection("false");
 					User admin = usersService.getDomainAdmin(localdomain);
 					
 					if (admin == null){
@@ -430,8 +477,8 @@ public class BpgService {
 					}
 					
 					vpn.setOwner(admin);
-					if (vpnDao.createVpn(vpn)){
-						vpn = vpnDao.getVpn(vpn.getName());
+					if (vpnsService.createVpn(vpn)){
+						vpn = vpnsService.getVpn(vpn.getName());
 						
 						Bgp new_bgp = new Bgp();
 			    		new_bgp.setLocal_domain(localdomain);
@@ -441,7 +488,7 @@ public class BpgService {
 			    		new_bgp.setAnnounce(subnet_string);
 			    		new_bgp.setVpn(vpn);
 			    		
-			    		bgpDao.updateBgp(new_bgp);
+			    		return bgpDao.updateBgp(new_bgp);
 					} else {
 						log.error("ERROR VPN was not created - " + vpn.toString());
 					}

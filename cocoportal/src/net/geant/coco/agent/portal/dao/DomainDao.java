@@ -37,7 +37,7 @@ public class DomainDao {
     	//String query = "SELECT * FROM domains";
         String query = "SELECT * FROM domains";
                 //+ "INNER JOIN ases ON domains.as = ases.id ";
-        log.trace(query);
+        log.debug(query);
         
         List<Domain> domains = getDomainList(query, null);
         
@@ -54,7 +54,7 @@ public class DomainDao {
         String query = "SELECT * FROM domains "
                 //+ "INNER JOIN ases ON domains.as = ases.id "
                 + "WHERE name = :name ;";
-        log.trace(query);
+        log.debug(query);
         
         List<Domain> domains = getDomainList(query, params);
         
@@ -71,7 +71,7 @@ public class DomainDao {
 
         String query = "SELECT * FROM domains "
                 + "WHERE bgp_ip = :bgp_ip ;";
-        log.trace(query.replace(":bgp_ip", ip));
+        log.debug(query.replace(":bgp_ip", ip));
         
         List<Domain> domains = getDomainList(query, params);
         
@@ -90,7 +90,7 @@ public class DomainDao {
         String query = "SELECT * FROM domains "
                 //+ "INNER JOIN ases ON domains.as = ases.id "
                 + "WHERE id = :name ;";
-        log.trace(query);
+        log.debug(query);
         
         List<Domain> domains = getDomainList(query, params);
         

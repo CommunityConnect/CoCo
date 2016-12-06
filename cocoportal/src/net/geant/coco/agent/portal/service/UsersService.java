@@ -35,8 +35,12 @@ public class UsersService {
 		this.siteDao = siteDao;
 	}
     
+    public User getDomainAdmin(int domain_id){
+    	return userDao.getDomainAdmin(domain_id);
+    }
+    
     public User getDomainAdmin(Domain domain){
-    	return userDao.getDomainAdmin(domain);
+    	return this.getDomainAdmin(domain.getId());
     }
     
     public User getUser(String userName) {

@@ -43,7 +43,7 @@ public class VpnDao {
     			+ "LEFT JOIN subnetUsers ON vpnSubnet.subnet=subnetUsers.subnet "
     			+ "WHERE subnetUsers.user = :userId or vpns.owner = :userId ;";
     	
-    	log.trace(query.replace(":userId", "" + userId));
+    	log.debug(query.replace(":userId", "" + userId));
         
         List<Vpn> vpns = getVpnList(query, params);
         
@@ -52,7 +52,7 @@ public class VpnDao {
 
     public List<Vpn> getVpns() {    	
     	String query = "SELECT * FROM vpns";
-        log.trace(query);
+        log.debug(query);
         
         List<Vpn> vpns = getVpnList(query, null);
         
@@ -64,7 +64,7 @@ public class VpnDao {
         params.addValue("name", vpnName);
         
         String query = "SELECT * FROM vpns WHERE name = :name ;";
-        log.trace(query);
+        log.debug(query);
         
         List<Vpn> vpns = getVpnList(query, params);
         
@@ -80,7 +80,7 @@ public class VpnDao {
         params.addValue("name", vpnID);
         
         String query = "SELECT * FROM vpns WHERE id = :name ;";
-        log.trace(query);
+        log.debug(query.replace(":name", "\"" + vpnID +  "\""));
         
         List<Vpn> vpns = getVpnList(query, params);
         
@@ -194,7 +194,7 @@ public class VpnDao {
                 + "(SELECT id FROM subnets WHERE `subnet` = :subnet), "
                 + ":user "
                 + ");";
-        log.trace("vpnDao addSite: " + query);
+        log.debug("vpnDao addSite: " + query);
         return jdbc.update(query, params) == 1;
     }
     
@@ -211,7 +211,7 @@ public class VpnDao {
 //                + "(SELECT id FROM vpns WHERE `name` = :vpnName),"
 //                + "(SELECT id FROM sites WHERE `name` = :siteName)"
 //                + ");";
-//        log.trace("vpnDao addSite: " + query);
+//        log.debug("vpnDao addSite: " + query);
 //        return jdbc.update(query, params) == 1;
     }
 
@@ -226,7 +226,7 @@ public class VpnDao {
     			+ "INNER JOIN subnets on vpnSubnet.subnet=subnets.id WHERE subnets.subnet = :subnet "
     			+ " );";
 
-    	log.trace("vpnDao deleteSite: " + query);
+    	log.debug("vpnDao deleteSite: " + query);
     	return jdbc.update(query, params) == 1;
     }
     
@@ -242,7 +242,7 @@ public class VpnDao {
 //                + "INNER JOIN sites s ON s2v.siteid = s.id "
 //                + "WHERE s.name = :siteName AND v.name = :vpnName ;";
 //        
-//        log.trace("vpnDao deleteSite: " + query);
+//        log.debug("vpnDao deleteSite: " + query);
 //        return jdbc.update(query, params) == 1;
     }
 }

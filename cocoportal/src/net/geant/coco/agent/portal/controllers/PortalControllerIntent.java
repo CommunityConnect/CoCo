@@ -308,11 +308,13 @@ public class PortalControllerIntent {
 	
 	@RequestMapping(value = RestVpnURIConstants.ACCEPT_VPN, method = RequestMethod.POST)
 	public boolean inviteAcceptVpn(@RequestBody VpnInviteAccept accept) {
+		log.debug("inviteAcceptVpn: " + accept);
 		
 		User user = this.getCurrentUser();
 		
 		String hash = accept.getHash();
 		NetworkSite site = networkSiteService.getNetworkSite(accept.getSubnet());
+		
 		Subnet subnet = subnetDao.getSubnet(accept.getSubnet());
 		String target = accept.getTarget();
 		
@@ -322,14 +324,15 @@ public class PortalControllerIntent {
 		}
 		
 		if (bgp == null){
-			// we are in the same network - vpn as to be given in the accept
+			// we are in the same network - vpn has to be given in the accept
 			Vpn vpn = vpnsService.getVpn(accept.getVpn());
 			
 			// check if we have the correct hash
 			String comp_hash = bgpService.createLocalHash("" + vpn.getOwner_id(), "" + user.getId(), "" + accept.getVpn());
 			if (comp_hash.equals(hash)){
-				vpn.getSites().add(site);
-				updateVpn(vpn.getId(), vpn);
+				//vpn.getSites().add(site);
+				vpnsService.addSiteToVpn(vpn.getName(), site.getName(), user.getId());
+				
 			} else {
 				// THIS IS AN ERROR - HASH DOES NOT MATCH
 				log.error(String.format("ERROR inviteAcceptVpn - HASH DOES NOT MATCH req:%s !- comp:%s",hash, comp_hash));
@@ -337,13 +340,25 @@ public class PortalControllerIntent {
 		} else {
 			Vpn vpn = bgp.getVpn();
 			// we have to setup a bgp connection
+			NetworkSite bgpSite = networkSiteService.getExternalNetworkSite(bgp);
 			
 			// target is matching the bgp -> lets proceed
 			// hash is matched in acceptRoute
 			if (bgpService.acceptRoute(user, subnet, vpn, hash, bgp)){
-				vpn = bgp.getVpn();
-				vpn.getSites().add(site);
-				updateVpn(vpn.getId(), vpn);
+				log.debug("bgpService.acceptRoute was sussesful");
+				//vpn = bgp.getVpn();
+				//vpn.getSites().add(site);
+				vpnsService.addSiteToVpn(vpn.getName(), site.getName(), user.getId());
+				
+				// NOTE: we have to manually add the bgp site here, as it doesnt fit in the regular process
+				vpnsService.addSiteToVpn(vpn, bgpSite);
+				
+				//we added all the subnets to the vpn - lets update the bgp
+				bgp = bgpService.getBgp(bgp.getId());
+				bgp.setSubnet(subnet);
+				bgpService.updateBgp(bgp);
+			} else {
+				log.error("bgpService.acceptRoute was not sussesful!");
 			}
 		}
 		

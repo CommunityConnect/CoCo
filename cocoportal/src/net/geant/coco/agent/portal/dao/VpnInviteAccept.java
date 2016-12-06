@@ -40,4 +40,8 @@ public class VpnInviteAccept implements Serializable {
 	public void setTarget(String target) {
 		this.target = target;
 	}
+	
+	public String toString() {
+		return "VpnInviteAccept(" + String.valueOf(vpn) + "," + subnet + ","+ hash + ","+ target +")";
+	}
 }

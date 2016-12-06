@@ -14,9 +14,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import lombok.extern.slf4j.Slf4j;
 import net.geant.coco.agent.portal.dao.NetworkElement.NODE_TYPE;
 import net.geant.coco.agent.portal.dao.NetworkInterface.IF_TYPE;
 
+@Slf4j
 @Component
 public class TopologyDao {
 
@@ -153,17 +155,16 @@ public class TopologyDao {
 		MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("userName", userName);
 		
-        String query = "select bgps.id AS id, bgps.announce AS name, "
-        		+ "domains.as_num AS as_id, domains.as_name AS as_name "
-        		+ "from domains "
-        		+ "INNER JOIN bgps ON bgps.localDomain=domains.id "
+    	String query = "select DISTINCT switches.id, switches.name, sites.id AS site_id, bgps.id AS bgp_id, bgps.announce from switches "
+        		+ "INNER JOIN sites ON sites.switch=switches.id "
+        		+ "INNER JOIN bgps ON remoteDomain=sites.domain "
         		+ "WHERE bgps.vpn IN (SELECT DISTINCT vpns.id FROM vpns "
         		+ " INNER JOIN vpnSubnet ON vpnSubnet.vpn=vpns.id "
         		+ " INNER JOIN subnetUsers ON vpnSubnet.subnet=subnetUsers.subnet "
         		+ " INNER JOIN users ON users.id=subnetUsers.user "
         		+ " WHERE users.email = :userName OR users.name = :userName) ";
 
-        //System.out.println("links query: " + query);
+    	log.debug(query.replace(":userName", userName));
 
         List<NetworkInterface> networkInterfaces = jdbc.query(query, params, new RowMapper<NetworkInterface>() {
 
@@ -171,8 +172,8 @@ public class TopologyDao {
             public NetworkInterface mapRow(ResultSet rs, int rowNum)
                     throws SQLException {
             	
-            	NetworkElement networkElementFrom = new NetworkElement(rs.getInt("as_id"), rs.getString("as_name"), NODE_TYPE.EXTERNAL_AS);
-            	NetworkElement networkElementTo = new NetworkElement(rs.getInt("id"), rs.getString("name"), NODE_TYPE.CUSTOMER_BGP);
+            	NetworkElement networkElementFrom = new NetworkElement(rs.getInt("id"), rs.getString("name"), NODE_TYPE.SWITCH);
+            	NetworkElement networkElementTo = new NetworkElement(rs.getInt("bgp_id"), "BGP" + rs.getString("announce"), NODE_TYPE.CUSTOMER_BGP);
             	
             	
             	NetworkInterface networkLink = new NetworkInterface(networkElementFrom, networkElementTo, IF_TYPE.UNI);

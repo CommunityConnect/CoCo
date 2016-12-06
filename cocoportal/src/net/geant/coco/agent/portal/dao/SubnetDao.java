@@ -35,7 +35,7 @@ public class SubnetDao {
 
     public List<Subnet> getSubnets() {    	
     	String query = "SELECT * FROM subnets";
-        log.trace(query);
+        log.debug(query);
         
         List<Subnet> subnets = getSubnetList(query, null);
         
@@ -47,7 +47,7 @@ public class SubnetDao {
         params.addValue("subnetName", subnetName);
         
         String query = "SELECT * FROM subnets WHERE subnet = :subnetName ;";
-        log.trace(query);
+        log.debug(query);
         
         List<Subnet> subnets = getSubnetList(query, params);
         
@@ -63,7 +63,7 @@ public class SubnetDao {
         params.addValue("name", subnetID);
         
         String query = "SELECT * FROM subnets WHERE id = :name ;";
-        log.trace(query);
+        log.debug(query);
         
         List<Subnet> subnets = getSubnetList(query, params);
         
@@ -85,7 +85,7 @@ public class SubnetDao {
         String query = "SELECT * FROM subnets "
                 + "INNER JOIN subnetUsers ON subnets.id = subnetUsers.subnet "
                 + "AND subnetUsers.user = :user_id ;";
-        log.trace(query);
+        log.debug(query);
         
         List<Subnet> subnets = getSubnetList(query, params);
         
@@ -106,7 +106,7 @@ public class SubnetDao {
         String query = "SELECT * FROM subnets "
                 + "INNER JOIN vpnSubnet ON subnets.id = vpnSubnet.subnet "
                 + "AND vpnSubnet.vpn_id = :vpn_id ;";
-        log.trace(query);
+        log.debug(query);
         
         List<Subnet> subnets = getSubnetList(query, params);
         

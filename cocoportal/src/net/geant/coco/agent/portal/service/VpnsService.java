@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.geant.coco.agent.portal.bgp.BgpRouter;
 import net.geant.coco.agent.portal.bgp.BgpRouterFactory;
 import net.geant.coco.agent.portal.bgp.BgpRouterInterface;
+import net.geant.coco.agent.portal.dao.Bgp;
+import net.geant.coco.agent.portal.dao.BgpDao;
 import net.geant.coco.agent.portal.dao.Domain;
 import net.geant.coco.agent.portal.dao.DomainDao;
 import net.geant.coco.agent.portal.dao.NetworkSite;
@@ -32,6 +34,7 @@ public class VpnsService {
     private VpnDao vpnDao;
     private NetworkSiteDao networkSiteDao;
     private DomainDao domainDao;
+    private BpgService bgpService;
     
     VpnProvisioner vpnProvisioner;
     
@@ -69,13 +72,18 @@ public class VpnsService {
         this.networkSiteDao = networkSiteDao;
     }
     
-    private void manage_vpn_fk(List<Vpn> vpns){
+    @Autowired
+    public void setBgpService(BpgService bgpService) {
+		this.bgpService = bgpService;
+	}
+
+	private void manage_vpn_fk(List<Vpn> vpns){
     	for (Vpn vpn : vpns) {
     		this.manage_vpn_fk(vpn);
     	}
     }
-    
-    private void manage_vpn_fk(Vpn vpn){
+
+	private void manage_vpn_fk(Vpn vpn){
     	List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
 		vpn.setSites(networkSitesFromVpn);
 		
@@ -136,14 +144,21 @@ public class VpnsService {
     	NetworkSite site = networkSiteDao.getNetworkSite(siteName);
     	Vpn currentVpn = vpnDao.getVpn(vpnName);
     	
-    	vpnProvisioner.addSite(vpnName, site.getName(), site.getIpv4Prefix(), site.getProviderSwitch() + ":" + site.getProviderPort(), site.getMacAddress());
-        
-    	bgpRouter.addPeer(site.getIpv4Prefix(), Integer.parseInt(env.getProperty("asNumber")));
+    	this.addSiteToVpn(currentVpn, site);
+    	
+    	// TODO: code cleanup BGP old stuff
+    	//bgpRouter.addPeer(site.getIpv4Prefix(), Integer.parseInt(env.getProperty("asNumber")));
     	
     	//TODO fix the neighbour IP address, how to handle multiple neighbours?
     	bgpRouter.addSiteToVpn(site.getIpv4Prefix(), "0.0.0.0", currentVpn.getId());
     	
     	return vpnDao.addSubnetToVpn(vpnName, siteName, userID);
+    }
+    
+    public boolean addSiteToVpn(Vpn vpn, NetworkSite site) {
+    	log.info("Add a site to via VPN-Provisioner - vpn: " + vpn + " site: " + site);
+    	vpnProvisioner.addSite(vpn.getName(), site.getName(), site.getIpv4Prefix(), site.getProviderSwitch() + ":" + site.getProviderPort(), site.getMacAddress());
+    	return true;
     }
 
     public boolean deleteSiteFromVpn(String vpnName, String siteName) {
@@ -175,7 +190,17 @@ public class VpnsService {
 		if (vpn == null) {
 			return new ArrayList<NetworkSite>();
 		}
+		
+		List<NetworkSite> sites = new ArrayList<NetworkSite>();
+		
+		List<NetworkSite> vpnSites = networkSiteDao.getNetworkSites(vpn.getName());
+		sites.addAll(vpnSites);
+		
+		for (Bgp bgp : bgpService.getBgps(vpnID)){
+			NetworkSite bgpSite = networkSiteDao.getExternalNetworkSite(bgp);
+			sites.add(bgpSite);
+		}
 
-		return networkSiteDao.getNetworkSites(vpn.getName());
+		return sites;
 	}
 }

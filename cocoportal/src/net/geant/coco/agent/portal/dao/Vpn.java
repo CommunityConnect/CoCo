@@ -124,6 +124,6 @@ public class Vpn implements Serializable {
     }
 
     public String toString() {
-		return "vpn(" + String.valueOf(id) + "," + name + ",sites:"+ sites.toString() + ")";
+		return "vpn(" + String.valueOf(id) + "," + name + ",domain:"+ domain_id + ",owner" + owner_id +")";
 	}
 }

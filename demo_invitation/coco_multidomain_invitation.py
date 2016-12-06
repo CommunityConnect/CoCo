@@ -372,16 +372,18 @@ class MDCoCoTopoSouth(Topo):
 
         if mode == 'full':
             ts_pe1 = self.addSwitch('ts_pe1', dpid='0000000000000031', datapath='user')
-            #        ts_pc1 = self.addSwitch('ts_pc1', dpid='0000000000000002')
-            #        ts_pe2 = self.addSwitch('ts_pe2', dpid='0000000000000003')
-            ts_gw_tn = self.addSwitch('ts_gw_tn', dpid='0000000000000032')
+            ts_pc1 = self.addSwitch('ts_pc1', dpid='0000000000000032', datapath='user')
+            ts_pe2 = self.addSwitch('ts_pe2', dpid='0000000000000033', datapath='user')
+            ts_gw_tn = self.addSwitch('ts_gw_tn', dpid='0000000000000034')
 
             pinghost = self.addHost('ts_ph_tn', cls=PingableHost, ip='10.0.0.4/24', mac='00:10:00:00:00:04',
                             remoteIP='10.0.0.3', remoteMAC='00:10:00:00:00:03')
             self.addLink(ts_pe1, pinghost)
 
             # Switches we want to attach our routers to, in the correct order
-            attachmentSwitches = [ts_pe1]
+            #attachmentSwitches = [ts_pe1]
+            ##we have to put PC switch also in this domain, CE1 is now attached to ts_pe2
+            attachmentSwitches = [ts_pe2]
 
         zebraConf = '%s/zebra.conf' % CONFIG_DIR
         exabgpIni = '%s/exabgp_config.ini' % CONFIG_DIR
@@ -489,8 +491,10 @@ class MDCoCoTopoSouth(Topo):
             self.addLink(bgp, ts_pe1)
             # Wire up the switches in the topology
             ##for a moment only one switch is present in TNO south
+            ###not any longer - bug in intent prevents path installation if PC switch is absent on a path
+            self.addLink(ts_pe1, ts_pc1)
             self.addLink(ts_pe1, ts_gw_tn)
-            # self.addLink( ts_pc1, ts_pe2 )
+            self.addLink(ts_pc1, ts_pe2 )
 
 
         if mode == 'full' or mode == 'bgp' or mode == 'all':

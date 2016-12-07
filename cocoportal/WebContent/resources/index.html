@@ -745,6 +745,10 @@ function color_all_nodes(typeOfColoring, notetype = "CUSTOMER")
 
 function color_nodes(vpnID, typeOfColoring)
 {
+	// TODO: somehow the color nodes have a bug
+	// TODO: an extra node appears :/
+	return;
+	
 	$.getJSON("../rest/sites/" + vpnID, function(data) {
 		//var vpn = data["vpn"][0];
 		var sites = data;
@@ -761,6 +765,7 @@ function populate_sitelist(vpnID)
 {
 	// TODO: exception, network is undefined!?
 	network.unselectAll();
+	
 	color_all_nodes(1);
 	color_all_nodes(3, "CUSTOMER_NO");
 	color_nodes(vpnID, 2);

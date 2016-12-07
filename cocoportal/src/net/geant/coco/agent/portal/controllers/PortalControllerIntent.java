@@ -239,7 +239,7 @@ public class PortalControllerIntent {
 	public List<NetworkSite> getSitesInVpn(@PathVariable("id") int vpnID) {
 		log.info("Start getall sites.");
 
-		return vpnsService.getSitesInVpn(vpnID);
+		return vpnsService.getVpn(vpnID).getSites();
 	}
 
 	@RequestMapping(value = RestVpnURIConstants.INVITE_VPN, method = RequestMethod.POST)
@@ -324,6 +324,7 @@ public class PortalControllerIntent {
 		}
 		
 		if (bgp == null){
+			log.debug("inviteAcceptVpn: we are on the same domain");
 			// we are in the same network - vpn has to be given in the accept
 			Vpn vpn = vpnsService.getVpn(accept.getVpn());
 			
@@ -338,9 +339,10 @@ public class PortalControllerIntent {
 				log.error(String.format("ERROR inviteAcceptVpn - HASH DOES NOT MATCH req:%s !- comp:%s",hash, comp_hash));
 			}
 		} else {
+			log.debug("we are on a different domain start BGP process");
 			Vpn vpn = bgp.getVpn();
 			// we have to setup a bgp connection
-			NetworkSite bgpSite = networkSiteService.getExternalNetworkSite(bgp);
+			NetworkSite bgpSite = networkSiteService.getExternalNetworkSite(bgp, vpn);
 			
 			// target is matching the bgp -> lets proceed
 			// hash is matched in acceptRoute

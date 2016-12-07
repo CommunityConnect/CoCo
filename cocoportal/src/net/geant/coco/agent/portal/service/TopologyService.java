@@ -34,8 +34,10 @@ public class TopologyService {
 		interfaces.addAll(if_inni);
 		interfaces.addAll(if_uni);
 		interfaces.addAll(if_uni_no);
-		// ERROR, possibly with null values
-		//interfaces.addAll(if_bgp);
+		if (if_bgp != null){
+			interfaces.addAll(if_bgp);
+		}
+		
 
 		return interfaces;
 	}

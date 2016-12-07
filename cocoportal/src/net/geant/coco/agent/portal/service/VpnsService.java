@@ -34,7 +34,7 @@ public class VpnsService {
     private VpnDao vpnDao;
     private NetworkSiteDao networkSiteDao;
     private DomainDao domainDao;
-    private BpgService bgpService;
+    private BgpDao bgpDao;
     
     VpnProvisioner vpnProvisioner;
     
@@ -73,8 +73,8 @@ public class VpnsService {
     }
     
     @Autowired
-    public void setBgpService(BpgService bgpService) {
-		this.bgpService = bgpService;
+	public void setBgpDao(BgpDao bgpDao) {
+		this.bgpDao = bgpDao;
 	}
 
 	private void manage_vpn_fk(List<Vpn> vpns){
@@ -84,8 +84,10 @@ public class VpnsService {
     }
 
 	private void manage_vpn_fk(Vpn vpn){
-    	List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
-		vpn.setSites(networkSitesFromVpn);
+    	//List<NetworkSite> networkSitesFromVpn = networkSiteDao.getNetworkSites(vpn.getName());
+		//vpn.setSites(networkSitesFromVpn);
+		// TODO: is this code correct, now we include BGP external sites into the VPN
+		vpn.setSites(this.getSitesInVpn(vpn));
 		
 		Domain domain = domainDao.getDomain(vpn.getDomain_id());
 		if (domain != null && domain instanceof Domain){
@@ -169,8 +171,9 @@ public class VpnsService {
     	
     	vpnProvisioner.deleteSite(vpnName, siteName);
     	
+    	//TODO code cleanup
     	//TODO fix the neighbour IP address, how to handle multiple neighbours?
-    	bgpRouter.delSiteFromVpn(siteName, "0.0.0.0", currentVpn.getId());
+    	//bgpRouter.delSiteFromVpn(siteName, "0.0.0.0", currentVpn.getId());
 
         return vpnDao.deleteSiteFromVpn(vpnName, siteName);
     }
@@ -179,14 +182,18 @@ public class VpnsService {
 		log.info("deleteVpn " + vpnId);
 		
 		Vpn vpn = getVpn(vpnId);
+		
+		for (NetworkSite site : vpn.getSites()){
+			//vpnProvisioner.deleteSite(vpn.getName(),site.getName());
+			this.deleteSiteFromVpn(vpn.getName(),site.getName());
+		}
+		
 		vpnProvisioner.deleteVpn(vpn.getName());
 		
 		return vpnDao.deleteVpn(vpnId);
 	}
-
-	public List<NetworkSite> getSitesInVpn(int vpnID) {
-		Vpn vpn = vpnDao.getVpn(vpnID);
-		
+	
+	private List<NetworkSite> getSitesInVpn(Vpn vpn) {
 		if (vpn == null) {
 			return new ArrayList<NetworkSite>();
 		}
@@ -196,8 +203,9 @@ public class VpnsService {
 		List<NetworkSite> vpnSites = networkSiteDao.getNetworkSites(vpn.getName());
 		sites.addAll(vpnSites);
 		
-		for (Bgp bgp : bgpService.getBgps(vpnID)){
-			NetworkSite bgpSite = networkSiteDao.getExternalNetworkSite(bgp);
+		//NOTE done use the service here, but the Dao as the service creates a loop here
+		for (Bgp bgp : bgpDao.getBgps(vpn.getId())){
+			NetworkSite bgpSite = networkSiteDao.getExternalNetworkSite(bgp, vpn);
 			sites.add(bgpSite);
 		}
 

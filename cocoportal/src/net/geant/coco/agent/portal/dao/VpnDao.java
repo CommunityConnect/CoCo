@@ -220,13 +220,11 @@ public class VpnDao {
     	params.addValue("vpnName", vpnName);
     	params.addValue("subnet", subnet);
     	
-    	String query = "DELETE FROM vpnSubnet WHERE id=( "
-    			+ "SELECT id FROM vpnSubnet "
-    			+ "INNER JOIN vpns on vpnSubnet.vpn=vpns.id WHERE vpns.name = :vpnName "
-    			+ "INNER JOIN subnets on vpnSubnet.subnet=subnets.id WHERE subnets.subnet = :subnet "
-    			+ " );";
+    	String query = "DELETE FROM vpnSubnet "
+    			+ "WHERE vpn = (SELECT id FROM vpns WHERE vpns.name = :vpnName) "
+    			+ "AND subnet = (SELECT id FROM subnets WHERE subnets.subnet = :subnet);";
 
-    	log.debug("vpnDao deleteSite: " + query);
+    	log.debug("vpnDao deleteSite: " + query.replace(":vpnName", vpnName).replace(":subnet",subnet));
     	return jdbc.update(query, params) == 1;
     }
     

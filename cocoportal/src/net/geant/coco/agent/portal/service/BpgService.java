@@ -451,7 +451,7 @@ public class BpgService {
 						Vpn vpn = vpnsService.getVpn(bgp.getVpn_id());
 						bgp.setVpn(vpn);
 						
-						NetworkSite bgpSite = networkSitesService.getExternalNetworkSite(bgp);
+						NetworkSite bgpSite = networkSitesService.getExternalNetworkSite(bgp, vpn);
 						
 						// NOTE: we have to manually add the bgp site here, as it doesn't fit in the regular process
 						vpnsService.addSiteToVpn(vpn, bgpSite);

@@ -7,6 +7,7 @@ import java.util.Map;
 import net.geant.coco.agent.portal.dao.Bgp;
 import net.geant.coco.agent.portal.dao.NetworkSite;
 import net.geant.coco.agent.portal.dao.NetworkSiteDao;
+import net.geant.coco.agent.portal.dao.Vpn;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -39,8 +40,8 @@ public class NetworkSitesService {
         return networkSiteDao.getNetworkSite(siteName);
     }
     
-    public NetworkSite getExternalNetworkSite(Bgp bgp) {
-        return networkSiteDao.getExternalNetworkSite(bgp);
+    public NetworkSite getExternalNetworkSite(Bgp bgp, Vpn vpn) {
+        return networkSiteDao.getExternalNetworkSite(bgp, vpn);
     }
     
     public int insertNetworkSite(String name, int switchNumber, int remotePort, int localPort, int vlanId, String ipPrefix, String macAddress) {

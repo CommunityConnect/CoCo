@@ -228,7 +228,7 @@ public class NetworkSiteDao {
         });
     }
     
-    public NetworkSite getExternalNetworkSite(Bgp bgp){
+    public NetworkSite getExternalNetworkSite(Bgp bgp, Vpn vpn){
 
     	MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("domain_id", bgp.getRemote_domain_id());
@@ -272,7 +272,7 @@ public class NetworkSiteDao {
     	
     	site.setUser(userDao.getDomainAdmin(bgp.getRemote_domain_id()));
     	
-    	site.setVpnName(bgp.getVpn().getName());
+    	site.setVpnName(vpn.getName());
         
         return site;
     }

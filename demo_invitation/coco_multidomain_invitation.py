@@ -492,9 +492,9 @@ class MDCoCoTopoSouth(Topo):
             ##for a moment only one switch is present in TNO south
             ###not any longer - bug in intent prevents path installation if PC switch is absent on a path
             self.addLink(ts_pe1, ts_pc1)
+            self.addLink(bgp, ts_pe1)
             self.addLink(ts_pe1, ts_gw_tn)
             self.addLink(ts_pc1, ts_pe2 )
-            self.addLink(bgp, ts_pe1)
 
 
         if mode == 'full' or mode == 'bgp' or mode == 'all':

@@ -804,6 +804,26 @@ def databaseDump(net, domain, mode):
                 # Rollback in case there is any error
                 db.rollback()
 
+    ## add the external link as a virtual site into the sitetable
+    # TODO this needs improvements to be future proof and completly dynamic
+    sql = ""
+    if mode == 'full':
+        if domain == 'MDCoCoTopoNorth':
+            sql = """INSERT INTO `CoCoINV`.`sites` (`name`, `x`, `y`, `switch`, `remote_port`, `local_port`, `vlanid`, `ipv4prefix`, `mac_address`, `domain`) VALUES ('ts_bgp', '0', '0', (SELECT switch FROM CoCoINV.extLinks WHERE id=1), (SELECT port FROM CoCoINV.extLinks WHERE id=1), (SELECT port FROM CoCoINV.extLinks WHERE id=1), '0', '10.3.0.0/24', '00:00:00:00:00:00', (SELECT domain FROM CoCoINV.extLinks WHERE id=1));"""
+
+        if domain == 'MDCoCoTopoSouth':
+            sql = """INSERT INTO `CoCoINV`.`sites` (`name`, `x`, `y`, `switch`, `remote_port`, `local_port`, `vlanid`, `ipv4prefix`, `mac_address`, `domain`) VALUES ('tn_bgp', '0', '0', (SELECT switch FROM CoCoINV.extLinks WHERE id=1), (SELECT port FROM CoCoINV.extLinks WHERE id=1), (SELECT port FROM CoCoINV.extLinks WHERE id=1), '0', '10.2.0.0/24', '00:00:00:00:00:00', (SELECT domain FROM CoCoINV.extLinks WHERE id=1));"""
+
+        if sql != "":
+            try:
+                # Execute the SQL command
+                cursor.execute(sql)
+                # Commit your changes in the database
+                db.commit()
+            except mdb.Error, e:
+                print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+                # Rollback in case there is any error
+                db.rollback()
 
 
     for trow in range(len(bighosttable)):

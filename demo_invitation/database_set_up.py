@@ -370,7 +370,7 @@ def database_insert_data(domain, db_host, mode):
     #Random data
     sql = """INSERT INTO `users` (name, email, domain, admin)
             VALUES 	('tn_admin','tn_admin@mail.com','%d',1),
-                    ('bill_tn','bill_tn@mail.com','%d',0),
+                    ('bill_tn','Bill.tn@mail.com','%d',0),
                     ('mark_tn','mark_tn@mail.com','%d',0),
                     ('tn_user','tn_user@mail.com','%d',0),
                     ('ts_admin','ts_admin@mail.com','%d',1),

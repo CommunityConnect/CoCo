@@ -375,7 +375,7 @@ def database_insert_data(domain, db_host, mode):
                     ('tn_user','tn_user@mail.com','%d',0),
                     ('ts_admin','ts_admin@mail.com','%d',1),
                     ('ts_user','ts_user@mail.com','%d',0),
-                    ('mike_ts','mike_ts@mail.com','%d',0),
+                    ('mike_ts','mike.ts@mail.com','%d',0),
                     ('harry_ts','harry_ts@mail.com','%d',0);""" %(id_north, id_north,id_north, id_north, id_south, id_south, id_south, id_south)
     try:
         # Execute the SQL command

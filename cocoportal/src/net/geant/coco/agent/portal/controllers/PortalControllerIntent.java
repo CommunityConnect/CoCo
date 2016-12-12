@@ -300,8 +300,8 @@ public class PortalControllerIntent {
 		
 		
 		log.info("New Invite {"+ invite +"} from {" + sender + "} to {" + receiver + "} url {"+ url +"};");
-		// TODO: send invite to other user via email
-		// CoCoMail.sendCoCoMail(sender, receiver, invite.getInvite_text(), url);
+		// send invite to other user via email
+		CoCoMail.sendCoCoMail(sender, receiver, invite.getInvite_text(), url);
 		
 		return false;
 	}

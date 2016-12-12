@@ -188,6 +188,12 @@ public class VpnsService {
 			this.deleteSiteFromVpn(vpn.getName(),site.getName());
 		}
 		
+		// delete the BGP before the VPN
+		// NOTE a BGP is alwys assosiated to one and one only VPN
+		for (Bgp bgp : bgpDao.getBgps(vpn.getId())){
+			bgpDao.deleteBgp(bgp);
+		}
+		
 		vpnProvisioner.deleteVpn(vpn.getName());
 		
 		return vpnDao.deleteVpn(vpnId);

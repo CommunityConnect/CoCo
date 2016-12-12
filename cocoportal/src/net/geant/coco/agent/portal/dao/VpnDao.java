@@ -167,7 +167,7 @@ public class VpnDao {
          params.addValue("id", vpnId);
          
          String query = "DELETE FROM vpns WHERE `id` = :id ;";
-         log.info("deleteVpn " + query);
+         log.info("deleteVpn: " + query.replace(":id", ""+vpnId));
          
          return (jdbc.update(query, params) == 1);
 	}

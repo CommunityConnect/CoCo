@@ -113,6 +113,30 @@ public class BgpDao {
         return bgps.get(0);
     }
     
+    /**
+     * Deletes Bgp from the database.
+     * @param vpnId
+     * @return
+     */
+    public boolean deleteBgp(Bgp bgp) {
+    	 return this.deleteBgp(bgp.getId());
+	}
+    
+    /**
+     * Deletes Bgp with a given id from a database.
+     * @param vpnId
+     * @return
+     */
+    public boolean deleteBgp(int bgpId) {
+    	 MapSqlParameterSource params = new MapSqlParameterSource();
+         params.addValue("id", bgpId);
+         
+         String query = "DELETE FROM bgps WHERE `id` = :id ;";
+         log.info("deleteVpn: " + query.replace(":id", ""+bgpId));
+         
+         return (jdbc.update(query, params) == 1);
+	}
+    
     public boolean updateBgp(Bgp bgp) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         

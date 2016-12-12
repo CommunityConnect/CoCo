@@ -40,12 +40,14 @@ public class CoCoMail {
 		String mail_title = EMAIL_TITLE.replace("[sender]", sender.getName());
 		String mail_text = EMAIL_TEXT.replace("[sender]", sender.getName());
 		mail_text = mail_text.replace("[receiver]", receiver.getName());
+		
 		if ( text != null &&  !text.equals("")){
-			text = text.replace("[Personal_Text]", text + "\n\r\n\r"); 
+			mail_text = mail_text.replace("[Personal_Text]", text + "\n\r\n\r"); 
 		} else {
-			text = text.replace("[Personal_Text]", "");  
+			mail_text = mail_text.replace("[Personal_Text]", "");  
 		}
-		text = text.replace("[link]", link);  
+		mail_text = mail_text.replace("[link]", link);  
+		
 		return CoCoMail.sendMail(receiver.getEmail(), mail_title, mail_text);
 	}
 	

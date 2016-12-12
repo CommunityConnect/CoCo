@@ -488,13 +488,13 @@ class MDCoCoTopoSouth(Topo):
 #                self.addLink(root, bgp)
 
         if mode == 'full':
-            self.addLink(bgp, ts_pe1)
             # Wire up the switches in the topology
             ##for a moment only one switch is present in TNO south
             ###not any longer - bug in intent prevents path installation if PC switch is absent on a path
             self.addLink(ts_pe1, ts_pc1)
             self.addLink(ts_pe1, ts_gw_tn)
             self.addLink(ts_pc1, ts_pe2 )
+            self.addLink(bgp, ts_pe1)
 
 
         if mode == 'full' or mode == 'bgp' or mode == 'all':

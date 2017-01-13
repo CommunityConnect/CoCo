@@ -1,0 +1,7 @@
+On a modern Ubuntu system (and many other GNU/Linux distributions), fixing a corrupted sudoers file is actually quite easy, and doesn't require rebooting, using a live CD, or physical access to the machine.
+
+To do this via SSH, log in to the machine and run the command pkexec visudo. If you have physical access to the machine, SSH is unnecessary; just open a Terminal window and run that pkexec command.
+
+Assuming you (or some other user) are authorized to run programs as root with PolicyKit, you can enter your password, and then it will run visudo as root, and you can fix your /etc/sudoers.
+
+If you need to edit one of the configuration files in /etc/sudoers.d (which in uncommon in this situation, but possible), use pkexec visudo -f /etc/sudoers.d/filename.

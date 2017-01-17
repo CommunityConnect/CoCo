@@ -635,7 +635,6 @@ def databaseDump(net, domain, mode):
                             VALUES ('%s', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%d')""" % (
                                  crow[0], crow[1], crow[2], crow[3], crow[4], crow[5], crow[6], crow[7], crow[8], id_temp)
 
-	print sql
         try:
             # Execute the SQL command
             cursor.execute(sql)
@@ -762,7 +761,6 @@ def databaseDump(net, domain, mode):
             sql = """INSERT INTO `CoCoINV`.`sites` (`name`, `x`, `y`, `switch`, `remote_port`, `local_port`, `vlanid`, `ipv4prefix`, `mac_address`, `domain`) VALUES ('tn_bgp', '0', '0', (SELECT switch FROM CoCoINV.extLinks WHERE id=1), (SELECT port FROM CoCoINV.extLinks WHERE id=1), (SELECT port FROM CoCoINV.extLinks WHERE id=1), '0', '10.2.0.0/24', '00:00:00:00:00:00', (SELECT domain FROM CoCoINV.extLinks WHERE id=1));"""
 
         if sql != "":
-            print sql
             try:
                 # Execute the SQL command
                 cursor.execute(sql)

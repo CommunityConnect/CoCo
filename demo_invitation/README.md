@@ -9,9 +9,10 @@ TODO:
 <<<<<<< HEAD
 Demo
 1. Start ODL controller
- /home/coco/vpnservice-karaf-intent/distribution-karaf-0.4.2-Berylium-SR2-clean/bin/karaf
 
- needed features are
+ /home/coco/distribution-karaf-0.4.2-Beryllium-SR2-vpnintent/bin/karaf
+
+ if installing clean ODL, needed features are
 
  feature:install odl-vpn-service-intent
  feature:install odl-dlux-all

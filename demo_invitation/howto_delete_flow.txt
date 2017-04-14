@@ -1,0 +1,18 @@
+del flow
+
+1) get all the flows from a table (mind switch number, this is decimal, as seen in dlux topology)
+
+GET http://127.0.0.1:8181/restconf/config/opendaylight-inventory:nodes/node/openflow:51/table/0/
+
+2) find the id of the interesting flow, for sanity check get it
+
+escape
+/ %2f
+. %2e
+_ %5f
+
+
+GET http://127.0.0.1:8181/restconf/config/opendaylight-inventory:nodes/node/openflow:51/table/0/flow/MPLS%5FRule%5F10%2E5%2E1%2E0%2F24BGP10%2E4%2E1%2E0%2F24
+
+3) DELETE http://127.0.0.1:8181/restconf/config/opendaylight-inventory:nodes/node/openflow:51/table/0/flow/MPLS%5FRule%5F10%2E5%2E1%2E0%2F24BGP10%2E4%2E1%2E0%2F24
+

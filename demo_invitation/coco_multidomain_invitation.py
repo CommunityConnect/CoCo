@@ -152,6 +152,8 @@ class EXABGPRouteReflector(Host):
                 self.nameToIntf[intf].ip=attrs['ipAddrs'].split('/')[0]
                 self.nameToIntf[intf].prefixLen=attrs['ipAddrs'].split('/')[1]
 
+        #we experienced problems with this folder disappearing so let's be sure it exists
+        self.cmd('mkdir -p %s' % EXABGP_RUN_DIR)
 
         self.cmd('env exabgp.daemon.pid=%s/exabgp%s.pid exabgp.log.destination=%s/exabgp%s.log exabgp -e %s %s' %(
             EXABGP_RUN_DIR, self.name, EXABGP_LOG_DIR, self.name, self.exabgpIniFile, self.exabgpConfFile
